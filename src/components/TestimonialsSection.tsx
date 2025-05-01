@@ -19,7 +19,6 @@ const testimonials = [
   {
     id: 3,
     rating: 4,
-    rating: 4,
     text: "The personalized calendars for our team were beautiful! Everyone loved having their names and company branding integrated thoughtfully.",
     author: "Michael Smith",
     position: "CEO"
