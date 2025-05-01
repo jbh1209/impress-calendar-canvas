@@ -1,39 +1,39 @@
 
-import { Check, CalendarDays, Award, Printer, CreditCard } from "lucide-react";
+import { Calendar, FileText, Image, Pen } from "lucide-react";
 
 const FeaturesSection = () => {
   return (
-    <div className="py-16 bg-darkSecondary">
+    <div className="py-16 bg-darkBg">
       <div className="container mx-auto px-4">
-        <h2 className="section-title text-center">Premium Calendar Features</h2>
-        <p className="section-subtitle text-center">
-          Our A2 landscape calendars combine exceptional quality with practical design to create a
-          calendar that's perfect for your needs
+        <h2 className="text-4xl font-bold text-center mb-3">Premium Calendar Features</h2>
+        <p className="text-gray-400 text-center max-w-3xl mx-auto mb-12 text-lg">
+          Our A2 Landscape Wire Bound Calendars combine quality materials with 
+          professional design for the perfect business calendar.
         </p>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           <FeatureCard 
-            icon={<CalendarDays className="feature-icon" />}
-            title="Custom Options"
-            description="Personalize every aspect from dates to images, creating a truly unique calendar"
+            icon={<Calendar className="w-6 h-6 text-white" />}
+            title="Premium A2 Size"
+            description="Large A2 landscape format provides ample space for notes and visibility from across the room."
           />
           
           <FeatureCard 
-            icon={<Award className="feature-icon" />}
-            title="Premium Quality"
-            description="High quality materials ensure your calendar looks beautiful throughout the year"
+            icon={<FileText className="w-6 h-6 text-white" />}
+            title="Wire Bound Design"
+            description="Durable wire binding allows pages to lay flat and flip easily for a better user experience."
           />
           
           <FeatureCard 
-            icon={<Printer className="feature-icon" />}
-            title="Vibrant Printing"
-            description="Our advanced printing technology delivers vivid colors and sharp details"
+            icon={<Image className="w-6 h-6 text-white" />}
+            title="High-Quality Printing"
+            description="Vibrant, fade-resistant colors on premium 250gsm paper for a professional look all year."
           />
           
           <FeatureCard 
-            icon={<CreditCard className="feature-icon" />}
-            title="Secure Payments"
-            description="Encrypted checkout with multiple payment options for your convenience"
+            icon={<Pen className="w-6 h-6 text-white" />}
+            title="Custom Branding"
+            description="Personalize with your logo and company details for consistent brand visibility."
           />
         </div>
       </div>
@@ -51,10 +51,15 @@ const FeatureCard = ({
   description: string;
 }) => {
   return (
-    <div className="bg-darkBg rounded-lg p-6 flex flex-col items-center text-center">
-      {icon}
-      <h3 className="text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-gray-400">{description}</p>
+    <div className="bg-[#222222] rounded-lg p-6 flex items-start relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-70"></div>
+      <div className="w-12 h-12 bg-[#333333] rounded-lg flex items-center justify-center mr-4 shrink-0 relative z-10">
+        {icon}
+      </div>
+      <div className="relative z-10">
+        <h3 className="text-xl font-semibold mb-2">{title}</h3>
+        <p className="text-gray-400 text-sm">{description}</p>
+      </div>
     </div>
   );
 };
