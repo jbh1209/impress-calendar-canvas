@@ -51,11 +51,18 @@ const FeatureCard = ({
   description: string;
 }) => {
   return (
-    <div className="bg-[#222222] rounded-lg p-6 flex items-start relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-70"></div>
+    <div className="bg-[#1A1A1A] rounded-lg p-6 flex items-start relative overflow-hidden shadow-lg">
+      {/* Enhanced vignette effect with multiple layers */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#333333]/80 via-[#222222]/50 to-transparent"></div>
+      <div className="absolute inset-0 bg-[#000000]/10 rounded-lg"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[#0000001a] to-transparent"></div>
+      
+      {/* Icon container */}
       <div className="w-12 h-12 bg-[#333333] rounded-lg flex items-center justify-center mr-4 shrink-0 relative z-10">
         {icon}
       </div>
+      
+      {/* Content */}
       <div className="relative z-10">
         <h3 className="text-xl font-semibold mb-2">{title}</h3>
         <p className="text-gray-400 text-sm">{description}</p>
