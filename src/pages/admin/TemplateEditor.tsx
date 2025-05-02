@@ -11,6 +11,14 @@ import { Save, ArrowLeft, Image, Text } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Canvas, Group, Image as FabricImage, Rect, Text as FabricText } from "fabric";
+
+// Define custom types for zone data to handle custom properties
+interface CustomZoneData {
+  zoneId: number;
+  zoneType: 'image' | 'text';
+  name: string;
+}
 
 // Mock data for template being edited
 const mockTemplates = [
@@ -35,7 +43,7 @@ const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fabricCanvasRef = useRef<any>(null);
+  const fabricCanvasRef = useRef<Canvas | null>(null);
   const isEditing = id !== undefined;
   const [activeTab, setActiveTab] = useState("general");
   const [isLoading, setIsLoading] = useState(true);
@@ -51,10 +59,6 @@ const TemplateEditor = () => {
   useEffect(() => {
     const loadFabric = async () => {
       try {
-        // Fix: Import Fabric components correctly
-        const fabricModule = await import("fabric");
-        const { Canvas, Image: FabricImage, Rect, Text: FabricText, Group } = fabricModule;
-        
         if (!canvasRef.current) return;
         
         const canvas = new Canvas(canvasRef.current, {
@@ -79,12 +83,18 @@ const TemplateEditor = () => {
             });
             
             // Load background image if available
-            FabricImage.fromURL(templateData.baseImageUrl, function(img) {
+            FabricImage.fromURL(templateData.baseImageUrl, {
+              // Use the options format required by Fabric.js v6
+              crossOrigin: 'anonymous',
+              signal: new AbortController().signal,
+            }).then((img) => {
               canvas.setWidth(800);
               canvas.setHeight(600);
               
               img.scaleToWidth(canvas.width || 800);
-              canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+              // Use correct property to set background image in Fabric.js v6
+              canvas.backgroundImage = img;
+              canvas.renderAll();
               
               // Load customization zones
               templateData.customizationZones.forEach(zone => {
@@ -99,7 +109,13 @@ const TemplateEditor = () => {
                   rx: 5,
                   ry: 5,
                   selectable: true,
-                  data: { zoneId: zone.id, zoneType: zone.type, name: zone.name }
+                });
+                
+                // Add zone metadata
+                rect.set('customProps', { 
+                  zoneId: zone.id, 
+                  zoneType: zone.type, 
+                  name: zone.name 
                 });
                 
                 // Add label to zone
@@ -118,11 +134,20 @@ const TemplateEditor = () => {
                   top: zone.y,
                   selectable: true,
                   hasControls: true,
-                  data: { zoneId: zone.id, zoneType: zone.type, name: zone.name }
+                });
+                
+                // Set custom properties to the group
+                zoneGroup.set('customProps', { 
+                  zoneId: zone.id, 
+                  zoneType: zone.type, 
+                  name: zone.name 
                 });
                 
                 canvas.add(zoneGroup);
               });
+            }).catch(error => {
+              console.error("Error loading background image:", error);
+              toast.error("Failed to load template background image");
             });
           }
         }
@@ -151,8 +176,7 @@ const TemplateEditor = () => {
     const zoneId = Date.now();
     const zoneName = type === 'image' ? `Image Zone ${zoneId}` : `Text Zone ${zoneId}`;
     
-    // Fix: Import Fabric components within this function scope
-    import("fabric").then(({ Rect, Text: FabricText, Group }) => {
+    try {
       const rect = new Rect({
         left: 100,
         top: 100,
@@ -164,7 +188,13 @@ const TemplateEditor = () => {
         rx: 5,
         ry: 5,
         selectable: true,
-        data: { zoneId, zoneType: type, name: zoneName }
+      });
+      
+      // Set custom properties to the rect
+      rect.set('customProps', { 
+        zoneId, 
+        zoneType: type, 
+        name: zoneName 
       });
       
       const text = new FabricText(zoneName, {
@@ -182,7 +212,13 @@ const TemplateEditor = () => {
         top: 100,
         selectable: true,
         hasControls: true,
-        data: { zoneId, zoneType: type, name: zoneName }
+      });
+      
+      // Set custom properties to the group
+      group.set('customProps', { 
+        zoneId, 
+        zoneType: type, 
+        name: zoneName 
       });
       
       canvas.add(group);
@@ -190,10 +226,10 @@ const TemplateEditor = () => {
       canvas.renderAll();
       
       toast.success(`Added new ${type} zone`);
-    }).catch(error => {
-      console.error("Error loading Fabric.js components:", error);
+    } catch (error) {
+      console.error("Error adding zone:", error);
       toast.error("Failed to add zone");
-    });
+    }
   };
   
   const handleSaveTemplate = () => {
