@@ -1,4 +1,3 @@
-
 # Impress Calendars E-Commerce Platform - Product Requirements Document (PRD)
 
 ## 1. Project Overview
@@ -33,9 +32,10 @@ Impress Calendars is an e-commerce platform that allows users to browse, customi
 
 - **carts**: Store shopping cart data (id, user_id, created_at, updated_at)
 - **cart_items**: Store items in cart (id, cart_id, product_variant_id, quantity, customization_data, shutterstock_images, created_at, updated_at)
-- **orders**: Store order information (id, user_id, status, subtotal, tax, shipping_cost, discount_amount, total, payment_intent_id, shipping_address_id, billing_address_id, created_at, updated_at)
+- **orders**: Store order information (id, user_id, status, subtotal, tax, shipping_cost, discount_amount, total, payment_merchant_id, payment_reference, shipping_address_id, billing_address_id, created_at, updated_at)
 - **order_items**: Store items in orders (id, order_id, product_variant_id, price_at_checkout, quantity, customization_data, shutterstock_images, created_at)
 - **addresses**: Store shipping and billing addresses (id, user_id, type, name, address_line1, address_line2, city, state, postal_code, country, phone, is_default, created_at, updated_at)
+- **payment_transactions**: Store payment transaction details (id, order_id, payment_merchant_id, payment_id, amount, status, currency, payment_method, created_at, updated_at)
 
 ### 2.3 User Data
 
@@ -63,7 +63,7 @@ Impress Calendars is an e-commerce platform that allows users to browse, customi
 ### 3.2 Shopping Experience
 
 - Shopping cart with item management
-- Checkout process with shipping options, address input, and payment integration
+- Checkout process with shipping options, address input, and PayFast payment integration
 - Order confirmation page
 - Order history and tracking
 
@@ -109,7 +109,7 @@ Impress Calendars is an e-commerce platform that allows users to browse, customi
 - Cart management
 - Tax calculation
 - Shipping cost calculation
-- Payment processing integration
+- PayFast payment processing integration
 - Order status management
 - Confirmation emails
 - Invoice generation
@@ -143,10 +143,11 @@ Impress Calendars is an e-commerce platform that allows users to browse, customi
 
 ### 5.1 Payment Processing
 
-- Integration with payment gateway (Stripe recommended)
-- Support for multiple payment methods (credit cards, PayPal, etc.)
-- Secure payment processing
-- Refund processing
+- Integration with PayFast payment gateway
+- Support for multiple payment methods through PayFast (credit cards, instant EFT, Mobicred, etc.)
+- Secure payment processing using PayFast's security features
+- Payment verification and ITN (Instant Transaction Notification) handling
+- Refund processing through PayFast admin interface
 
 ### 5.2 Shipping
 
@@ -169,6 +170,35 @@ Impress Calendars is an e-commerce platform that allows users to browse, customi
 - **Licensing**: Purchasing and downloading licensed images
 - **Usage Tracking**: Monitoring API usage and costs
 
+### 5.5 PayFast API Integration Details
+
+#### 5.5.1 Setup and Configuration
+- Register for PayFast merchant account
+- Obtain and securely store Merchant ID, Merchant Key, and Passphrase in Supabase
+- Configure PayFast sandbox environment for testing
+- Set up secure callback URLs for payment notifications (ITN)
+
+#### 5.5.2 Payment Flow
+- Implement redirect-based payment flow
+- Generate secure payment requests with proper signature
+- Handle payment return URLs (success, cancel, notify)
+- Process and verify Instant Transaction Notifications
+- Provide order status updates based on payment verification
+
+#### 5.5.3 Security Implementation
+- Implement signature generation and validation
+- Validate ITN messages using server-side processing
+- Perform security checks (amount validation, duplicate payment detection)
+- Use HTTPS for all payment-related communication
+- Implement PayFast's security recommendations
+
+#### 5.5.4 Testing & Monitoring
+- Test payments using PayFast sandbox environment
+- Implement payment logging and monitoring
+- Test edge cases (failed payments, disputed transactions)
+- Implement payment status tracking and recovery procedures
+- Monitor transaction fees and reconciliation
+
 ## 6. Technical Requirements
 
 ### 6.1 Performance
@@ -182,10 +212,11 @@ Impress Calendars is an e-commerce platform that allows users to browse, customi
 
 - HTTPS implementation
 - Secure storage of user data
-- PCI compliance for payment processing
+- PCI compliance through PayFast's secure payment handling
 - GDPR compliance for user data
 - Rate limiting for API endpoints
 - Protection against common web vulnerabilities (XSS, CSRF, etc.)
+- Secure communication with PayFast API using valid signatures
 
 ### 6.3 Reliability
 
@@ -205,11 +236,12 @@ Impress Calendars is an e-commerce platform that allows users to browse, customi
 
 ### Phase 2: E-Commerce Functionality (4-6 weeks)
 - Implement checkout process
-- Integrate payment processing
+- Integrate PayFast payment processing
 - Set up order management system
 - Create user account features
 - Implement inventory management
 - Set up email notifications
+- Implement payment notification handling and verification
 
 ### Phase 3: Customization Tools (4-6 weeks)
 - Develop calendar customization interface
@@ -249,7 +281,7 @@ Impress Calendars is an e-commerce platform that allows users to browse, customi
 - **Backend**: Supabase (Authentication, Database, Storage)
 - **Database**: PostgreSQL (via Supabase)
 - **API**: RESTful API endpoints with Supabase edge functions
-- **Payment**: Stripe integration
+- **Payment**: PayFast integration with secure ITN handling
 - **Image Processing**: Canvas API for client-side image manipulation
 - **External APIs**: Shutterstock API for image library
 
@@ -303,7 +335,7 @@ As of May 2025, the following components have been implemented:
 
 ### In Progress:
 - Calendar customization interface
-- Payment processing integration
+- PayFast payment processing integration
 - Order management system
 - Admin dashboard
 
