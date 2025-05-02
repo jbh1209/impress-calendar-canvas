@@ -1,5 +1,5 @@
 
-import { ShoppingCart, User, LogOut, Menu, X } from "lucide-react";
+import { ShoppingCart, User, LogOut, Menu, X, Image } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "./ui/button";
@@ -32,6 +32,7 @@ const Navbar = () => {
           <NavLink href="/templates">Templates</NavLink>
           <NavLink href="/about">About Us</NavLink>
           <NavLink href="/contact">Contact</NavLink>
+          {user && <NavLink href="/shutterstock">Stock Images</NavLink>}
         </div>
         
         {/* Mobile Menu Button */}
@@ -72,6 +73,11 @@ const Navbar = () => {
                     My Orders
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/shutterstock" className="cursor-pointer hover:bg-darkBg focus:bg-darkBg">
+                    <Image className="mr-2 h-4 w-4" /> Stock Images
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-darkBorder" />
                 <DropdownMenuItem 
                   onClick={() => signOut()} 
@@ -98,6 +104,7 @@ const Navbar = () => {
             <NavLink href="/templates" onClick={() => setMobileMenuOpen(false)}>Templates</NavLink>
             <NavLink href="/about" onClick={() => setMobileMenuOpen(false)}>About Us</NavLink>
             <NavLink href="/contact" onClick={() => setMobileMenuOpen(false)}>Contact</NavLink>
+            {user && <NavLink href="/shutterstock" onClick={() => setMobileMenuOpen(false)}>Stock Images</NavLink>}
             
             <div className="pt-2 border-t border-darkBorder">
               {user ? (

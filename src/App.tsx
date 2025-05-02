@@ -11,6 +11,7 @@ import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ShutterstockPage from "./pages/ShutterstockPage";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route path="/profile" element={<Index />} /> {/* Placeholder for profile page */}
               <Route path="/orders" element={<Index />} /> {/* Placeholder for orders page */}
+              <Route path="/shutterstock" element={<ShutterstockPage />} />
             </Route>
             
             {/* Default placeholder routes */}

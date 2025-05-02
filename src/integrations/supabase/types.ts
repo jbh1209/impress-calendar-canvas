@@ -36,6 +36,75 @@ export type Database = {
         }
         Relationships: []
       }
+      shutterstock_licenses: {
+        Row: {
+          download_url: string | null
+          expires_at: string | null
+          id: string
+          image_id: string
+          license_id: string | null
+          license_type: string
+          order_id: string | null
+          price: number | null
+          purchased_at: string | null
+          user_id: string
+        }
+        Insert: {
+          download_url?: string | null
+          expires_at?: string | null
+          id?: string
+          image_id: string
+          license_id?: string | null
+          license_type: string
+          order_id?: string | null
+          price?: number | null
+          purchased_at?: string | null
+          user_id: string
+        }
+        Update: {
+          download_url?: string | null
+          expires_at?: string | null
+          id?: string
+          image_id?: string
+          license_id?: string | null
+          license_type?: string
+          order_id?: string | null
+          price?: number | null
+          purchased_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      shutterstock_selections: {
+        Row: {
+          created_at: string
+          id: string
+          image_id: string
+          preview_url: string
+          thumbnail_url: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_id: string
+          preview_url: string
+          thumbnail_url: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_id?: string
+          preview_url?: string
+          thumbnail_url?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

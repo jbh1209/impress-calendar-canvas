@@ -1,1 +1,5 @@
+
 project_id = "eclrjzypacapggwkwbwb"
+
+[functions.shutterstock]
+verify_jwt = true
