@@ -23,7 +23,6 @@ As of May 2, 2025, the following components have been implemented:
 - Order management system
 
 ## Pending:
-- Template customization zone definition tools
 - Product catalog management
 - PDF generation with PDF-lib
 - Wishlist functionality
