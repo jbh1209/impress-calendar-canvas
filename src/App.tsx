@@ -12,6 +12,10 @@ import SignUp from "./pages/auth/SignUp";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ShutterstockPage from "./pages/ShutterstockPage";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import TemplateManagement from "./pages/admin/TemplateManagement";
+import TemplateEditor from "./pages/admin/TemplateEditor";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +38,14 @@ const App = () => (
               <Route path="/profile" element={<Index />} /> {/* Placeholder for profile page */}
               <Route path="/orders" element={<Index />} /> {/* Placeholder for orders page */}
               <Route path="/shutterstock" element={<ShutterstockPage />} />
+              
+              {/* Admin routes */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="templates" element={<TemplateManagement />} />
+                <Route path="templates/create" element={<TemplateEditor />} />
+                <Route path="templates/edit/:id" element={<TemplateEditor />} />
+              </Route>
             </Route>
             
             {/* Default placeholder routes */}
