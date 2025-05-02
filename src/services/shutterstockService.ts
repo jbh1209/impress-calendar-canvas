@@ -74,12 +74,20 @@ export const shutterstockService = {
   },
 
   async saveSelection(imageId: string, thumbnailUrl: string, previewUrl: string): Promise<void> {
+    // Get the current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    if (!sessionData.session?.user) {
+      throw new Error("User must be logged in to save selections");
+    }
+    
     const { error } = await supabase
       .from('shutterstock_selections')
       .insert({
         image_id: imageId,
         thumbnail_url: thumbnailUrl,
-        preview_url: previewUrl
+        preview_url: previewUrl,
+        user_id: sessionData.session.user.id // Add the user_id field
       });
     
     if (error) throw new Error(error.message);
