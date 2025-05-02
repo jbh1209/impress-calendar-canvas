@@ -27,11 +27,14 @@
 
 ## 3.4 Customization Tools
 
-- Calendar customization interface
-- Drag-and-drop image placement
+- Calendar template selection interface
+- Interactive canvas-based customization interface using Fabric.js
+- Drag-and-drop image placement within predefined zones
+- Image upload functionality for custom images
 - Text editing tools for adding custom text
 - Date marking and event management
-- Preview generation
+- Real-time preview generation
+- Save and resume design functionality
 
 ## 3.5 Shutterstock Integration UI
 
@@ -43,3 +46,17 @@
 - Placement interface for adding images to calendar designs
 - Image positioning and resizing controls
 - License status indicators
+
+## 3.6 Admin Interface
+
+- Secure admin dashboard with restricted access
+- Template management system:
+  - Template creation interface with Fabric.js canvas
+  - Customization zone definition tools 
+  - Template preview and testing
+  - Template publication controls
+- Product and inventory management
+- Order management and processing
+- User management
+- Analytics and reporting dashboard
+

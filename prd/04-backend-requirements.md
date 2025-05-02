@@ -7,6 +7,7 @@
 - Social authentication options
 - Session management
 - Access control for protected routes
+- Admin role authorization for administrative features
 
 ## 4.2 Order Processing
 
@@ -27,6 +28,8 @@
 
 ## 4.4 Admin Dashboard
 
+- Template management system
+- Customization zone definition and management
 - Product management
 - Order management
 - User management
@@ -42,3 +45,12 @@
 - License purchasing and tracking
 - Usage monitoring and optimization
 - Error handling and fallbacks
+
+## 4.6 PDF Generation Service
+
+- Server-side PDF generation using PDF-lib
+- High-resolution print-ready file creation
+- Template and user customization combining
+- Support for various calendar formats and sizes
+- Proper text and image positioning
+

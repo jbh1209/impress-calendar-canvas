@@ -12,13 +12,17 @@ As of May 2, 2025, the following components have been implemented:
 - Responsive UI design for all device sizes
 
 ## In Progress:
-- Calendar customization interface
+- Admin template management system
+- Calendar customization interface with Fabric.js
 - PayFast payment processing integration
 - Order management system
 - Admin dashboard
 
 ## Pending:
+- Template customization zone definition tools
 - Product catalog management
+- PDF generation with PDF-lib
 - Wishlist functionality
 - Email notification system
 - Advanced analytics
+

@@ -29,3 +29,5 @@
 - **calendar_designs**: Store user calendar designs (id, user_id, name, product_id, customization_data, preview_image_url, is_saved, created_at, updated_at)
 - **shutterstock_selections**: Track selected Shutterstock images (id, user_id, image_id, thumbnail_url, preview_url, created_at, updated_at)
 - **shutterstock_licenses**: Store license information for purchased images (id, user_id, image_id, license_type, license_id, download_url, purchased_at, expires_at, price, order_id)
+- **calendar_templates**: Store template designs with customizable zones (id, name, description, base_image_url, customization_zones_data, category_id, is_active, dimensions, created_at, updated_at)
+
