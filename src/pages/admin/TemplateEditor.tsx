@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -52,12 +51,13 @@ const TemplateEditor = () => {
   useEffect(() => {
     const loadFabric = async () => {
       try {
-        // Dynamic import of fabric (would be installed)
-        const { fabric } = await import("fabric");
+        // Fix: Import Fabric components correctly
+        const fabricModule = await import("fabric");
+        const { Canvas, Image: FabricImage, Rect, Text: FabricText, Group } = fabricModule;
         
         if (!canvasRef.current) return;
         
-        const canvas = new fabric.Canvas(canvasRef.current, {
+        const canvas = new Canvas(canvasRef.current, {
           width: 800,
           height: 600,
           backgroundColor: "#ffffff"
@@ -79,7 +79,7 @@ const TemplateEditor = () => {
             });
             
             // Load background image if available
-            fabric.Image.fromURL(templateData.baseImageUrl, function(img) {
+            FabricImage.fromURL(templateData.baseImageUrl, function(img) {
               canvas.setWidth(800);
               canvas.setHeight(600);
               
@@ -88,7 +88,7 @@ const TemplateEditor = () => {
               
               // Load customization zones
               templateData.customizationZones.forEach(zone => {
-                const rect = new fabric.Rect({
+                const rect = new Rect({
                   left: zone.x,
                   top: zone.y,
                   width: zone.width,
@@ -103,7 +103,7 @@ const TemplateEditor = () => {
                 });
                 
                 // Add label to zone
-                const text = new fabric.Text(zone.name, {
+                const text = new FabricText(zone.name, {
                   left: zone.x + zone.width / 2,
                   top: zone.y + zone.height / 2,
                   fontSize: 14,
@@ -113,7 +113,7 @@ const TemplateEditor = () => {
                   selectable: false
                 });
                 
-                const zoneGroup = new fabric.Group([rect, text], {
+                const zoneGroup = new Group([rect, text], {
                   left: zone.x,
                   top: zone.y,
                   selectable: true,
@@ -151,43 +151,49 @@ const TemplateEditor = () => {
     const zoneId = Date.now();
     const zoneName = type === 'image' ? `Image Zone ${zoneId}` : `Text Zone ${zoneId}`;
     
-    const rect = new fabric.Rect({
-      left: 100,
-      top: 100,
-      width: type === 'image' ? 200 : 150,
-      height: type === 'image' ? 150 : 50,
-      fill: type === 'image' ? 'rgba(0, 150, 255, 0.3)' : 'rgba(255, 150, 0, 0.3)',
-      stroke: type === 'image' ? 'rgba(0, 150, 255, 1)' : 'rgba(255, 150, 0, 1)',
-      strokeWidth: 2,
-      rx: 5,
-      ry: 5,
-      selectable: true,
-      data: { zoneId, zoneType: type, name: zoneName }
+    // Fix: Import Fabric components within this function scope
+    import("fabric").then(({ Rect, Text: FabricText, Group }) => {
+      const rect = new Rect({
+        left: 100,
+        top: 100,
+        width: type === 'image' ? 200 : 150,
+        height: type === 'image' ? 150 : 50,
+        fill: type === 'image' ? 'rgba(0, 150, 255, 0.3)' : 'rgba(255, 150, 0, 0.3)',
+        stroke: type === 'image' ? 'rgba(0, 150, 255, 1)' : 'rgba(255, 150, 0, 1)',
+        strokeWidth: 2,
+        rx: 5,
+        ry: 5,
+        selectable: true,
+        data: { zoneId, zoneType: type, name: zoneName }
+      });
+      
+      const text = new FabricText(zoneName, {
+        fontSize: 14,
+        originX: 'center',
+        originY: 'center',
+        left: rect.width! / 2,
+        top: rect.height! / 2,
+        fontWeight: 'bold',
+        selectable: false
+      });
+      
+      const group = new Group([rect, text], {
+        left: 100,
+        top: 100,
+        selectable: true,
+        hasControls: true,
+        data: { zoneId, zoneType: type, name: zoneName }
+      });
+      
+      canvas.add(group);
+      canvas.setActiveObject(group);
+      canvas.renderAll();
+      
+      toast.success(`Added new ${type} zone`);
+    }).catch(error => {
+      console.error("Error loading Fabric.js components:", error);
+      toast.error("Failed to add zone");
     });
-    
-    const text = new fabric.Text(zoneName, {
-      fontSize: 14,
-      originX: 'center',
-      originY: 'center',
-      left: rect.width! / 2,
-      top: rect.height! / 2,
-      fontWeight: 'bold',
-      selectable: false
-    });
-    
-    const group = new fabric.Group([rect, text], {
-      left: 100,
-      top: 100,
-      selectable: true,
-      hasControls: true,
-      data: { zoneId, zoneType: type, name: zoneName }
-    });
-    
-    canvas.add(group);
-    canvas.setActiveObject(group);
-    canvas.renderAll();
-    
-    toast.success(`Added new ${type} zone`);
   };
   
   const handleSaveTemplate = () => {
