@@ -1,25 +1,16 @@
 
 import { Canvas, Group, Rect, Text as FabricText, Image as FabricImage } from "fabric";
 import { toast } from "sonner";
+import { CustomizationZone } from "@/services/templateService";
 
-// Define custom types for zone data to handle custom properties
-export interface CustomZoneData {
-  zoneId: number;
+// Custom properties interface to handle zone data
+interface CustomProps {
+  zoneId: string;
   zoneType: 'image' | 'text';
   name: string;
 }
 
-interface ZoneConfig {
-  id: number;
-  name: string;
-  type: 'image' | 'text';
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export const renderZones = (canvas: Canvas, zones: ZoneConfig[]): void => {
+export const renderZones = (canvas: Canvas, zones: CustomizationZone[]): void => {
   try {
     zones.forEach((zone) => {
       const rect = new Rect({
@@ -40,7 +31,7 @@ export const renderZones = (canvas: Canvas, zones: ZoneConfig[]): void => {
         zoneId: zone.id, 
         zoneType: zone.type, 
         name: zone.name 
-      });
+      } as CustomProps);
       
       // Add label to zone
       const text = new FabricText(zone.name, {
@@ -65,7 +56,7 @@ export const renderZones = (canvas: Canvas, zones: ZoneConfig[]): void => {
         zoneId: zone.id, 
         zoneType: zone.type, 
         name: zone.name 
-      });
+      } as CustomProps);
       
       canvas.add(zoneGroup);
     });

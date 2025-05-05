@@ -3,11 +3,12 @@ import { useEffect, useRef } from "react";
 import { Canvas as FabricCanvas } from "fabric";
 import { toast } from "sonner";
 import { renderZones, loadTemplateBackground } from "./utils/zoneUtils";
+import { Template } from "@/services/templateService";
 
 interface CanvasProps {
   isEditing: boolean;
   templateId?: string;
-  templateData?: any;
+  templateData?: Template | null;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   fabricCanvasRef: React.MutableRefObject<FabricCanvas | null>;
@@ -38,13 +39,13 @@ const Canvas = ({
         
         if (isEditing && templateId && templateData) {
           // Load background image if available
-          if (templateData.baseImageUrl) {
-            await loadTemplateBackground(canvas, templateData.baseImageUrl);
-            
-            // Load customization zones
-            if (templateData.customizationZones && templateData.customizationZones.length > 0) {
-              renderZones(canvas, templateData.customizationZones);
-            }
+          if (templateData.base_image_url) {
+            await loadTemplateBackground(canvas, templateData.base_image_url);
+          }
+          
+          // Load customization zones
+          if (templateData.customization_zones && templateData.customization_zones.length > 0) {
+            renderZones(canvas, templateData.customization_zones);
           }
         }
         

@@ -61,7 +61,7 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
   try {
     // Fetch the template
     const { data: template, error: templateError } = await supabase
-      .from('templates')
+      .from('templates' as any)
       .select('*')
       .eq('id', id)
       .single();
@@ -78,7 +78,7 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
     
     // Fetch the customization zones for this template
     const { data: zones, error: zonesError } = await supabase
-      .from('customization_zones')
+      .from('customization_zones' as any)
       .select('*')
       .eq('template_id', id)
       .order('z_index', { ascending: true });
@@ -90,8 +90,8 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
     
     // Convert the database rows to our type
     const templateData: Template = {
-      ...template as TemplateRow,
-      customization_zones: (zones || []) as ZoneRow[]
+      ...(template as unknown as TemplateRow),
+      customization_zones: (zones as unknown as ZoneRow[]) || []
     };
     
     // Return the template with its zones
@@ -107,7 +107,7 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
 export const getAllTemplates = async (includeZones = false): Promise<Template[]> => {
   try {
     const { data: templates, error: templatesError } = await supabase
-      .from('templates')
+      .from('templates' as any)
       .select('*');
       
     if (templatesError) {
@@ -117,15 +117,15 @@ export const getAllTemplates = async (includeZones = false): Promise<Template[]>
     }
     
     if (!includeZones || !templates || templates.length === 0) {
-      return templates as TemplateRow[] || [];
+      return templates as unknown as TemplateRow[] || [];
     }
     
     // If zones are requested, fetch them for all templates
     const templatesWithZones: Template[] = [];
     
-    for (const template of templates as TemplateRow[]) {
+    for (const template of templates as unknown as TemplateRow[]) {
       const { data: zones, error: zonesError } = await supabase
-        .from('customization_zones')
+        .from('customization_zones' as any)
         .select('*')
         .eq('template_id', template.id)
         .order('z_index', { ascending: true });
@@ -136,7 +136,7 @@ export const getAllTemplates = async (includeZones = false): Promise<Template[]>
       
       templatesWithZones.push({
         ...template,
-        customization_zones: (zones || []) as ZoneRow[]
+        customization_zones: (zones as unknown as ZoneRow[]) || []
       });
     }
     
@@ -169,13 +169,13 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
     
     if (isNewTemplate) {
       templateResult = await supabase
-        .from('templates')
+        .from('templates' as any)
         .insert([templateWithoutZones])
         .select()
         .single();
     } else {
       templateResult = await supabase
-        .from('templates')
+        .from('templates' as any)
         .update(templateWithoutZones)
         .eq('id', template.id)
         .select()
@@ -206,7 +206,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
       if (isNewTemplate) {
         // For new templates, insert all zones
         const { error: zonesError } = await supabase
-          .from('customization_zones')
+          .from('customization_zones' as any)
           .insert(customizationZones);
           
         if (zonesError) {
@@ -218,7 +218,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
         
         // Get existing zones to determine which to update vs insert
         const { data: existingZones, error: fetchError } = await supabase
-          .from('customization_zones')
+          .from('customization_zones' as any)
           .select('*')
           .eq('template_id', data.id);
           
@@ -227,7 +227,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
           toast.error('Failed to update template zones');
         } else {
           // Determine which zones to update vs insert vs delete
-          const existingZoneIds = new Set((existingZones as ZoneRow[] || []).map(z => z.id));
+          const existingZoneIds = new Set((existingZones as unknown as ZoneRow[] || []).map(z => z.id));
           const currentZoneIds = new Set(customizationZones.map(z => z.id).filter(Boolean));
           
           // Zones to update (exist in both sets)
@@ -243,7 +243,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
           if (zonesToUpdate.length > 0) {
             for (const zone of zonesToUpdate) {
               const { error: updateError } = await supabase
-                .from('customization_zones')
+                .from('customization_zones' as any)
                 .update(zone)
                 .eq('id', zone.id!);
                 
@@ -256,7 +256,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
           // Perform inserts
           if (zonesToInsert.length > 0) {
             const { error: insertError } = await supabase
-              .from('customization_zones')
+              .from('customization_zones' as any)
               .insert(zonesToInsert);
               
             if (insertError) {
@@ -267,7 +267,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
           // Perform deletes
           if (zoneIdsToDelete.length > 0) {
             const { error: deleteError } = await supabase
-              .from('customization_zones')
+              .from('customization_zones' as any)
               .delete()
               .in('id', zoneIdsToDelete);
               
@@ -292,7 +292,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
 export const deleteTemplate = async (id: string): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .from('templates')
+      .from('templates' as any)
       .delete()
       .eq('id', id);
       
