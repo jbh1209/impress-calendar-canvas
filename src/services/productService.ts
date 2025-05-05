@@ -21,7 +21,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
   try {
     // Fetch the product
     const { data: product, error: productError } = await supabase
-      .from('products' as any)
+      .from('products')
       .select('*')
       .eq('id', id)
       .single();
@@ -38,7 +38,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
     
     // Fetch product variants
     const { data: variants, error: variantsError } = await supabase
-      .from('product_variants' as any)
+      .from('product_variants')
       .select('*')
       .eq('product_id', id);
     
@@ -48,7 +48,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
     
     // Fetch product images
     const { data: images, error: imagesError } = await supabase
-      .from('product_images' as any)
+      .from('product_images')
       .select('*')
       .eq('product_id', id)
       .order('display_order', { ascending: true });
@@ -59,7 +59,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
     
     // Fetch template associations
     const { data: templateAssociations, error: templatesError } = await supabase
-      .from('product_templates' as any)
+      .from('product_templates')
       .select('*')
       .eq('product_id', id);
     
@@ -70,7 +70,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
     // Fetch template details for each associated template
     const templatesWithDetails = [];
     if (templateAssociations && templateAssociations.length > 0) {
-      for (const assoc of templateAssociations as ProductTemplateRow[]) {
+      for (const assoc of templateAssociations) {
         const template = await getTemplateById(assoc.template_id);
         templatesWithDetails.push({
           ...assoc,
@@ -81,7 +81,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
     
     // Convert the database rows to our type
     const productData: Product = {
-      ...(product as unknown as ProductRow),
+      ...(product as ProductRow),
       variants: (variants || []) as ProductVariant[],
       images: (images || []) as ProductImage[],
       templates: templatesWithDetails
@@ -105,7 +105,7 @@ export const getAllProducts = async (
 ): Promise<Product[]> => {
   try {
     const { data: products, error: productsError } = await supabase
-      .from('products' as any)
+      .from('products')
       .select('*')
       .order('name', { ascending: true });
       
@@ -120,43 +120,43 @@ export const getAllProducts = async (
     }
     
     if (!includeVariants && !includeImages && !includeTemplates) {
-      return products as unknown as ProductRow[];
+      return products as ProductRow[];
     }
     
     // Fetch additional data for each product
     const productsWithData: Product[] = [];
     
-    for (const product of products as unknown as ProductRow[]) {
+    for (const product of products as ProductRow[]) {
       let variants = undefined;
       let images = undefined;
       let templates = undefined;
       
       if (includeVariants) {
         const { data: variantsData } = await supabase
-          .from('product_variants' as any)
+          .from('product_variants')
           .select('*')
           .eq('product_id', product.id);
         
-        variants = variantsData as unknown as ProductVariant[];
+        variants = variantsData as ProductVariant[];
       }
       
       if (includeImages) {
         const { data: imagesData } = await supabase
-          .from('product_images' as any)
+          .from('product_images')
           .select('*')
           .eq('product_id', product.id)
           .order('display_order', { ascending: true });
         
-        images = imagesData as unknown as ProductImage[];
+        images = imagesData as ProductImage[];
       }
       
       if (includeTemplates) {
         const { data: templateAssociations } = await supabase
-          .from('product_templates' as any)
+          .from('product_templates')
           .select('*')
           .eq('product_id', product.id);
         
-        templates = templateAssociations as unknown as ProductTemplateAssociation[];
+        templates = templateAssociations as ProductTemplateAssociation[];
       }
       
       productsWithData.push({
@@ -348,7 +348,7 @@ export const associateTemplateWithProduct = async (
   try {
     // Check if association already exists
     const { data: existingAssoc } = await supabase
-      .from('product_templates' as any)
+      .from('product_templates')
       .select('*')
       .eq('product_id', productId)
       .eq('template_id', templateId)
@@ -358,7 +358,7 @@ export const associateTemplateWithProduct = async (
       // Update is_default if needed
       if (existingAssoc.is_default !== isDefault) {
         const { error } = await supabase
-          .from('product_templates' as any)
+          .from('product_templates')
           .update({ is_default: isDefault })
           .eq('id', existingAssoc.id);
           
@@ -373,7 +373,7 @@ export const associateTemplateWithProduct = async (
     
     // Create new association
     const { error } = await supabase
-      .from('product_templates' as any)
+      .from('product_templates')
       .insert([{
         product_id: productId,
         template_id: templateId,
@@ -400,7 +400,7 @@ export const associateTemplateWithProduct = async (
 export const getTemplatesByProductId = async (productId: string): Promise<Template[]> => {
   try {
     const { data: associations, error } = await supabase
-      .from('product_templates' as any)
+      .from('product_templates')
       .select('template_id')
       .eq('product_id', productId);
       

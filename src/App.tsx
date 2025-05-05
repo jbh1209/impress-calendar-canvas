@@ -1,3 +1,4 @@
+
 import React from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Index from "@/pages/Index";
@@ -6,13 +7,13 @@ import ShutterstockPage from "@/pages/ShutterstockPage";
 import SignIn from "@/pages/auth/SignIn";
 import SignUp from "@/pages/auth/SignUp";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
-import AdminLayout from "@/layouts/AdminLayout";
-import AuthLayout from "@/layouts/AuthLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import TemplateManagement from "@/pages/admin/TemplateManagement";
 import TemplateEditor from "@/pages/admin/TemplateEditor";
 import ProductCatalog from "@/pages/admin/ProductCatalog";
 import ProductManagement from "@/pages/admin/ProductManagement";
+import AdminLayout from "@/layouts/AdminLayout";
+import AuthLayout from "@/layouts/AuthLayout";
 
 // Update routes to include product management
 const router = createBrowserRouter([

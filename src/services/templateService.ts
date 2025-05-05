@@ -11,7 +11,7 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
   try {
     // Fetch the template
     const { data: template, error: templateError } = await supabase
-      .from('templates' as any)
+      .from('templates')
       .select('*')
       .eq('id', id)
       .single();
@@ -31,7 +31,7 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
     
     // Fetch product associations
     const { data: productAssociations, error: assocError } = await supabase
-      .from('product_templates' as any)
+      .from('product_templates')
       .select('product_id, is_default, products(name)')
       .eq('template_id', id);
     
@@ -41,9 +41,14 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
     
     // Convert the database rows to our type
     const templateData: Template = {
-      ...(template as unknown as TemplateRow),
+      ...(template as TemplateRow),
       customization_zones: zones,
-      products: productAssociations || []
+      products: productAssociations ? 
+        productAssociations.map(assoc => ({
+          product_id: assoc.product_id,
+          is_default: assoc.is_default,
+          products: assoc.products
+        })) : []
     };
     
     // Return the template with its zones
