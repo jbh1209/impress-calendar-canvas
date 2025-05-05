@@ -192,5 +192,6 @@ export const exportTemplateAsJson = async (id: string): Promise<string | null> =
   }
 };
 
-// Re-export types from templateTypes.ts
-export { Template, CustomizationZone } from "./types/templateTypes";
+// Re-export types from templateTypes.ts - Fixed with export type
+export type { Template, CustomizationZone } from "./types/templateTypes";
+
