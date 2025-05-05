@@ -8,7 +8,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import TemplateCanvas from "@/components/admin/template/TemplateCanvas";
 import TemplateSettings from "@/components/admin/template/TemplateSettings";
-import { getTemplateById, saveTemplate } from "@/services/templateService";
+import { getTemplateById, saveTemplate, Template } from "@/services/templateService";
 
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();

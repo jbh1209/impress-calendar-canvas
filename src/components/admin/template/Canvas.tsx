@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { Canvas as FabricCanvas } from "fabric";
 import { toast } from "sonner";
 import { renderZones, loadTemplateBackground } from "./utils/zoneUtils";
-import { Template } from "@/services/templateService";
+import { Template } from "@/services/types/templateTypes";
 
 interface CanvasProps {
   isEditing: boolean;

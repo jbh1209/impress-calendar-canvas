@@ -1,7 +1,7 @@
 
 import { Canvas, Group, Rect, Text as FabricText, Image as FabricImage } from "fabric";
 import { toast } from "sonner";
-import { CustomizationZone } from "@/services/templateService";
+import { CustomizationZone } from "@/services/types/templateTypes";
 
 // Custom properties interface to handle zone data
 interface CustomProps {
