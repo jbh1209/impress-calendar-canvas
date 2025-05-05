@@ -1,133 +1,284 @@
 
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
 // Define types for template and customization zones
 export interface CustomizationZone {
-  id: number;
+  id: string;
+  template_id?: string;
   name: string;
   type: 'image' | 'text';
   x: number;
   y: number;
   width: number;
   height: number;
+  z_index?: number;
 }
 
 export interface Template {
-  id: number;
+  id: string;
   name: string;
-  description: string;
+  description: string | null;
   category: string;
-  isActive: boolean;
-  baseImageUrl: string;
-  dimensions: string;
-  createdAt: string;
-  customizationZones: CustomizationZone[];
+  is_active: boolean;
+  base_image_url: string | null;
+  dimensions: string | null;
+  created_at: string;
+  created_by?: string | null;
+  customization_zones?: CustomizationZone[];
 }
 
-// Mock data for templates
-const mockTemplates: Template[] = [
-  { 
-    id: 1, 
-    name: "Professional Calendar", 
-    description: "Clean, corporate design with customizable accent colors.",
-    category: "Corporate",
-    isActive: true,
-    baseImageUrl: "https://placehold.co/600x400/darkblue/white?text=Professional+Calendar",
-    dimensions: "11x8.5",
-    createdAt: "2025-03-15T10:30:00Z",
-    customizationZones: [
-      { id: 1, name: "Header Logo", type: "image", x: 50, y: 50, width: 100, height: 50 },
-      { id: 2, name: "Month Label", type: "text", x: 300, y: 50, width: 200, height: 50 },
-      { id: 3, name: "Main Image", type: "image", x: 150, y: 150, width: 300, height: 200 }
-    ]
-  },
-  { 
-    id: 2, 
-    name: "Family Calendar", 
-    description: "Warm, friendly design with large photo areas for family pictures.",
-    category: "Personal",
-    isActive: true,
-    baseImageUrl: "https://placehold.co/600x400/darkgreen/white?text=Family+Calendar",
-    dimensions: "12x12",
-    createdAt: "2025-03-20T14:15:00Z",
-    customizationZones: [
-      { id: 1, name: "Family Photo", type: "image", x: 50, y: 50, width: 300, height: 200 },
-      { id: 2, name: "Month Title", type: "text", x: 400, y: 50, width: 200, height: 50 },
-      { id: 3, name: "Events Area", type: "text", x: 100, y: 300, width: 400, height: 150 }
-    ]
-  },
-  { 
-    id: 3, 
-    name: "Nature Seasons", 
-    description: "Beautiful natural landscapes with seasonal themes for each month.",
-    category: "Nature",
-    isActive: false,
-    baseImageUrl: "https://placehold.co/600x400/sienna/white?text=Nature+Calendar",
-    dimensions: "11x8.5",
-    createdAt: "2025-04-05T09:45:00Z",
-    customizationZones: [
-      { id: 1, name: "Seasonal Image", type: "image", x: 100, y: 50, width: 400, height: 250 },
-      { id: 2, name: "Month Name", type: "text", x: 300, y: 320, width: 200, height: 50 },
-      { id: 3, name: "Quote Area", type: "text", x: 150, y: 380, width: 300, height: 100 }
-    ]
-  }
-];
-
-// Template service functions for database interaction
-export const getTemplateById = (id: number): Template | undefined => {
-  return mockTemplates.find(template => template.id === id);
-};
-
-export const getAllTemplates = (): Template[] => {
-  return [...mockTemplates];
-};
-
-export const saveTemplate = (template: Partial<Template>): Template => {
-  // In a real implementation, this would save to a database
-  // For now, just return the template with a mock ID if it's a new template
-  if (!template.id) {
-    const newTemplate: Template = {
-      id: Date.now(),
-      name: template.name || 'Untitled Template',
-      description: template.description || '',
-      category: template.category || 'Corporate',
-      isActive: template.isActive || false,
-      baseImageUrl: template.baseImageUrl || 'https://placehold.co/600x400/gray/white?text=Blank+Template',
-      dimensions: template.dimensions || '11x8.5',
-      createdAt: new Date().toISOString(),
-      customizationZones: template.customizationZones || []
-    };
-    mockTemplates.push(newTemplate);
-    return newTemplate;
-  } else {
-    // Update existing template
-    const index = mockTemplates.findIndex(t => t.id === template.id);
-    if (index >= 0) {
-      mockTemplates[index] = { ...mockTemplates[index], ...template };
-      return mockTemplates[index];
+// Get template by ID with its associated customization zones
+export const getTemplateById = async (id: string): Promise<Template | null> => {
+  try {
+    // Fetch the template
+    const { data: template, error: templateError } = await supabase
+      .from('templates')
+      .select('*')
+      .eq('id', id)
+      .single();
+      
+    if (templateError) {
+      console.error('Error fetching template:', templateError);
+      toast.error('Failed to load template');
+      return null;
     }
     
-    throw new Error(`Template with ID ${template.id} not found`);
+    if (!template) {
+      return null;
+    }
+    
+    // Fetch the customization zones for this template
+    const { data: customizationZones, error: zonesError } = await supabase
+      .from('customization_zones')
+      .select('*')
+      .eq('template_id', id)
+      .order('z_index', { ascending: true });
+      
+    if (zonesError) {
+      console.error('Error fetching customization zones:', zonesError);
+      toast.error('Failed to load template zones');
+    }
+    
+    // Return the template with its zones
+    return {
+      ...template,
+      customization_zones: customizationZones || []
+    };
+  } catch (error) {
+    console.error('Unexpected error fetching template:', error);
+    toast.error('An unexpected error occurred');
+    return null;
   }
 };
 
-// Function to delete a template
-export const deleteTemplate = (id: number): boolean => {
-  const initialLength = mockTemplates.length;
-  const index = mockTemplates.findIndex(template => template.id === id);
-  
-  if (index >= 0) {
-    mockTemplates.splice(index, 1);
-    return mockTemplates.length < initialLength;
+// Get all templates with optional customization zones
+export const getAllTemplates = async (includeZones = false): Promise<Template[]> => {
+  try {
+    let query = supabase.from('templates').select('*');
+    
+    const { data: templates, error: templatesError } = await query;
+      
+    if (templatesError) {
+      console.error('Error fetching templates:', templatesError);
+      toast.error('Failed to load templates');
+      return [];
+    }
+    
+    if (!includeZones || !templates || templates.length === 0) {
+      return templates || [];
+    }
+    
+    // If zones are requested, fetch them for all templates
+    const templatesWithZones = await Promise.all(
+      templates.map(async (template) => {
+        const { data: zones, error: zonesError } = await supabase
+          .from('customization_zones')
+          .select('*')
+          .eq('template_id', template.id)
+          .order('z_index', { ascending: true });
+          
+        if (zonesError) {
+          console.error(`Error fetching zones for template ${template.id}:`, zonesError);
+        }
+        
+        return {
+          ...template,
+          customization_zones: zones || []
+        };
+      })
+    );
+    
+    return templatesWithZones;
+  } catch (error) {
+    console.error('Unexpected error fetching templates:', error);
+    toast.error('An unexpected error occurred');
+    return [];
   }
-  
-  return false;
+};
+
+// Save a template and its customization zones
+export const saveTemplate = async (template: Partial<Template>): Promise<Template | null> => {
+  try {
+    const user = supabase.auth.getUser();
+    const userId = (await user).data.user?.id;
+    
+    const isNewTemplate = !template.id;
+    let customizationZones = template.customization_zones || [];
+    delete template.customization_zones; // Remove zones from template object for insert/update
+    
+    // For new templates, add created_by field
+    if (isNewTemplate && userId) {
+      template.created_by = userId;
+    }
+    
+    // Insert or update the template
+    const operation = isNewTemplate 
+      ? supabase.from('templates').insert([template])
+      : supabase.from('templates').update(template).eq('id', template.id);
+      
+    const { data, error } = await operation.select().single();
+    
+    if (error) {
+      console.error('Error saving template:', error);
+      toast.error('Failed to save template');
+      return null;
+    }
+    
+    if (!data) {
+      toast.error('No data returned after saving template');
+      return null;
+    }
+    
+    // Save customization zones if they exist
+    if (customizationZones && customizationZones.length > 0) {
+      // For each zone, set the template_id
+      customizationZones = customizationZones.map(zone => ({
+        ...zone,
+        template_id: data.id
+      }));
+      
+      if (isNewTemplate) {
+        // For new templates, insert all zones
+        const { error: zonesError } = await supabase
+          .from('customization_zones')
+          .insert(customizationZones);
+          
+        if (zonesError) {
+          console.error('Error saving customization zones:', zonesError);
+          toast.error('Failed to save template zones');
+        }
+      } else {
+        // For existing templates, handle zone updates, inserts, and deletions
+        
+        // Get existing zones to determine which to update vs insert
+        const { data: existingZones, error: fetchError } = await supabase
+          .from('customization_zones')
+          .select('*')
+          .eq('template_id', data.id);
+          
+        if (fetchError) {
+          console.error('Error fetching existing zones:', fetchError);
+          toast.error('Failed to update template zones');
+        } else {
+          // Determine which zones to update vs insert vs delete
+          const existingZoneIds = new Set(existingZones?.map(z => z.id) || []);
+          const currentZoneIds = new Set(customizationZones.map(z => z.id));
+          
+          // Zones to update (exist in both sets)
+          const zonesToUpdate = customizationZones.filter(z => z.id && existingZoneIds.has(z.id));
+          
+          // Zones to insert (don't exist in existing set)
+          const zonesToInsert = customizationZones.filter(z => !z.id || !existingZoneIds.has(z.id));
+          
+          // Zones to delete (exist in existing but not in current)
+          const zoneIdsToDelete = [...existingZoneIds].filter(id => !currentZoneIds.has(id));
+          
+          // Perform updates
+          if (zonesToUpdate.length > 0) {
+            for (const zone of zonesToUpdate) {
+              const { error: updateError } = await supabase
+                .from('customization_zones')
+                .update(zone)
+                .eq('id', zone.id);
+                
+              if (updateError) {
+                console.error(`Error updating zone ${zone.id}:`, updateError);
+              }
+            }
+          }
+          
+          // Perform inserts
+          if (zonesToInsert.length > 0) {
+            const { error: insertError } = await supabase
+              .from('customization_zones')
+              .insert(zonesToInsert);
+              
+            if (insertError) {
+              console.error('Error inserting new zones:', insertError);
+            }
+          }
+          
+          // Perform deletes
+          if (zoneIdsToDelete.length > 0) {
+            const { error: deleteError } = await supabase
+              .from('customization_zones')
+              .delete()
+              .in('id', zoneIdsToDelete);
+              
+            if (deleteError) {
+              console.error('Error deleting zones:', deleteError);
+            }
+          }
+        }
+      }
+    }
+    
+    // Reload the template with its zones
+    return await getTemplateById(data.id);
+  } catch (error) {
+    console.error('Unexpected error saving template:', error);
+    toast.error('An unexpected error occurred while saving');
+    return null;
+  }
+};
+
+// Function to delete a template (and its zones via cascade)
+export const deleteTemplate = async (id: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('templates')
+      .delete()
+      .eq('id', id);
+      
+    if (error) {
+      console.error('Error deleting template:', error);
+      toast.error('Failed to delete template');
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Unexpected error deleting template:', error);
+    toast.error('An unexpected error occurred');
+    return false;
+  }
 };
 
 // Function to export template as JSON
-export const exportTemplateAsJson = (id: number): string => {
-  const template = getTemplateById(id);
-  if (!template) {
-    throw new Error(`Template with ID ${id} not found`);
+export const exportTemplateAsJson = async (id: string): Promise<string | null> => {
+  try {
+    const template = await getTemplateById(id);
+    
+    if (!template) {
+      toast.error('Template not found');
+      return null;
+    }
+    
+    return JSON.stringify(template, null, 2);
+  } catch (error) {
+    console.error('Error exporting template:', error);
+    toast.error('Failed to export template');
+    return null;
   }
-  
-  return JSON.stringify(template, null, 2);
 };

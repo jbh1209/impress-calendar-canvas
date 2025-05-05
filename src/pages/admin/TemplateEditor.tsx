@@ -8,7 +8,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import TemplateCanvas from "@/components/admin/template/TemplateCanvas";
 import TemplateSettings from "@/components/admin/template/TemplateSettings";
-import { getTemplateById } from "@/services/templateService";
+import { getTemplateById, saveTemplate } from "@/services/templateService";
 
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,35 +20,73 @@ const TemplateEditor = () => {
   const [template, setTemplate] = useState({
     name: "",
     description: "",
-    category: "",
+    category: "Corporate",
     isActive: false,
     dimensions: "11x8.5"
   });
 
   useEffect(() => {
-    if (isEditing && id) {
-      // Load template data
-      const data = getTemplateById(parseInt(id));
-      if (data) {
-        setTemplateData(data);
-        setTemplate({
-          name: data.name,
-          description: data.description,
-          category: data.category,
-          isActive: data.isActive,
-          dimensions: data.dimensions
-        });
+    const loadTemplate = async () => {
+      if (isEditing && id) {
+        try {
+          const data = await getTemplateById(id);
+          if (data) {
+            setTemplateData(data);
+            setTemplate({
+              name: data.name,
+              description: data.description || "",
+              category: data.category,
+              isActive: data.is_active,
+              dimensions: data.dimensions || "11x8.5"
+            });
+            setIsLoading(false);
+          } else {
+            toast.error("Template not found");
+            navigate("/admin/templates");
+          }
+        } catch (error) {
+          console.error("Error loading template:", error);
+          toast.error("Failed to load template");
+          navigate("/admin/templates");
+        }
       } else {
-        toast.error("Template not found");
-        navigate("/admin/templates");
+        setIsLoading(false);
       }
-    }
+    };
+
+    loadTemplate();
   }, [id, isEditing, navigate]);
   
-  const handleSaveTemplate = () => {
-    // In a real implementation, this would save the template data to Supabase
-    toast.success(isEditing ? "Template updated successfully" : "Template created successfully");
-    navigate("/admin/templates");
+  const handleSaveTemplate = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Prepare template data
+      const templateToSave = {
+        id: templateData?.id,
+        name: template.name,
+        description: template.description,
+        category: template.category,
+        is_active: template.isActive,
+        dimensions: template.dimensions,
+        base_image_url: templateData?.base_image_url,
+        customization_zones: templateData?.customization_zones || []
+      };
+      
+      const savedTemplate = await saveTemplate(templateToSave);
+      
+      if (savedTemplate) {
+        toast.success(isEditing ? "Template updated successfully" : "Template created successfully");
+        navigate("/admin/templates");
+      } else {
+        toast.error("Failed to save template");
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error("Error saving template:", error);
+      toast.error("An unexpected error occurred");
+      setIsLoading(false);
+    }
   };
   
   return (
@@ -74,7 +112,7 @@ const TemplateEditor = () => {
           </Button>
           <h1 className="text-3xl font-bold">{isEditing ? "Edit Template" : "Create Template"}</h1>
         </div>
-        <Button onClick={handleSaveTemplate}>
+        <Button onClick={handleSaveTemplate} disabled={isLoading}>
           <Save className="mr-2 h-4 w-4" />
           Save Template
         </Button>
