@@ -28,13 +28,40 @@ export interface Template {
   customization_zones?: CustomizationZone[];
 }
 
+// Define database response types to match our tables
+interface TemplateRow {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  is_active: boolean;
+  base_image_url: string | null;
+  dimensions: string | null;
+  created_at: string;
+  created_by: string | null;
+  updated_at: string;
+}
+
+interface ZoneRow {
+  id: string;
+  template_id: string;
+  name: string;
+  type: 'image' | 'text';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  z_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // Get template by ID with its associated customization zones
 export const getTemplateById = async (id: string): Promise<Template | null> => {
   try {
     // Fetch the template
-    // Use any type to bypass TypeScript limitations until types are updated
     const { data: template, error: templateError } = await supabase
-      .from('templates' as any)
+      .from('templates')
       .select('*')
       .eq('id', id)
       .single();
@@ -50,8 +77,8 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
     }
     
     // Fetch the customization zones for this template
-    const { data: customizationZones, error: zonesError } = await supabase
-      .from('customization_zones' as any)
+    const { data: zones, error: zonesError } = await supabase
+      .from('customization_zones')
       .select('*')
       .eq('template_id', id)
       .order('z_index', { ascending: true });
@@ -61,11 +88,14 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
       toast.error('Failed to load template zones');
     }
     
-    // Return the template with its zones
-    return {
-      ...template,
-      customization_zones: customizationZones as CustomizationZone[] || []
+    // Convert the database rows to our type
+    const templateData: Template = {
+      ...template as TemplateRow,
+      customization_zones: (zones || []) as ZoneRow[]
     };
+    
+    // Return the template with its zones
+    return templateData;
   } catch (error) {
     console.error('Unexpected error fetching template:', error);
     toast.error('An unexpected error occurred');
@@ -76,9 +106,9 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
 // Get all templates with optional customization zones
 export const getAllTemplates = async (includeZones = false): Promise<Template[]> => {
   try {
-    let query = supabase.from('templates' as any).select('*');
-    
-    const { data: templates, error: templatesError } = await query;
+    const { data: templates, error: templatesError } = await supabase
+      .from('templates')
+      .select('*');
       
     if (templatesError) {
       console.error('Error fetching templates:', templatesError);
@@ -87,30 +117,30 @@ export const getAllTemplates = async (includeZones = false): Promise<Template[]>
     }
     
     if (!includeZones || !templates || templates.length === 0) {
-      return templates as Template[] || [];
+      return templates as TemplateRow[] || [];
     }
     
     // If zones are requested, fetch them for all templates
-    const templatesWithZones = await Promise.all(
-      templates.map(async (template) => {
-        const { data: zones, error: zonesError } = await supabase
-          .from('customization_zones' as any)
-          .select('*')
-          .eq('template_id', template.id)
-          .order('z_index', { ascending: true });
-          
-        if (zonesError) {
-          console.error(`Error fetching zones for template ${template.id}:`, zonesError);
-        }
-        
-        return {
-          ...template,
-          customization_zones: zones as CustomizationZone[] || []
-        };
-      })
-    );
+    const templatesWithZones: Template[] = [];
     
-    return templatesWithZones as Template[];
+    for (const template of templates as TemplateRow[]) {
+      const { data: zones, error: zonesError } = await supabase
+        .from('customization_zones')
+        .select('*')
+        .eq('template_id', template.id)
+        .order('z_index', { ascending: true });
+          
+      if (zonesError) {
+        console.error(`Error fetching zones for template ${template.id}:`, zonesError);
+      }
+      
+      templatesWithZones.push({
+        ...template,
+        customization_zones: (zones || []) as ZoneRow[]
+      });
+    }
+    
+    return templatesWithZones;
   } catch (error) {
     console.error('Unexpected error fetching templates:', error);
     toast.error('An unexpected error occurred');
@@ -135,11 +165,24 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
     }
     
     // Insert or update the template
-    const operation = isNewTemplate 
-      ? supabase.from('templates' as any).insert([templateWithoutZones])
-      : supabase.from('templates' as any).update(templateWithoutZones).eq('id', template.id);
-      
-    const { data, error } = await operation.select().single();
+    let templateResult;
+    
+    if (isNewTemplate) {
+      templateResult = await supabase
+        .from('templates')
+        .insert([templateWithoutZones])
+        .select()
+        .single();
+    } else {
+      templateResult = await supabase
+        .from('templates')
+        .update(templateWithoutZones)
+        .eq('id', template.id)
+        .select()
+        .single();
+    }
+    
+    const { data, error } = templateResult;
     
     if (error) {
       console.error('Error saving template:', error);
@@ -163,7 +206,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
       if (isNewTemplate) {
         // For new templates, insert all zones
         const { error: zonesError } = await supabase
-          .from('customization_zones' as any)
+          .from('customization_zones')
           .insert(customizationZones);
           
         if (zonesError) {
@@ -175,7 +218,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
         
         // Get existing zones to determine which to update vs insert
         const { data: existingZones, error: fetchError } = await supabase
-          .from('customization_zones' as any)
+          .from('customization_zones')
           .select('*')
           .eq('template_id', data.id);
           
@@ -184,8 +227,8 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
           toast.error('Failed to update template zones');
         } else {
           // Determine which zones to update vs insert vs delete
-          const existingZoneIds = new Set((existingZones as CustomizationZone[] || []).map(z => z.id));
-          const currentZoneIds = new Set(customizationZones.map(z => z.id));
+          const existingZoneIds = new Set((existingZones as ZoneRow[] || []).map(z => z.id));
+          const currentZoneIds = new Set(customizationZones.map(z => z.id).filter(Boolean));
           
           // Zones to update (exist in both sets)
           const zonesToUpdate = customizationZones.filter(z => z.id && existingZoneIds.has(z.id));
@@ -200,9 +243,9 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
           if (zonesToUpdate.length > 0) {
             for (const zone of zonesToUpdate) {
               const { error: updateError } = await supabase
-                .from('customization_zones' as any)
+                .from('customization_zones')
                 .update(zone)
-                .eq('id', zone.id);
+                .eq('id', zone.id!);
                 
               if (updateError) {
                 console.error(`Error updating zone ${zone.id}:`, updateError);
@@ -213,7 +256,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
           // Perform inserts
           if (zonesToInsert.length > 0) {
             const { error: insertError } = await supabase
-              .from('customization_zones' as any)
+              .from('customization_zones')
               .insert(zonesToInsert);
               
             if (insertError) {
@@ -224,7 +267,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
           // Perform deletes
           if (zoneIdsToDelete.length > 0) {
             const { error: deleteError } = await supabase
-              .from('customization_zones' as any)
+              .from('customization_zones')
               .delete()
               .in('id', zoneIdsToDelete);
               
@@ -249,7 +292,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
 export const deleteTemplate = async (id: string): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .from('templates' as any)
+      .from('templates')
       .delete()
       .eq('id', id);
       
