@@ -1,64 +1,82 @@
+import React from "react";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import Index from "@/pages/Index";
+import NotFound from "@/pages/NotFound";
+import ShutterstockPage from "@/pages/ShutterstockPage";
+import SignIn from "@/pages/auth/SignIn";
+import SignUp from "@/pages/auth/SignUp";
+import ForgotPassword from "@/pages/auth/ForgotPassword";
+import AdminLayout from "@/layouts/AdminLayout";
+import AuthLayout from "@/layouts/AuthLayout";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import TemplateManagement from "@/pages/admin/TemplateManagement";
+import TemplateEditor from "@/pages/admin/TemplateEditor";
+import ProductCatalog from "@/pages/admin/ProductCatalog";
+import ProductManagement from "@/pages/admin/ProductManagement";
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import SignIn from "./pages/auth/SignIn";
-import SignUp from "./pages/auth/SignUp";
-import ForgotPassword from "./pages/auth/ForgotPassword";
-import ProtectedRoute from "./components/ProtectedRoute";
-import ShutterstockPage from "./pages/ShutterstockPage";
-import AdminLayout from "./pages/admin/AdminLayout";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import TemplateManagement from "./pages/admin/TemplateManagement";
-import TemplateEditor from "./pages/admin/TemplateEditor";
+// Update routes to include product management
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Index />,
+    errorElement: <NotFound />,
+  },
+  {
+    path: "shutterstock",
+    element: <ShutterstockPage />,
+  },
+  {
+    path: "auth",
+    element: <AuthLayout />,
+    children: [
+      {
+        path: "signin",
+        element: <SignIn />,
+      },
+      {
+        path: "signup",
+        element: <SignUp />,
+      },
+      {
+        path: "forgot-password",
+        element: <ForgotPassword />,
+      },
+    ],
+  },
+  {
+    path: "admin",
+    element: <AdminLayout />,
+    children: [
+      {
+        path: "",
+        element: <AdminDashboard />,
+      },
+      {
+        path: "templates",
+        element: <TemplateManagement />,
+      },
+      {
+        path: "templates/:templateId",
+        element: <TemplateEditor />,
+      },
+      {
+        path: "products",
+        element: <ProductCatalog />,
+      },
+      {
+        path: "products/new",
+        element: <ProductManagement />,
+      },
+      {
+        path: "products/:productId",
+        element: <ProductManagement />,
+      },
+    ],
+  },
+]);
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/auth/sign-in" element={<SignIn />} />
-            <Route path="/auth/sign-up" element={<SignUp />} />
-            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-            
-            {/* Protected routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/profile" element={<Index />} /> {/* Placeholder for profile page */}
-              <Route path="/orders" element={<Index />} /> {/* Placeholder for orders page */}
-              <Route path="/shutterstock" element={<ShutterstockPage />} />
-              
-              {/* Admin routes */}
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="templates" element={<TemplateManagement />} />
-                <Route path="templates/create" element={<TemplateEditor />} />
-                <Route path="templates/edit/:id" element={<TemplateEditor />} />
-              </Route>
-            </Route>
-            
-            {/* Default placeholder routes */}
-            <Route path="/templates" element={<Index />} />
-            <Route path="/design" element={<Index />} />
-            
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return <RouterProvider router={router} />;
+}
 
 export default App;

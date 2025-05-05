@@ -24,6 +24,13 @@ export interface Template {
   created_at: string;
   created_by?: string | null;
   customization_zones?: CustomizationZone[];
+  products?: Array<{
+    product_id: string;
+    is_default: boolean;
+    products: {
+      name: string;
+    }
+  }>;
 }
 
 // Database row interfaces to help with type casting

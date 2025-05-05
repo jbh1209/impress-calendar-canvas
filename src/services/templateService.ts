@@ -29,10 +29,21 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
     // Fetch the customization zones for this template
     const zones = await getZonesByTemplateId(id);
     
+    // Fetch product associations
+    const { data: productAssociations, error: assocError } = await supabase
+      .from('product_templates' as any)
+      .select('product_id, is_default, products(name)')
+      .eq('template_id', id);
+    
+    if (assocError) {
+      console.error('Error fetching template product associations:', assocError);
+    }
+    
     // Convert the database rows to our type
     const templateData: Template = {
       ...(template as unknown as TemplateRow),
-      customization_zones: zones
+      customization_zones: zones,
+      products: productAssociations || []
     };
     
     // Return the template with its zones
@@ -47,11 +58,12 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
 /**
  * Get all templates with optional customization zones
  */
-export const getAllTemplates = async (includeZones = false): Promise<Template[]> => {
+export const getAllTemplates = async (includeZones = false, includeProducts = false): Promise<Template[]> => {
   try {
     const { data: templates, error: templatesError } = await supabase
       .from('templates' as any)
-      .select('*');
+      .select('*')
+      .order('name', { ascending: true });
       
     if (templatesError) {
       console.error('Error fetching templates:', templatesError);
@@ -59,23 +71,43 @@ export const getAllTemplates = async (includeZones = false): Promise<Template[]>
       return [];
     }
     
-    if (!includeZones || !templates || templates.length === 0) {
-      return templates as unknown as TemplateRow[] || [];
+    if (!templates || templates.length === 0) {
+      return [];
     }
     
-    // If zones are requested, fetch them for all templates
-    const templatesWithZones: Template[] = [];
+    // If no additional data is requested, return templates as is
+    if (!includeZones && !includeProducts) {
+      return templates as unknown as TemplateRow[];
+    }
+    
+    // If additional data is requested, fetch it for all templates
+    const templatesWithData: Template[] = [];
     
     for (const template of templates as unknown as TemplateRow[]) {
-      const zones = await getZonesByTemplateId(template.id);
+      let zones = undefined;
+      let products = undefined;
       
-      templatesWithZones.push({
+      if (includeZones) {
+        zones = await getZonesByTemplateId(template.id);
+      }
+      
+      if (includeProducts) {
+        const { data: productAssociations } = await supabase
+          .from('product_templates' as any)
+          .select('product_id, is_default, products(name)')
+          .eq('template_id', template.id);
+        
+        products = productAssociations;
+      }
+      
+      templatesWithData.push({
         ...template,
-        customization_zones: zones
+        customization_zones: zones,
+        products: products
       });
     }
     
-    return templatesWithZones;
+    return templatesWithData;
   } catch (error) {
     console.error('Unexpected error fetching templates:', error);
     toast.error('An unexpected error occurred');
@@ -95,6 +127,7 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
     const customizationZones = template.customization_zones || [];
     const templateWithoutZones = { ...template };
     delete templateWithoutZones.customization_zones; // Remove zones from template object for insert/update
+    delete templateWithoutZones.products; // Remove product associations from template object
     
     // For new templates, add created_by field
     if (isNewTemplate && userId) {
@@ -153,6 +186,23 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
  */
 export const deleteTemplate = async (id: string): Promise<boolean> => {
   try {
+    // First check if template is associated with any products
+    const { data: associations, error: checkError } = await supabase
+      .from('product_templates' as any)
+      .select('product_id')
+      .eq('template_id', id);
+    
+    if (checkError) {
+      console.error('Error checking template associations:', checkError);
+      toast.error('Failed to check template associations');
+      return false;
+    }
+    
+    if (associations && associations.length > 0) {
+      toast.error('Cannot delete template that is associated with products. Please remove the template from all products first.');
+      return false;
+    }
+    
     const { error } = await supabase
       .from('templates' as any)
       .delete()
@@ -192,6 +242,5 @@ export const exportTemplateAsJson = async (id: string): Promise<string | null> =
   }
 };
 
-// Re-export types from templateTypes.ts - Fixed with export type
+// Re-export types from templateTypes.ts
 export type { Template, CustomizationZone } from "./types/templateTypes";
-
