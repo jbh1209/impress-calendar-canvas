@@ -29,8 +29,10 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({
   <Link
     to={to}
     className={cn(
-      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
-      isActive ? "bg-accent" : "transparent"
+      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
+      isActive 
+        ? "bg-gray-800 text-white dark:bg-gray-700" 
+        : "text-gray-600 dark:text-gray-300 hover:bg-gray-700 hover:text-white"
     )}
   >
     {icon}
@@ -43,10 +45,12 @@ const AdminSidebar = () => {
   const path = location.pathname;
 
   return (
-    <div className="flex h-screen flex-col border-r">
-      <div className="p-4 text-xl font-semibold">Admin Dashboard</div>
+    <div className="flex h-screen flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+      <div className="p-4 text-xl font-semibold border-b border-gray-200 dark:border-gray-700">
+        Admin Dashboard
+      </div>
       <div className="flex-1 overflow-auto py-2">
-        <nav className="grid items-start px-2 text-sm font-medium">
+        <nav className="grid items-start px-2 text-sm font-medium gap-1">
           <SidebarLink
             to="/admin"
             icon={<LayoutDashboard className="h-4 w-4" />}

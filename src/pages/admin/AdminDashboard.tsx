@@ -10,50 +10,50 @@ const AdminDashboard = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Admin Dashboard</h1>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="hover:shadow-md transition-shadow border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl flex items-center gap-2">
+            <CardTitle className="text-xl flex items-center gap-2 text-gray-800 dark:text-white">
               <FilePlus size={20} />
               Templates Management
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">Create and manage calendar templates for customers.</p>
-            <Button onClick={() => navigate("/admin/templates")}>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">Create and manage calendar templates for customers.</p>
+            <Button onClick={() => navigate("/admin/templates")} variant="default">
               Manage Templates
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="hover:shadow-md transition-shadow border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl flex items-center gap-2">
+            <CardTitle className="text-xl flex items-center gap-2 text-gray-800 dark:text-white">
               <ShoppingCart size={20} />
               Order Management
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">View and manage customer orders.</p>
-            <Button onClick={() => navigate("/admin/orders")}>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">View and manage customer orders.</p>
+            <Button onClick={() => navigate("/admin/orders")} variant="default">
               View Orders
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="hover:shadow-md transition-shadow border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl flex items-center gap-2">
+            <CardTitle className="text-xl flex items-center gap-2 text-gray-800 dark:text-white">
               <Users size={20} />
               User Management
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">Manage user accounts and permissions.</p>
-            <Button onClick={() => navigate("/admin/users")}>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">Manage user accounts and permissions.</p>
+            <Button onClick={() => navigate("/admin/users")} variant="default">
               Manage Users
             </Button>
           </CardContent>
