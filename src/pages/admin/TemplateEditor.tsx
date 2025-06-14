@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Canvas as FabricCanvas } from "fabric";
@@ -11,6 +10,9 @@ import TemplateCanvas from "@/components/admin/template/TemplateCanvas";
 import TemplateSettings from "@/components/admin/template/TemplateSettings";
 import { getTemplateById, saveTemplate } from "@/services/templateService";
 import { CustomizationZone } from "@/services/types/templateTypes";
+import { getTemplatePages } from "@/services/templatePageService";
+import TemplatePageNavigator from "@/components/admin/template/TemplatePageNavigator";
+import { TemplatePage } from "@/services/types/templateTypes";
 
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +29,10 @@ const TemplateEditor = () => {
     isActive: false,
     dimensions: "11x8.5"
   });
+
+  // PAGE NAVIGATION STATE
+  const [pages, setPages] = useState<TemplatePage[]>([]);
+  const [activePageIndex, setActivePageIndex] = useState(0);
 
   useEffect(() => {
     const loadTemplate = async () => {
@@ -59,6 +65,24 @@ const TemplateEditor = () => {
 
     loadTemplate();
   }, [id, isEditing, navigate]);
+
+  // Load pages for this template (when id changes)
+  useEffect(() => {
+    const loadPages = async () => {
+      if (id) {
+        setIsLoading(true);
+        const results = await getTemplatePages(id);
+        setPages(results);
+        setIsLoading(false);
+        // Always reset to page 0 on load
+        setActivePageIndex(0);
+      } else {
+        setPages([]);
+        setActivePageIndex(0);
+      }
+    };
+    loadPages();
+  }, [id]);
 
   const getZonesFromCanvas = (): CustomizationZone[] => {
     if (!fabricCanvasRef.current) return [];
@@ -152,6 +176,13 @@ const TemplateEditor = () => {
         <div className="lg:col-span-2">
           <Card className="mb-6">
             <CardContent className="p-6">
+              {pages.length > 0 && (
+                <TemplatePageNavigator
+                  pages={pages}
+                  activePageIndex={activePageIndex}
+                  setActivePageIndex={setActivePageIndex}
+                />
+              )}
               <TemplateCanvas 
                 isEditing={isEditing}
                 templateId={id}
@@ -159,6 +190,7 @@ const TemplateEditor = () => {
                 isLoading={isLoading}
                 setIsLoading={setIsLoading}
                 fabricCanvasRef={fabricCanvasRef}
+                // TODO: pass activePage info as needed in next phase
               />
             </CardContent>
           </Card>
