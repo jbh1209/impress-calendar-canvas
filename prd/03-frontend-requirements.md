@@ -1,4 +1,3 @@
-
 # 3. Frontend Requirements
 
 ## 3.1 Product Browsing
@@ -29,12 +28,13 @@
 
 - Calendar template selection interface
 - Interactive canvas-based customization interface using Fabric.js
-- Drag-and-drop image placement within predefined zones
-- Image upload functionality for custom images
-- Text editing tools for adding custom text
-- Date marking and event management
-- Real-time preview generation
-- Save and resume design functionality
+- **Multi-page navigation**: Ability for users to easily switch between calendar pages.
+- **Zone-aware content placement**: Drag-and-drop image and logo placement within predefined zones.
+- Image upload functionality for custom images, with cropping and resizing tools.
+- Text editing tools for adding custom text (where applicable).
+- **Repeating Logos**: Place a logo once in a designated "repeating" zone and see it appear on all relevant pages.
+- Real-time, multi-page preview generation.
+- Save and resume design functionality.
 
 ## 3.5 Shutterstock Integration UI
 
@@ -51,12 +51,14 @@
 
 - Secure admin dashboard with restricted access
 - Template management system:
-  - Template creation interface with Fabric.js canvas
-  - Customization zone definition tools 
-  - Template preview and testing
-  - Template publication controls
+  - **Multi-page PDF Upload**: Ability to upload a complete calendar PDF as a base template.
+  - **Template Editor Enhancements**:
+    - Page-by-page view of the uploaded PDF.
+    - Tools to draw and define customization zones (for images, logos, text) on each page.
+    - Ability to mark zones as "repeating" (e.g., for a company logo).
+  - Template preview and testing across all pages.
+  - Template publication controls.
 - Product and inventory management
 - Order management and processing
 - User management
 - Analytics and reporting dashboard
-

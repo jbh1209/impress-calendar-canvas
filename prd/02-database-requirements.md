@@ -29,5 +29,8 @@
 - **calendar_designs**: Store user calendar designs (id, user_id, name, product_id, customization_data, preview_image_url, is_saved, created_at, updated_at)
 - **shutterstock_selections**: Track selected Shutterstock images (id, user_id, image_id, thumbnail_url, preview_url, created_at, updated_at)
 - **shutterstock_licenses**: Store license information for purchased images (id, user_id, image_id, license_type, license_id, download_url, purchased_at, expires_at, price, order_id)
-- **calendar_templates**: Store template designs with customizable zones (id, name, description, base_image_url, customization_zones_data, category_id, is_active, dimensions, created_at, updated_at)
-
+- **templates**: Store template designs (id, name, description, base_pdf_url, category_id, is_active, dimensions, created_at, updated_at)
+- **template_pages**: Store individual pages of a template PDF (id, template_id, page_number, preview_image_url, created_at, updated_at)
+- **customization_zones**: Store definitions for customizable zones (id, template_id, name, type, default_x, default_y, default_width, default_height, created_at, updated_at)
+- **zone_page_assignments**: Links zones to specific pages and defines their properties for that page (id, zone_id, page_id, x, y, width, height, z_index, is_repeating)
+- **user_customizations**: Stores user-specific content for each zone in a design (id, design_id, zone_assignment_id, content_type, content_value, shutterstock_image_id)

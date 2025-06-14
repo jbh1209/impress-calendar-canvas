@@ -1,4 +1,3 @@
-
 # 7. Implementation Plan
 
 ## Phase 1: Foundation (4-6 weeks)
@@ -8,13 +7,15 @@
 - Develop shopping cart functionality
 - Setup admin dashboard foundation
 
-## Phase 2: Admin Template Management (4-6 weeks)
-- Create template database structure
-- Develop admin interface for template management
-- Implement template creation tool with Fabric.js
-- Create customization zone definition interface
-- Set up template preview and publication workflows
-- Implement template categorization and filtering
+## Phase 2: Admin Template Management (6-8 weeks)
+- Create template database structure for multi-page support (`templates`, `template_pages`, `customization_zones`, `zone_page_assignments`).
+- Develop admin interface for template management.
+- **Implement multi-page PDF upload and server-side processing (e.g., with PDF-lib) to generate page previews.**
+- **Enhance the template editor (Fabric.js) with page navigation to view individual pages.**
+- **Implement tools to draw, resize, and position customization zones on each page.**
+- **Add functionality to designate zones as "repeating".**
+- Set up template preview and publication workflows.
+- Implement template categorization and filtering.
 
 ## Phase 3: E-Commerce Functionality (4-6 weeks)
 - Implement checkout process
@@ -25,13 +26,14 @@
 - Set up email notifications
 - Implement payment notification handling and verification
 
-## Phase 4: Customization Tools (4-6 weeks)
-- Develop calendar customization interface with Fabric.js
-- Create image upload and management functionality
-- Implement text editing tools
-- Develop design saving functionality
-- Create preview generation system
-- Implement customization within predefined zones
+## Phase 4: Customization Tools (6-8 weeks)
+- Develop the customer-facing calendar customization interface with Fabric.js.
+- **Implement page navigation for the user to customize each page of the calendar.**
+- Create image upload (with cropping/resizing) and management functionality.
+- **Implement drag-and-drop placement of images/logos into predefined zones.**
+- **Ensure repeating logos automatically populate across designated pages.**
+- Develop design saving functionality (`user_customizations` table).
+- Create a real-time, multi-page preview generation system.
 
 ## Phase 5: Shutterstock Integration (4-6 weeks)
 - Set up Shutterstock API authentication
@@ -41,9 +43,9 @@
 - Implement licensing process
 - Set up usage monitoring
 
-## Phase 6: PDF Generation (2-4 weeks)
-- Implement PDF-lib integration
-- Create server-side PDF generation service
+## Phase 6: PDF Generation (3-5 weeks)
+- Implement PDF-lib integration for final output.
+- **Create a server-side service to merge the original base PDF with all user customizations (images, logos).**
 - Develop high-resolution print-ready output
 - Implement proper image and text positioning
 - Set up download functionality
@@ -56,4 +58,3 @@
 - Perform user acceptance testing
 - Prepare marketing materials
 - Launch platform
-

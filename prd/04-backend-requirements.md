@@ -1,4 +1,3 @@
-
 # 4. Backend Requirements
 
 ## 4.1 Authentication
@@ -28,8 +27,9 @@
 
 ## 4.4 Admin Dashboard
 
-- Template management system
-- Customization zone definition and management
+- Template management system:
+  - **PDF Processing**: Handle uploads of multi-page PDFs, splitting them into individual page images for the editor.
+  - Customization zone definition and management across multiple pages.
 - Product management
 - Order management
 - User management
@@ -48,9 +48,8 @@
 
 ## 4.6 PDF Generation Service
 
-- Server-side PDF generation using PDF-lib
-- High-resolution print-ready file creation
-- Template and user customization combining
-- Support for various calendar formats and sizes
-- Proper text and image positioning
-
+- Server-side PDF generation using PDF-lib or a similar tool.
+- **Combining Layers**: Merge the original base PDF template with user-uploaded images, logos, and Shutterstock assets.
+- High-resolution, print-ready file creation based on the final user design.
+- Support for various calendar formats and sizes.
+- Proper text and image positioning based on defined zones and user manipulations.
