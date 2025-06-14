@@ -9,6 +9,56 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      customization_zones: {
+        Row: {
+          created_at: string
+          height: number
+          id: string
+          name: string
+          template_id: string
+          type: string
+          updated_at: string
+          width: number
+          x: number
+          y: number
+          z_index: number
+        }
+        Insert: {
+          created_at?: string
+          height: number
+          id?: string
+          name: string
+          template_id: string
+          type: string
+          updated_at?: string
+          width: number
+          x: number
+          y: number
+          z_index?: number
+        }
+        Update: {
+          created_at?: string
+          height?: number
+          id?: string
+          name?: string
+          template_id?: string
+          type?: string
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+          z_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customization_zones_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_images: {
         Row: {
           alt_text: string | null

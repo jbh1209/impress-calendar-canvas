@@ -1,6 +1,7 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Canvas as FabricCanvas } from "fabric";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -8,7 +9,8 @@ import { ArrowLeft, Save } from "lucide-react";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import TemplateCanvas from "@/components/admin/template/TemplateCanvas";
 import TemplateSettings from "@/components/admin/template/TemplateSettings";
-import { getTemplateById, saveTemplate, Template } from "@/services/templateService";
+import { getTemplateById, saveTemplate } from "@/services/templateService";
+import { CustomizationZone } from "@/services/types/templateTypes";
 
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +18,7 @@ const TemplateEditor = () => {
   const isEditing = id !== undefined;
   const [isLoading, setIsLoading] = useState(true);
   const [templateData, setTemplateData] = useState<any>(null);
+  const fabricCanvasRef = useRef<FabricCanvas | null>(null);
   
   const [template, setTemplate] = useState({
     name: "",
@@ -56,21 +59,48 @@ const TemplateEditor = () => {
 
     loadTemplate();
   }, [id, isEditing, navigate]);
+
+  const getZonesFromCanvas = (): CustomizationZone[] => {
+    if (!fabricCanvasRef.current) return [];
+
+    const canvasObjects = fabricCanvasRef.current.getObjects();
+    const zones: CustomizationZone[] = canvasObjects.map((obj, index) => {
+      const customProps = obj.get('customProps' as any);
+      
+      const width = obj.width! * (obj.scaleX || 1);
+      const height = obj.height! * (obj.scaleY || 1);
+
+      return {
+        id: customProps.zoneId, // This is undefined for new zones
+        name: customProps.name,
+        type: customProps.zoneType,
+        x: obj.left!,
+        y: obj.top!,
+        width: width,
+        height: height,
+        z_index: index,
+      };
+    });
+
+    return zones;
+  };
   
   const handleSaveTemplate = async () => {
     setIsLoading(true);
     
     try {
+      const currentZones = getZonesFromCanvas();
+      
       // Prepare template data
       const templateToSave = {
-        id: templateData?.id,
+        id: isEditing ? id : undefined,
         name: template.name,
         description: template.description,
         category: template.category,
         is_active: template.isActive,
         dimensions: template.dimensions,
         base_image_url: templateData?.base_image_url,
-        customization_zones: templateData?.customization_zones || []
+        customization_zones: currentZones,
       };
       
       const savedTemplate = await saveTemplate(templateToSave);
@@ -128,6 +158,7 @@ const TemplateEditor = () => {
                 templateData={templateData}
                 isLoading={isLoading}
                 setIsLoading={setIsLoading}
+                fabricCanvasRef={fabricCanvasRef}
               />
             </CardContent>
           </Card>

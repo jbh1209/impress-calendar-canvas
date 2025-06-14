@@ -2,7 +2,7 @@
 // Shared type definitions for templates and customization zones
 
 export interface CustomizationZone {
-  id: string;
+  id?: string; // Made optional to support creating new zones
   template_id?: string;
   name: string;
   type: 'image' | 'text';

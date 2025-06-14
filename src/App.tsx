@@ -1,4 +1,3 @@
-
 import React from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Index from "@/pages/Index";
@@ -57,7 +56,11 @@ const router = createBrowserRouter([
         element: <TemplateManagement />,
       },
       {
-        path: "templates/:templateId",
+        path: "templates/create",
+        element: <TemplateEditor />,
+      },
+      {
+        path: "templates/edit/:id",
         element: <TemplateEditor />,
       },
       {

@@ -1,5 +1,4 @@
 
-import { useRef } from "react";
 import { Canvas as FabricCanvas } from "fabric";
 import Canvas from "./Canvas";
 import ZoneControls from "./ZoneControls";
@@ -10,11 +9,10 @@ interface TemplateCanvasProps {
   templateData?: any;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
+  fabricCanvasRef: React.MutableRefObject<FabricCanvas | null>;
 }
 
 const TemplateCanvas = (props: TemplateCanvasProps) => {
-  const fabricCanvasRef = useRef<FabricCanvas | null>(null);
-  
   return (
     <div className="border rounded-lg overflow-hidden">
       {props.isLoading ? (
@@ -23,8 +21,8 @@ const TemplateCanvas = (props: TemplateCanvasProps) => {
         </div>
       ) : (
         <div className="relative">
-          <Canvas {...props} fabricCanvasRef={fabricCanvasRef} />
-          <ZoneControls fabricCanvasRef={fabricCanvasRef} />
+          <Canvas {...props} />
+          <ZoneControls fabricCanvasRef={props.fabricCanvasRef} />
         </div>
       )}
     </div>

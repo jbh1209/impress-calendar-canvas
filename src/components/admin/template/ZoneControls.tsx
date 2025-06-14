@@ -1,5 +1,3 @@
-
-import { useRef } from "react";
 import { Canvas, Group, Rect, Text as FabricText } from "fabric";
 import { Button } from "@/components/ui/button";
 import { Image, Text } from "lucide-react";
@@ -14,8 +12,8 @@ const ZoneControls = ({ fabricCanvasRef }: ZoneControlsProps) => {
     if (!fabricCanvasRef.current) return;
     
     const canvas = fabricCanvasRef.current;
-    const zoneId = Date.now();
-    const zoneName = type === 'image' ? `Image Zone ${zoneId}` : `Text Zone ${zoneId}`;
+    const zoneCount = canvas.getObjects().filter(obj => obj.get('customProps' as any)?.zoneType === type).length + 1;
+    const zoneName = `${type.charAt(0).toUpperCase() + type.slice(1)} Zone ${zoneCount}`;
     
     try {
       const rect = new Rect({
@@ -33,7 +31,6 @@ const ZoneControls = ({ fabricCanvasRef }: ZoneControlsProps) => {
       
       // Set custom properties to the rect
       rect.set('customProps', { 
-        zoneId, 
         zoneType: type, 
         name: zoneName 
       });
@@ -57,7 +54,6 @@ const ZoneControls = ({ fabricCanvasRef }: ZoneControlsProps) => {
       
       // Set custom properties to the group
       group.set('customProps', { 
-        zoneId, 
         zoneType: type, 
         name: zoneName 
       });
