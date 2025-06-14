@@ -13,6 +13,7 @@ import { CustomizationZone } from "@/services/types/templateTypes";
 import { getTemplatePages } from "@/services/templatePageService";
 import TemplatePageNavigator from "@/components/admin/template/TemplatePageNavigator";
 import { TemplatePage } from "@/services/types/templateTypes";
+import PdfUploadSection from "@/components/admin/template/PdfUploadSection";
 
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -142,6 +143,16 @@ const TemplateEditor = () => {
       setIsLoading(false);
     }
   };
+
+  // Refresh pages when PDF upload completes
+  const reloadPages = async () => {
+    if (id) {
+      setIsLoading(true);
+      const results = await getTemplatePages(id);
+      setPages(results);
+      setIsLoading(false);
+    }
+  };
   
   return (
     <div>
@@ -171,6 +182,14 @@ const TemplateEditor = () => {
           Save Template
         </Button>
       </div>
+
+      {/* 1. PDF Upload section for new/existing template */}
+      {id && (
+        <PdfUploadSection
+          templateId={id}
+          onProcessingComplete={reloadPages}
+        />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
