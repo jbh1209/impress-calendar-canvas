@@ -1,4 +1,3 @@
-
 // Shared type definitions for templates and customization zones
 
 export interface CustomizationZone {
@@ -59,4 +58,27 @@ export interface ZoneRow {
   z_index: number;
   created_at: string;
   updated_at: string;
+}
+
+// Add TemplatePage type
+export interface TemplatePage {
+  id: string;
+  template_id: string;
+  page_number: number;
+  preview_image_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Add ZonePageAssignment type
+export interface ZonePageAssignment {
+  id: string;
+  zone_id: string;
+  page_id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  z_index: number;
+  is_repeating: boolean;
 }

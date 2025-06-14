@@ -318,6 +318,41 @@ export type Database = {
         }
         Relationships: []
       }
+      template_pages: {
+        Row: {
+          created_at: string
+          id: string
+          page_number: number
+          preview_image_url: string | null
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          page_number: number
+          preview_image_url?: string | null
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          page_number?: number
+          preview_image_url?: string | null
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_pages_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       templates: {
         Row: {
           base_image_url: string | null
@@ -356,6 +391,57 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      zone_page_assignments: {
+        Row: {
+          height: number
+          id: string
+          is_repeating: boolean
+          page_id: string
+          width: number
+          x: number
+          y: number
+          z_index: number
+          zone_id: string
+        }
+        Insert: {
+          height: number
+          id?: string
+          is_repeating?: boolean
+          page_id: string
+          width: number
+          x: number
+          y: number
+          z_index?: number
+          zone_id: string
+        }
+        Update: {
+          height?: number
+          id?: string
+          is_repeating?: boolean
+          page_id?: string
+          width?: number
+          x?: number
+          y?: number
+          z_index?: number
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zone_page_assignments_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "template_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zone_page_assignments_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "customization_zones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
