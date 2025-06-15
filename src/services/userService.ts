@@ -42,3 +42,14 @@ export async function getCurrentUserRoles(userId: string): Promise<Enums<"app_ro
   if (error) throw error;
   return (data || []).map((row) => row.role);
 }
+
+// --- NEW FUNCTION: Check if any admin exists
+export async function anyAdminExists(): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("id")
+    .eq("role", "admin")
+    .limit(1);
+  if (error) throw error;
+  return Array.isArray(data) && data.length > 0;
+}
