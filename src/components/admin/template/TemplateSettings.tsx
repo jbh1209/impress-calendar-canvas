@@ -1,6 +1,3 @@
-// REFACTOR: Use new layout & UI system for best-in-class template editor settings.
-// Note: If you build on this, please keep files small and open for composition.
-
 import { useState } from "react";
 import { toast } from "sonner";
 import TemplateSettingsPanelFrame from "./TemplateSettingsPanelFrame";
@@ -8,6 +5,7 @@ import TemplateDetailsSection from "./TemplateDetailsSection";
 import TemplateDimensionsSection from "./TemplateDimensionsSection";
 import TemplateBleedSection from "./TemplateBleedSection";
 import TemplateStatusAndCategorySection from "./TemplateStatusAndCategorySection";
+import SectionPanel from "./SectionPanel";
 
 const DEFAULT_BLEED = { top: 0.125, right: 0.125, bottom: 0.125, left: 0.125, units: "in" };
 
@@ -65,13 +63,15 @@ export default function TemplateSettings({
     setIsSaving(false);
   }
 
-  // Main stylish form frame with panel, vertical rhythm & roomy sections
+  // Main stylish professional layout: full-width, breathable, grouped panels
   return (
     <TemplateSettingsPanelFrame>
       <form className="w-full flex flex-col gap-8" onSubmit={handleSaveTemplate} autoComplete="off">
-        {/* Heading and Save */}
-        <div className="flex items-center gap-2 justify-between sticky top-0 z-10 bg-white/90 backdrop-blur-md rounded-2xl px-2 py-2 mb-2 shadow-sm border-b">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight truncate">{template.name || "Untitled Template"}</h1>
+        {/* Fixed sticky save header */}
+        <div className="flex items-center gap-2 justify-between sticky top-0 z-20 bg-white/95 backdrop-blur-xl rounded-2xl px-3 py-3 mb-2 border-b shadow-sm transition">
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight truncate">
+            {template.name || "Untitled Template"}
+          </h1>
           <button
             type="submit"
             className="gold-button flex gap-2 items-center"
@@ -87,27 +87,52 @@ export default function TemplateSettings({
             )}
           </button>
         </div>
-        {/* Error message */}
+
         {errorMsg && (
           <div className="bg-red-50 border border-red-200 text-red-700 rounded px-4 py-2 mb-2 text-sm text-center">
             {errorMsg}
           </div>
         )}
-        {/* Organized clean sections */}
-        <TemplateDetailsSection template={template} setTemplate={setTemplate} />
-        <TemplateStatusAndCategorySection template={template} setTemplate={setTemplate} />
-        <TemplateDimensionsSection
-          template={template}
-          setTemplate={setTemplate}
-          units={units}
-          setUnits={handleUnitChange}
-        />
-        <TemplateBleedSection
-          bleed={template.bleed || bleed}
-          setBleed={(b) => setTemplate({ ...template, bleed: b })}
-          units={units}
-          setUnits={handleUnitChange}
-        />
+
+        <div className="flex flex-col gap-8">
+          <SectionPanel
+            title="Template Details"
+            description="Name your template and optionally provide a description for users."
+          >
+            <TemplateDetailsSection template={template} setTemplate={setTemplate} />
+          </SectionPanel>
+
+          <SectionPanel
+            title="Visibility & Category"
+            description="Control whether your template appears to customers and assign a suitable category."
+          >
+            <TemplateStatusAndCategorySection template={template} setTemplate={setTemplate} />
+          </SectionPanel>
+
+          <SectionPanel
+            title="Page Dimensions"
+            description="Set the printable area, choose a preset, and update units used for measurements (excluding bleed)."
+          >
+            <TemplateDimensionsSection
+              template={template}
+              setTemplate={setTemplate}
+              units={units}
+              setUnits={handleUnitChange}
+            />
+          </SectionPanel>
+
+          <SectionPanel
+            title="Bleed Settings"
+            description="Adjust the print bleed for all edges. This prevents unprinted edges."
+          >
+            <TemplateBleedSection
+              bleed={template.bleed || bleed}
+              setBleed={b => setTemplate({ ...template, bleed: b })}
+              units={units}
+              setUnits={handleUnitChange}
+            />
+          </SectionPanel>
+        </div>
       </form>
     </TemplateSettingsPanelFrame>
   );
