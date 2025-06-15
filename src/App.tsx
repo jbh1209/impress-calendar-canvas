@@ -1,3 +1,4 @@
+
 import React from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Index from "@/pages/Index";
@@ -13,8 +14,10 @@ import ProductCatalog from "@/pages/admin/ProductCatalog";
 import ProductManagement from "@/pages/admin/ProductManagement";
 import AdminLayout from "@/layouts/AdminLayout";
 import AuthLayout from "@/layouts/AuthLayout";
+import UserManagementPage from "@/pages/admin/UserManagement";
+import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 
-// Update routes to include product management
+// Update routes to include product management and user management
 const router = createBrowserRouter([
   {
     path: "/",
@@ -45,7 +48,11 @@ const router = createBrowserRouter([
   },
   {
     path: "admin",
-    element: <AdminLayout />,
+    element: (
+      <AdminProtectedRoute>
+        <AdminLayout />
+      </AdminProtectedRoute>
+    ),
     children: [
       {
         path: "",
@@ -74,6 +81,10 @@ const router = createBrowserRouter([
       {
         path: "products/:productId",
         element: <ProductManagement />,
+      },
+      {
+        path: "users",
+        element: <UserManagementPage />, // Fix: add UserManagement admin route!
       },
     ],
   },

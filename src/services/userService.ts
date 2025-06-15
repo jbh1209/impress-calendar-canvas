@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { Enums } from "@/integrations/supabase/types"; // Import Supabase types
 
@@ -34,3 +33,12 @@ export async function inviteAdmin(email: string) {
   return data;
 }
 
+// Fetch all roles for a user (returns: string[])
+export async function getCurrentUserRoles(userId: string): Promise<Enums<"app_role">[]> {
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  if (error) throw error;
+  return (data || []).map((row) => row.role);
+}
