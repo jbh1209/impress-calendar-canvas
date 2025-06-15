@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+
+import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Canvas as FabricCanvas } from "fabric";
 import { Button } from "@/components/ui/button";
@@ -11,37 +12,42 @@ import TemplateSettings from "@/components/admin/template/TemplateSettings";
 import { CustomizationZone } from "@/services/types/templateTypes";
 import TemplatePageNavigator from "@/components/admin/template/TemplatePageNavigator";
 import PdfUploadSection from "@/components/admin/template/PdfUploadSection";
-// HOOK
 import { useTemplateEditor } from "@/hooks/admin/template/useTemplateEditor";
 import { saveTemplate } from "@/services/templateService";
-import { getTemplatePages } from "@/services/templatePageService"; // <-- Added missing import
-
-const DEFAULT_TEMPLATE = {
-  name: "Untitled Template",
-  description: "",
-  category: "Corporate",
-  isActive: false,
-  dimensions: "11x8.5",
-};
+import { getTemplatePages } from "@/services/templatePageService";
 
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
   const {
+    mode,
     isLoading,
     setIsLoading,
     templateId,
+    setTemplateId,
     template,
     setTemplate,
     templateData,
-    pages,
-    setPages,
-    activePageIndex,
-    setActivePageIndex,
-    errorMsg, // Added
+    errorMsg,
+    setErrorMsg
   } = useTemplateEditor(id || null);
 
   const navigate = useNavigate();
   const fabricCanvasRef = useRef<FabricCanvas | null>(null);
+
+  // We'll only fetch pages if editing an existing template
+  const [pages, setPages] = useState([]);
+  const [activePageIndex, setActivePageIndex] = useState(0);
+
+  // Load pages when editing an existing template
+  // (Pages cannot exist for draft templates)
+  useState(() => {
+    if (mode === "edit" && templateId) {
+      setIsLoading(true);
+      getTemplatePages(templateId)
+        .then(results => setPages(results))
+        .finally(() => setIsLoading(false));
+    }
+  }, [templateId, mode]);
 
   const getZonesFromCanvas = (): CustomizationZone[] => {
     if (!fabricCanvasRef.current) return [];
@@ -64,25 +70,41 @@ const TemplateEditor = () => {
     return zones;
   };
 
-  // Save template (no longer triggers reload, just save core)
+  // Validate fields before save
+  const validateTemplate = () => {
+    if (!template.name?.trim()) return "Template name is required.";
+    if (!template.dimensions?.trim()) return "Dimensions are required.";
+    if (!template.category?.trim()) return "Category is required.";
+    // Add more as needed
+    return null;
+  };
+
+  // Save/create template to DB only on explicit action
   const handleSaveTemplate = async () => {
+    const validationError = validateTemplate();
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
     setIsLoading(true);
+
+    // Always send the latest from the form
+    const templateToSave = {
+      ...(mode === "edit" && templateId ? { id: templateId } : {}),
+      name: template.name,
+      description: template.description,
+      category: template.category,
+      is_active: template.isActive,
+      dimensions: template.dimensions,
+      // Only allow editing of base_image_url in "edit" mode for now
+      base_image_url: templateData?.base_image_url,
+      customization_zones: getZonesFromCanvas(),
+    };
+
     try {
-      const currentZones = getZonesFromCanvas();
-      const templateToSave = {
-        id: templateId,
-        name: template.name,
-        description: template.description,
-        category: template.category,
-        is_active: template.isActive,
-        dimensions: template.dimensions,
-        base_image_url: templateData?.base_image_url,
-        customization_zones: currentZones,
-      };
-      // Use main save function (doesn't save zones yet!)
       const savedTemplate = await saveTemplate(templateToSave);
       if (savedTemplate) {
-        toast.success(id ? "Template updated successfully" : "Template created successfully");
+        toast.success(mode === "edit" ? "Template updated successfully" : "Template created successfully");
         navigate("/admin/templates");
       } else {
         toast.error("Failed to save template");
@@ -95,27 +117,7 @@ const TemplateEditor = () => {
     }
   };
 
-  const reloadPages = async () => {
-    if (templateId) {
-      setIsLoading(true);
-      const results = await getTemplatePages(templateId);
-      setPages(results);
-      setIsLoading(false);
-    }
-  };
-
-  // UI for no pages yet
-  const renderNoPages = () => (
-    <Card className="mb-6">
-      <CardContent className="p-16 text-center">
-        <div className="text-lg text-gray-700 mb-2 font-medium">No pages yet</div>
-        <div className="text-gray-500 mb-4">Upload a PDF to generate pages for your template.</div>
-        <span role="img" aria-label="PDF">📄</span>
-      </CardContent>
-    </Card>
-  );
-
-  // If there's an error in hook, show clear feedback and ability to return
+  // Warn and go back for errors in Edit mode
   if (errorMsg) {
     return (
       <div className="flex flex-col items-center justify-center py-32">
@@ -127,6 +129,7 @@ const TemplateEditor = () => {
     );
   }
 
+  // Readable, clean UI
   return (
     <div>
       <Breadcrumb className="mb-6">
@@ -139,7 +142,7 @@ const TemplateEditor = () => {
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <BreadcrumbPage>{id ? "Edit Template" : "Create Template"}</BreadcrumbPage>
+          <BreadcrumbPage>{mode === "edit" ? "Edit Template" : "Create Template"}</BreadcrumbPage>
         </BreadcrumbItem>
       </Breadcrumb>
 
@@ -148,7 +151,7 @@ const TemplateEditor = () => {
           <Button variant="outline" size="icon" onClick={() => navigate("/admin/templates")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-3xl font-bold">{id ? "Edit Template" : "Create Template"}</h1>
+          <h1 className="text-3xl font-bold">{mode === "edit" ? "Edit Template" : "Create Template"}</h1>
         </div>
         <Button onClick={handleSaveTemplate} disabled={isLoading}>
           <Save className="mr-2 h-4 w-4" />
@@ -156,18 +159,23 @@ const TemplateEditor = () => {
         </Button>
       </div>
 
-      {/* 1. PDF Upload section — always render when templateId */}
-      {templateId && (
+      {/* Only offer PDF upload in edit mode, after a template is created */}
+      {mode === "edit" && templateId && (
         <PdfUploadSection
           templateId={templateId}
-          onProcessingComplete={reloadPages}
+          onProcessingComplete={async () => {
+            setIsLoading(true);
+            const results = await getTemplatePages(templateId);
+            setPages(results);
+            setIsLoading(false);
+          }}
         />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          {/* If pages exist, show navigator/canvas. Else show helper */}
-          {pages.length > 0 ? (
+          {/* If pages exist in edit mode, show navigator/canvas. Else show helper */}
+          {mode === "edit" && pages.length > 0 ? (
             <Card className="mb-6">
               <CardContent className="p-6">
                 <TemplatePageNavigator
@@ -176,7 +184,7 @@ const TemplateEditor = () => {
                   setActivePageIndex={setActivePageIndex}
                 />
                 <TemplateCanvas
-                  isEditing={!!templateId}
+                  isEditing={true}
                   templateId={templateId}
                   templateData={templateData}
                   isLoading={isLoading}
@@ -186,7 +194,21 @@ const TemplateEditor = () => {
               </CardContent>
             </Card>
           ) : (
-            renderNoPages()
+            <Card className="mb-6">
+              <CardContent className="p-16 text-center">
+                <div className="text-lg text-gray-700 mb-2 font-medium">
+                  {mode === "edit"
+                    ? "No pages yet"
+                    : "Set template details and save to start"}
+                </div>
+                <div className="text-gray-500 mb-4">
+                  {mode === "edit"
+                    ? "Upload a PDF to generate pages."
+                    : "Enter required info, then save to create your new template."}
+                </div>
+                <span role="img" aria-label="PDF">📄</span>
+              </CardContent>
+            </Card>
           )}
         </div>
         <div>
@@ -201,3 +223,4 @@ const TemplateEditor = () => {
 };
 
 export default TemplateEditor;
+

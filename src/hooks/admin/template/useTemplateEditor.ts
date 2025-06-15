@@ -1,43 +1,52 @@
-// Custom hook for handling template editor state & logic
+
+// Purely handles UI state for creating or editing templates.
+// NO side-effect (DB) calls for new templates until user saves.
 
 import { useState, useEffect } from "react";
-import { getTemplateById, saveTemplate } from "@/services/templateService";
-import { getZonesByTemplateId, saveZones } from "@/services/templateZoneService";
-import { getTemplatePages } from "@/services/templatePageService";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { getTemplateById } from "@/services/templateService";
 
 const DEFAULT_TEMPLATE = {
-  name: "Untitled Template",
+  name: "",
   description: "",
   category: "Corporate",
   isActive: false,
   dimensions: "11x8.5",
 };
 
-export function useTemplateEditor(templateIdFromParams: string | null | undefined) {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
+export type TemplateEditorMode = "create" | "edit";
+
+export function useTemplateEditor(templateIdFromParams?: string | null) {
+  const [mode, setMode] = useState<TemplateEditorMode>(templateIdFromParams ? "edit" : "create");
+  const [isLoading, setIsLoading] = useState(!!templateIdFromParams);
   const [templateId, setTemplateId] = useState<string | null>(templateIdFromParams || null);
-  const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
-  const [templateData, setTemplateData] = useState<any>(null); // shape from DB
-  const [pages, setPages] = useState([]);
-  const [activePageIndex, setActivePageIndex] = useState(0);
+
+  // Unified form state for changes BEFORE save
+  const [template, setTemplate] = useState({
+    ...DEFAULT_TEMPLATE,
+  });
+
+  // Holds original DB row for edit mode only
+  const [templateData, setTemplateData] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // 1. Initial create/load
   useEffect(() => {
-    const initOrLoadTemplate = async () => {
-      setIsLoading(true);
-      setErrorMsg(null);
-      if (templateIdFromParams) {
-        // Editing flow
-        const data = await getTemplateById(templateIdFromParams);
+    if (!templateIdFromParams) {
+      setMode("create");
+      setIsLoading(false);
+      setTemplate({ ...DEFAULT_TEMPLATE });
+      setTemplateData(null);
+      return;
+    }
+    // Edit mode: fetch the row and initialize
+    setIsLoading(true);
+    getTemplateById(templateIdFromParams)
+      .then((data) => {
         if (!data) {
           setErrorMsg("Template not found.");
           setIsLoading(false);
           return;
         }
+        setMode("edit");
         setTemplateData(data);
         setTemplate({
           name: data.name,
@@ -48,60 +57,20 @@ export function useTemplateEditor(templateIdFromParams: string | null | undefine
         });
         setTemplateId(data.id);
         setIsLoading(false);
-      } else {
-        // Creating flow: immediately create draft template
-        try {
-          const saved = await saveTemplate({ ...DEFAULT_TEMPLATE });
-          if (!saved) throw new Error("Could not create draft template. Ensure you are logged in.");
-          setTemplateData(saved);
-          setTemplate({
-            name: saved.name || DEFAULT_TEMPLATE.name,
-            description: saved.description || "",
-            category: saved.category || DEFAULT_TEMPLATE.category,
-            isActive: saved.is_active,
-            dimensions: saved.dimensions || DEFAULT_TEMPLATE.dimensions,
-          });
-          setTemplateId(saved.id);
-        } catch (e: any) {
-          setErrorMsg("Could not create draft template: " + (e?.message || ""));
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    initOrLoadTemplate();
-    // eslint-disable-next-line
+      });
   }, [templateIdFromParams]);
 
-  // 2. Load pages
-  useEffect(() => {
-    if (!templateId) {
-      setPages([]);
-      setActivePageIndex(0);
-      return;
-    }
-    const loadPages = async () => {
-      setIsLoading(true);
-      const results = await getTemplatePages(templateId);
-      setPages(results);
-      setIsLoading(false);
-      setActivePageIndex(0);
-    };
-    loadPages();
-  }, [templateId]);
-
   return {
+    mode,
     isLoading,
     setIsLoading,
     templateId,
+    setTemplateId,
     template,
     setTemplate,
     templateData,
-    setTemplateData,
-    pages,
-    setPages,
-    activePageIndex,
-    setActivePageIndex,
-    errorMsg, // NEW
+    errorMsg,
+    setErrorMsg,
   };
 }
+
