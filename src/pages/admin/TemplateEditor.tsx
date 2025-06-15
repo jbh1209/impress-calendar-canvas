@@ -17,7 +17,7 @@ import { TemplatePage } from "@/services/types/templateTypes";
 import PdfUploadSection from "@/components/admin/template/PdfUploadSection";
 
 const DEFAULT_TEMPLATE = {
-  name: "",
+  name: "Untitled Template",
   description: "",
   category: "Corporate",
   isActive: false,
@@ -63,15 +63,16 @@ const TemplateEditor = () => {
       } else {
         // Creating flow: immediately create draft template
         try {
+          // DOUBLE SAFEGUARD: avoid calling saveTemplate if not authenticated
           const saved = await saveTemplate({ ...DEFAULT_TEMPLATE });
-          if (!saved) throw new Error("Could not create draft template");
+          if (!saved) throw new Error("Could not create draft template. Ensure you are logged in.");
           setTemplateData(saved);
           setTemplate({
-            name: saved.name || "",
+            name: saved.name || DEFAULT_TEMPLATE.name,
             description: saved.description || "",
-            category: saved.category || "Corporate",
+            category: saved.category || DEFAULT_TEMPLATE.category,
             isActive: saved.is_active,
-            dimensions: saved.dimensions || "11x8.5",
+            dimensions: saved.dimensions || DEFAULT_TEMPLATE.dimensions,
           });
           setTemplateId(saved.id);
         } catch (e: any) {

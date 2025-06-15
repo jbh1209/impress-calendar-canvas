@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Template, TemplateRow } from "./types/templateTypes";
@@ -125,23 +124,35 @@ export const getAllTemplates = async (includeZones = false, includeProducts = fa
  */
 export const saveTemplate = async (template: Partial<Template>): Promise<Template | null> => {
   try {
+    // Always get user id and enforce for creation
     const user = supabase.auth.getUser();
     const userId = (await user).data.user?.id;
-    
+
     const isNewTemplate = !template.id;
+    // For NEW templates we must provide all required fields!
+    const defaultFields = {
+      name: template.name && template.name.trim() !== "" ? template.name : "Untitled Template",
+      category: template.category || "Corporate",
+      is_active: typeof template.isActive === "boolean" ? template.isActive : false,
+      dimensions: template.dimensions || "11x8.5",
+    };
+
     const customizationZones = template.customization_zones || [];
-    const templateWithoutZones = { ...template };
-    delete templateWithoutZones.customization_zones; // Remove zones from template object for insert/update
-    delete templateWithoutZones.products; // Remove product associations from template object
-    
-    // For new templates, add created_by field
-    if (isNewTemplate && userId) {
+    const templateWithoutZones = { ...template, ...defaultFields };
+    delete templateWithoutZones.customization_zones;
+    delete templateWithoutZones.products;
+
+    // For new templates, require authentication & add created_by field
+    if (isNewTemplate) {
+      if (!userId) {
+        toast.error("You must be logged in to create a template.");
+        return null;
+      }
       templateWithoutZones.created_by = userId;
     }
-    
-    // Insert or update the template
+
     let templateResult;
-    
+
     if (isNewTemplate) {
       templateResult = await supabase
         .from('templates' as any)
@@ -156,28 +167,25 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
         .select()
         .single();
     }
-    
+
     const { data, error } = templateResult;
-    
+
     if (error) {
       console.error('Error saving template:', error);
-      toast.error('Failed to save template');
+      toast.error('Failed to save template: ' + error.message);
       return null;
     }
-    
+
     if (!data) {
       toast.error('No data returned after saving template');
       return null;
     }
-    
-    // Save customization zones if they exist
+
     const success = await saveZones(customizationZones, data.id, isNewTemplate);
-    
     if (!success) {
       toast.error('Template saved but some zones may not have been saved correctly');
     }
-    
-    // Reload the template with its zones
+
     return await getTemplateById(data.id);
   } catch (error) {
     console.error('Unexpected error saving template:', error);
