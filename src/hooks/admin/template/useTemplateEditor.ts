@@ -1,4 +1,3 @@
-
 // Custom hook for handling template editor state & logic
 
 import { useState, useEffect } from "react";
@@ -24,17 +23,19 @@ export function useTemplateEditor(templateIdFromParams: string | null | undefine
   const [templateData, setTemplateData] = useState<any>(null); // shape from DB
   const [pages, setPages] = useState([]);
   const [activePageIndex, setActivePageIndex] = useState(0);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // 1. Initial create/load
   useEffect(() => {
     const initOrLoadTemplate = async () => {
       setIsLoading(true);
+      setErrorMsg(null);
       if (templateIdFromParams) {
         // Editing flow
         const data = await getTemplateById(templateIdFromParams);
         if (!data) {
-          toast.error("Template not found");
-          navigate("/admin/templates");
+          setErrorMsg("Template not found.");
+          setIsLoading(false);
           return;
         }
         setTemplateData(data);
@@ -62,8 +63,7 @@ export function useTemplateEditor(templateIdFromParams: string | null | undefine
           });
           setTemplateId(saved.id);
         } catch (e: any) {
-          toast.error("Could not create draft template: " + (e?.message || ""));
-          navigate("/admin/templates");
+          setErrorMsg("Could not create draft template: " + (e?.message || ""));
         } finally {
           setIsLoading(false);
         }
@@ -102,6 +102,6 @@ export function useTemplateEditor(templateIdFromParams: string | null | undefine
     setPages,
     activePageIndex,
     setActivePageIndex,
+    errorMsg, // NEW
   };
 }
-

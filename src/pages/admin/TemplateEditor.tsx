@@ -37,9 +37,10 @@ const TemplateEditor = () => {
     setPages,
     activePageIndex,
     setActivePageIndex,
+    errorMsg, // Added
   } = useTemplateEditor(id || null);
-  const navigate = useNavigate();
 
+  const navigate = useNavigate();
   const fabricCanvasRef = useRef<FabricCanvas | null>(null);
 
   const getZonesFromCanvas = (): CustomizationZone[] => {
@@ -113,6 +114,18 @@ const TemplateEditor = () => {
       </CardContent>
     </Card>
   );
+
+  // If there's an error in hook, show clear feedback and ability to return
+  if (errorMsg) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32">
+        <div className="mb-4 text-red-600 font-semibold text-lg">{errorMsg}</div>
+        <Button variant="outline" onClick={() => navigate("/admin/templates")}>
+          Back to Template List
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div>
