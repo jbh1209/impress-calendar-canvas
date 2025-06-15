@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Enums } from "@/integrations/supabase/types"; // Import Supabase types
 
 export async function getUsersWithRoles() {
   // Join users (auth.users) with user_roles and profiles
@@ -11,10 +12,11 @@ export async function getUsersWithRoles() {
   return data;
 }
 
-export async function assignRole(userId: string, role: string) {
+// Type the role to the Supabase enum type
+export async function assignRole(userId: string, role: Enums<"app_role">) {
   const { data, error } = await supabase
     .from("user_roles")
-    .insert({ user_id: userId, role });
+    .insert([{ user_id: userId, role }]); // Insert expects an array of objects
   if (error) throw error;
   return data;
 }
@@ -31,3 +33,4 @@ export async function inviteAdmin(email: string) {
   if (error) throw error;
   return data;
 }
+
