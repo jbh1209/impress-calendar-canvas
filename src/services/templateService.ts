@@ -58,8 +58,15 @@ export const saveTemplate = async (
   template: Partial<Template>
 ): Promise<Template | null> => {
   try {
+    // Log user authentication
     const user = await supabase.auth.getUser();
     const userId = user.data.user?.id;
+    console.log("[saveTemplate] Auth state:", user);
+
+    if (!userId) {
+      toast.error("You must be logged in to create a template.");
+      return null;
+    }
     const isNewTemplate = !template.id;
 
     // Only core template fields, default as needed
@@ -79,21 +86,19 @@ export const saveTemplate = async (
     };
 
     if (isNewTemplate) {
-      if (!userId) {
-        toast.error("You must be logged in to create a template.");
-        return null;
-      }
       dataToSave.created_by = userId;
     }
 
     let templateResult;
     if (isNewTemplate) {
+      console.log("[saveTemplate] Inserting new template:", dataToSave);
       templateResult = await supabase
         .from("templates")
         .insert([dataToSave])
         .select()
         .maybeSingle();
     } else {
+      console.log("[saveTemplate] Updating template:", { ...dataToSave, id: template.id });
       templateResult = await supabase
         .from("templates")
         .update(dataToSave)
@@ -104,7 +109,8 @@ export const saveTemplate = async (
     const { data, error } = templateResult;
 
     if (error) {
-      console.error("Error saving template:", error);
+      // Log full error object for debugging
+      console.error("[saveTemplate] Error saving template:", error);
       toast.error("Failed to save template: " + error.message);
       return null;
     }
@@ -114,7 +120,7 @@ export const saveTemplate = async (
     }
     return data as Template;
   } catch (error) {
-    console.error("Unexpected error saving template:", error);
+    console.error("[saveTemplate] Unexpected error saving template:", error);
     toast.error("An unexpected error occurred while saving");
     return null;
   }
