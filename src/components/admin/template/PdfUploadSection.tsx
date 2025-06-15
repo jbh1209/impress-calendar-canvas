@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -13,55 +13,130 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
   onProcessingComplete
 }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
 
-  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  // Open file dialog on button click
+  const handleButtonClick = () => {
+    if (!isUploading) {
+      fileInputRef.current?.click();
+    }
+  };
+
+  // Main upload handler (file from input/dnd)
+  const uploadPdfFile = async (file: File) => {
     if (!file || !templateId) return;
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
-      // Create form data for upload
       const formData = new FormData();
       formData.append("pdf", file);
       formData.append("template_id", templateId);
 
-      // Call the edge function to split & process the pdf
-      const res = await fetch("/functions/v1/split-pdf", {
-        method: "POST",
-        body: formData
-      });
+      // Use fetch and track progress
+      const req = new XMLHttpRequest();
+      req.open("POST", "/functions/v1/split-pdf");
+      req.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          setUploadProgress(Math.round((event.loaded / event.total) * 100));
+        }
+      };
 
-      if (!res.ok) {
-        throw new Error("Failed to process PDF.");
-      }
+      req.onload = () => {
+        setIsUploading(false);
+        setUploadProgress(null);
+        if (req.status >= 200 && req.status < 300) {
+          toast.success("PDF uploaded! Pages are being processed.");
+          if (onProcessingComplete) onProcessingComplete();
+        } else {
+          try {
+            const { error } = JSON.parse(req.responseText);
+            toast.error(error || "An error occurred.");
+          } catch {
+            toast.error("An error occurred during PDF upload.");
+          }
+        }
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      };
 
-      // Optionally: check response JSON for details
-      toast.success("PDF uploaded! Pages are being processed.");
-      if (onProcessingComplete) onProcessingComplete();
+      req.onerror = () => {
+        setIsUploading(false);
+        setUploadProgress(null);
+        toast.error("An error occurred while uploading.");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      };
+
+      req.send(formData);
     } catch (error: any) {
       toast.error(error.message || "An error occurred.");
-    } finally {
       setIsUploading(false);
-      // Reset the input for re-upload
-      e.target.value = "";
+      setUploadProgress(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
+  // Input change handler
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadPdfFile(file);
+  };
+
+  // Drag & Drop handlers
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = () => setDragOver(false);
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) uploadPdfFile(file);
+  };
+
   return (
-    <div className="border border-gray-200 rounded p-6 mb-8 flex flex-col items-start gap-3">
-      <label className="font-semibold mb-1 text-sm">Upload New PDF Template</label>
+    <div
+      className={`border border-gray-200 rounded p-6 mb-8 flex flex-col items-start gap-3 transition-colors ${
+        dragOver ? "bg-blue-50 border-blue-300" : "bg-white"
+      }`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      tabIndex={0}  // for accessibility
+    >
+      <label className="font-semibold mb-1 text-sm">
+        Upload New PDF Template
+      </label>
       <input
         type="file"
         accept="application/pdf"
         disabled={isUploading}
         onChange={handleFileSelected}
-        className="block rounded border p-1 mb-2"
+        ref={fileInputRef}
+        className="hidden"
       />
-      <Button size="sm" disabled>
-        {isUploading ? "Uploading..." : "Select PDF"}
+      <Button
+        size="sm"
+        onClick={handleButtonClick}
+        disabled={isUploading}
+        className="mt-1"
+      >
+        {isUploading
+          ? uploadProgress !== null
+            ? `Uploading (${uploadProgress}%)...`
+            : "Uploading..."
+          : "Select PDF"}
       </Button>
       <div className="text-xs text-muted-foreground mt-2">
-        (Each page will appear in the page navigator after upload)
+        <span>
+          (Each page will appear in the page navigator after upload.
+          <span className="ml-1">You may also drag and drop a PDF here.)</span>
+        </span>
       </div>
     </div>
   );
