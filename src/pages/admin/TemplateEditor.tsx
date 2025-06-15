@@ -14,11 +14,9 @@ const TemplateEditor = () => {
   const templateEditorState = useTemplateEditor(id || null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Validation: ensure required fields
   function validateTemplate(template) {
     if (!template.name?.trim()) return "Template name is required.";
     if (!template.dimensions?.trim()) return "Dimensions are required.";
-    // Add more as needed (category...)
     return null;
   }
 
@@ -45,22 +43,21 @@ const TemplateEditor = () => {
     setIsSaving(false);
   }
 
+  // Minimalist, modern background (light color with fade) 
   return (
-    <AdminTemplateEditorLayout>
-      <AdminTemplateEditorHeader
-        {...templateEditorState}
-        handleSaveTemplate={handleSaveTemplate}
-        isLoading={isSaving || templateEditorState.isLoading}
-      />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <AdminTemplateEditorMain {...templateEditorState} />
-        </div>
-        <div>
+    <div className="bg-gradient-to-br from-zinc-100 to-zinc-200 min-h-screen w-full px-2 py-8">
+      <AdminTemplateEditorLayout>
+        <AdminTemplateEditorHeader
+          {...templateEditorState}
+          handleSaveTemplate={handleSaveTemplate}
+          isLoading={isSaving || templateEditorState.isLoading}
+        />
+        {/* Use a single centered settings panel on create/new */}
+        <div className="flex justify-center items-start w-full mt-2">
           <AdminTemplateEditorSettingsPanel {...templateEditorState} />
         </div>
-      </div>
-    </AdminTemplateEditorLayout>
+      </AdminTemplateEditorLayout>
+    </div>
   );
 };
 
