@@ -7,8 +7,15 @@ const AdminTemplateEditorSettingsPanel = ({
   setTemplate,
 }) => (
   <div className="flex justify-center items-start min-h-screen">
-    <TemplateSettings template={template} setTemplate={setTemplate} />
+    <TemplateSettings
+      template={template}
+      setTemplate={setTemplate}
+      isLoading={false}
+      templateId={null}
+      setTemplateId={() => {}}
+    />
   </div>
 );
 
 export default AdminTemplateEditorSettingsPanel;
+
