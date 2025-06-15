@@ -5,7 +5,7 @@ import TemplateCanvas from "@/components/admin/template/TemplateCanvas";
 import PdfUploadSection from "@/components/admin/template/PdfUploadSection";
 import { getTemplatePages } from "@/services/templatePageService";
 import { useRef, useEffect, useState } from "react";
-import { FabricCanvas } from "fabric";
+import { Canvas } from "fabric"; // <-- Correct import
 
 const AdminTemplateEditorMain = ({
   mode,
@@ -16,7 +16,7 @@ const AdminTemplateEditorMain = ({
 }) => {
   const [pages, setPages] = useState([]);
   const [activePageIndex, setActivePageIndex] = useState(0);
-  const fabricCanvasRef = useRef<FabricCanvas | null>(null);
+  const fabricCanvasRef = useRef<Canvas | null>(null); // <-- Use Canvas
 
   useEffect(() => {
     if (mode === "edit" && templateId) {
@@ -83,3 +83,4 @@ const AdminTemplateEditorMain = ({
 };
 
 export default AdminTemplateEditorMain;
+
