@@ -133,14 +133,27 @@ export const saveTemplate = async (template: Partial<Template>): Promise<Templat
     const defaultFields = {
       name: template.name && template.name.trim() !== "" ? template.name : "Untitled Template",
       category: template.category || "Corporate",
-      is_active: typeof template.isActive === "boolean" ? template.isActive : false,
+      is_active:
+        // Support camelCase (from UI) or snake_case (from API) for frontend flexibility
+        typeof (template as any).isActive === "boolean"
+          ? (template as any).isActive
+          : typeof template.is_active === "boolean"
+            ? template.is_active
+            : false,
       dimensions: template.dimensions || "11x8.5",
     };
 
     const customizationZones = template.customization_zones || [];
-    const templateWithoutZones = { ...template, ...defaultFields };
+    // Always use snake_case for DB
+    const templateWithoutZones = {
+      ...template,
+      ...defaultFields,
+      // Remove isActive if for some reason it lingers on the object
+      isActive: undefined,
+    };
     delete templateWithoutZones.customization_zones;
     delete templateWithoutZones.products;
+    delete templateWithoutZones.isActive; // Extra safety
 
     // For new templates, require authentication & add created_by field
     if (isNewTemplate) {
