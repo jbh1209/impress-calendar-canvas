@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Canvas as FabricCanvas } from "fabric";
@@ -9,12 +8,12 @@ import { ArrowLeft, Save } from "lucide-react";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import TemplateCanvas from "@/components/admin/template/TemplateCanvas";
 import TemplateSettings from "@/components/admin/template/TemplateSettings";
-import { getTemplateById, saveTemplate } from "@/services/templateService";
 import { CustomizationZone } from "@/services/types/templateTypes";
-import { getTemplatePages } from "@/services/templatePageService";
 import TemplatePageNavigator from "@/components/admin/template/TemplatePageNavigator";
-import { TemplatePage } from "@/services/types/templateTypes";
 import PdfUploadSection from "@/components/admin/template/PdfUploadSection";
+// HOOK
+import { useTemplateEditor } from "@/hooks/admin/template/useTemplateEditor";
+import { saveTemplate } from "@/services/templateService";
 
 const DEFAULT_TEMPLATE = {
   name: "Untitled Template",
@@ -26,83 +25,21 @@ const DEFAULT_TEMPLATE = {
 
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
+  const {
+    isLoading,
+    setIsLoading,
+    templateId,
+    template,
+    setTemplate,
+    templateData,
+    pages,
+    setPages,
+    activePageIndex,
+    setActivePageIndex,
+  } = useTemplateEditor(id || null);
   const navigate = useNavigate();
-  const isEditing = id !== undefined;
-  const [isLoading, setIsLoading] = useState(true);
-  const [templateId, setTemplateId] = useState<string | null>(id || null);
-  const [templateData, setTemplateData] = useState<any>(null);
+
   const fabricCanvasRef = useRef<FabricCanvas | null>(null);
-
-  const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
-
-  const [pages, setPages] = useState<TemplatePage[]>([]);
-  const [activePageIndex, setActivePageIndex] = useState(0);
-
-  // 1. Auto-create draft for create flow (no id in params)
-  useEffect(() => {
-    const initOrLoadTemplate = async () => {
-      setIsLoading(true);
-      if (id) {
-        // Editing flow
-        const data = await getTemplateById(id);
-        if (!data) {
-          toast.error("Template not found");
-          navigate("/admin/templates");
-          return;
-        }
-        setTemplateData(data);
-        setTemplate({
-          name: data.name,
-          description: data.description || "",
-          category: data.category,
-          isActive: data.is_active,
-          dimensions: data.dimensions || "11x8.5",
-        });
-        setTemplateId(data.id);
-        setIsLoading(false);
-      } else {
-        // Creating flow: immediately create draft template
-        try {
-          // DOUBLE SAFEGUARD: avoid calling saveTemplate if not authenticated
-          const saved = await saveTemplate({ ...DEFAULT_TEMPLATE });
-          if (!saved) throw new Error("Could not create draft template. Ensure you are logged in.");
-          setTemplateData(saved);
-          setTemplate({
-            name: saved.name || DEFAULT_TEMPLATE.name,
-            description: saved.description || "",
-            category: saved.category || DEFAULT_TEMPLATE.category,
-            isActive: saved.is_active,
-            dimensions: saved.dimensions || DEFAULT_TEMPLATE.dimensions,
-          });
-          setTemplateId(saved.id);
-        } catch (e: any) {
-          toast.error("Could not create draft template: " + (e?.message || ""));
-          navigate("/admin/templates");
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    initOrLoadTemplate();
-    // eslint-disable-next-line
-  }, [id]);
-
-  // 2. Load template pages when templateId is available
-  useEffect(() => {
-    if (!templateId) {
-      setPages([]);
-      setActivePageIndex(0);
-      return;
-    }
-    const loadPages = async () => {
-      setIsLoading(true);
-      const results = await getTemplatePages(templateId);
-      setPages(results);
-      setIsLoading(false);
-      setActivePageIndex(0);
-    };
-    loadPages();
-  }, [templateId]);
 
   const getZonesFromCanvas = (): CustomizationZone[] => {
     if (!fabricCanvasRef.current) return [];
@@ -125,7 +62,7 @@ const TemplateEditor = () => {
     return zones;
   };
 
-  // Save template
+  // Save template (no longer triggers reload, just save core)
   const handleSaveTemplate = async () => {
     setIsLoading(true);
     try {
@@ -140,9 +77,10 @@ const TemplateEditor = () => {
         base_image_url: templateData?.base_image_url,
         customization_zones: currentZones,
       };
+      // Use main save function (doesn't save zones yet!)
       const savedTemplate = await saveTemplate(templateToSave);
       if (savedTemplate) {
-        toast.success(isEditing ? "Template updated successfully" : "Template created successfully");
+        toast.success(id ? "Template updated successfully" : "Template created successfully");
         navigate("/admin/templates");
       } else {
         toast.error("Failed to save template");
@@ -155,7 +93,6 @@ const TemplateEditor = () => {
     }
   };
 
-  // Refresh pages when PDF upload completes
   const reloadPages = async () => {
     if (templateId) {
       setIsLoading(true);
@@ -188,7 +125,7 @@ const TemplateEditor = () => {
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <BreadcrumbPage>{isEditing ? "Edit Template" : "Create Template"}</BreadcrumbPage>
+          <BreadcrumbPage>{id ? "Edit Template" : "Create Template"}</BreadcrumbPage>
         </BreadcrumbItem>
       </Breadcrumb>
 
@@ -197,7 +134,7 @@ const TemplateEditor = () => {
           <Button variant="outline" size="icon" onClick={() => navigate("/admin/templates")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-3xl font-bold">{isEditing ? "Edit Template" : "Create Template"}</h1>
+          <h1 className="text-3xl font-bold">{id ? "Edit Template" : "Create Template"}</h1>
         </div>
         <Button onClick={handleSaveTemplate} disabled={isLoading}>
           <Save className="mr-2 h-4 w-4" />
