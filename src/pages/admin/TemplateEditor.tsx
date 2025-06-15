@@ -14,6 +14,7 @@ import PdfUploadSection from "@/components/admin/template/PdfUploadSection";
 // HOOK
 import { useTemplateEditor } from "@/hooks/admin/template/useTemplateEditor";
 import { saveTemplate } from "@/services/templateService";
+import { getTemplatePages } from "@/services/templatePageService"; // <-- Added missing import
 
 const DEFAULT_TEMPLATE = {
   name: "Untitled Template",
