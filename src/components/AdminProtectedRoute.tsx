@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,12 +11,19 @@ export default function AdminProtectedRoute({ children }: { children?: React.Rea
   const [noAdmins, setNoAdmins] = useState(false);
   const queryClient = useQueryClient();
 
+  // Log user/auth state
+  useEffect(() => {
+    console.log("[AdminProtectedRoute] Auth user:", user);
+    console.log("[AdminProtectedRoute] Loading:", loading);
+  }, [user, loading]);
+
   // Check if any admins exist
   useEffect(() => {
     async function checkAdmins() {
       if (user && !loading) {
         const exists = await anyAdminExists();
         setNoAdmins(!exists);
+        console.log("[AdminProtectedRoute] anyAdminExists() =>", exists);
       }
     }
     checkAdmins();
@@ -27,6 +35,12 @@ export default function AdminProtectedRoute({ children }: { children?: React.Rea
     queryFn: () => (user ? getCurrentUserRoles(user.id) : Promise.resolve([])),
     enabled: !!user,
   });
+
+  useEffect(() => {
+    if (!rolesLoading) {
+      console.log("[AdminProtectedRoute] Fetched roles:", roles);
+    }
+  }, [roles, rolesLoading]);
 
   // Mutation to assign admin to oneself
   const assignSelfAdmin = useMutation({
@@ -41,6 +55,12 @@ export default function AdminProtectedRoute({ children }: { children?: React.Rea
     },
   });
 
+  // Log the key state affecting rendering
+  useEffect(() => {
+    console.log("[AdminProtectedRoute] noAdmins:", noAdmins);
+    console.log("[AdminProtectedRoute] User roles:", roles);
+  }, [noAdmins, roles]);
+
   if (loading || rolesLoading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
@@ -50,11 +70,13 @@ export default function AdminProtectedRoute({ children }: { children?: React.Rea
   }
 
   if (!user) {
+    console.log("[AdminProtectedRoute] No user, redirecting...");
     return <Navigate to="/auth/signin" replace />;
   }
 
   // --- No admins exist: allow self-promotion if logged in and not admin already
   if (noAdmins && !(roles || []).includes("admin")) {
+    console.log("[AdminProtectedRoute] No admins, user not admin. Show self-promotion option.");
     return (
       <div className="flex items-center justify-center min-h-[40vh] text-center">
         <div className="bg-blue-100 text-blue-700 rounded p-6 shadow animate-in fade-in">
@@ -84,6 +106,7 @@ export default function AdminProtectedRoute({ children }: { children?: React.Rea
 
   // Not admin and admins already exist
   if (!noAdmins && !(roles || []).includes("admin")) {
+    console.log("[AdminProtectedRoute] Admins exist and user not admin -> Access Denied.");
     return (
       <div className="flex items-center justify-center min-h-[40vh] text-center">
         <div className="bg-red-100 text-red-600 rounded p-6 shadow">
@@ -95,5 +118,7 @@ export default function AdminProtectedRoute({ children }: { children?: React.Rea
   }
 
   // Admin - show children or <Outlet />
+  console.log("[AdminProtectedRoute] User is admin, show content!");
   return children ? <>{children}</> : <Outlet />;
 }
+
