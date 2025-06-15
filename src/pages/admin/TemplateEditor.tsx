@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Canvas as FabricCanvas } from "fabric";
@@ -15,88 +16,102 @@ import TemplatePageNavigator from "@/components/admin/template/TemplatePageNavig
 import { TemplatePage } from "@/services/types/templateTypes";
 import PdfUploadSection from "@/components/admin/template/PdfUploadSection";
 
+const DEFAULT_TEMPLATE = {
+  name: "",
+  description: "",
+  category: "Corporate",
+  isActive: false,
+  dimensions: "11x8.5",
+};
+
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEditing = id !== undefined;
   const [isLoading, setIsLoading] = useState(true);
+  const [templateId, setTemplateId] = useState<string | null>(id || null);
   const [templateData, setTemplateData] = useState<any>(null);
   const fabricCanvasRef = useRef<FabricCanvas | null>(null);
-  
-  const [template, setTemplate] = useState({
-    name: "",
-    description: "",
-    category: "Corporate",
-    isActive: false,
-    dimensions: "11x8.5"
-  });
 
-  // PAGE NAVIGATION STATE
+  const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
+
   const [pages, setPages] = useState<TemplatePage[]>([]);
   const [activePageIndex, setActivePageIndex] = useState(0);
 
+  // 1. Auto-create draft for create flow (no id in params)
   useEffect(() => {
-    const loadTemplate = async () => {
-      if (isEditing && id) {
-        try {
-          const data = await getTemplateById(id);
-          if (data) {
-            setTemplateData(data);
-            setTemplate({
-              name: data.name,
-              description: data.description || "",
-              category: data.category,
-              isActive: data.is_active,
-              dimensions: data.dimensions || "11x8.5"
-            });
-            setIsLoading(false);
-          } else {
-            toast.error("Template not found");
-            navigate("/admin/templates");
-          }
-        } catch (error) {
-          console.error("Error loading template:", error);
-          toast.error("Failed to load template");
+    const initOrLoadTemplate = async () => {
+      setIsLoading(true);
+      if (id) {
+        // Editing flow
+        const data = await getTemplateById(id);
+        if (!data) {
+          toast.error("Template not found");
           navigate("/admin/templates");
+          return;
         }
-      } else {
+        setTemplateData(data);
+        setTemplate({
+          name: data.name,
+          description: data.description || "",
+          category: data.category,
+          isActive: data.is_active,
+          dimensions: data.dimensions || "11x8.5",
+        });
+        setTemplateId(data.id);
         setIsLoading(false);
+      } else {
+        // Creating flow: immediately create draft template
+        try {
+          const saved = await saveTemplate({ ...DEFAULT_TEMPLATE });
+          if (!saved) throw new Error("Could not create draft template");
+          setTemplateData(saved);
+          setTemplate({
+            name: saved.name || "",
+            description: saved.description || "",
+            category: saved.category || "Corporate",
+            isActive: saved.is_active,
+            dimensions: saved.dimensions || "11x8.5",
+          });
+          setTemplateId(saved.id);
+        } catch (e: any) {
+          toast.error("Could not create draft template: " + (e?.message || ""));
+          navigate("/admin/templates");
+        } finally {
+          setIsLoading(false);
+        }
       }
     };
+    initOrLoadTemplate();
+    // eslint-disable-next-line
+  }, [id]);
 
-    loadTemplate();
-  }, [id, isEditing, navigate]);
-
-  // Load pages for this template (when id changes)
+  // 2. Load template pages when templateId is available
   useEffect(() => {
+    if (!templateId) {
+      setPages([]);
+      setActivePageIndex(0);
+      return;
+    }
     const loadPages = async () => {
-      if (id) {
-        setIsLoading(true);
-        const results = await getTemplatePages(id);
-        setPages(results);
-        setIsLoading(false);
-        // Always reset to page 0 on load
-        setActivePageIndex(0);
-      } else {
-        setPages([]);
-        setActivePageIndex(0);
-      }
+      setIsLoading(true);
+      const results = await getTemplatePages(templateId);
+      setPages(results);
+      setIsLoading(false);
+      setActivePageIndex(0);
     };
     loadPages();
-  }, [id]);
+  }, [templateId]);
 
   const getZonesFromCanvas = (): CustomizationZone[] => {
     if (!fabricCanvasRef.current) return [];
-
     const canvasObjects = fabricCanvasRef.current.getObjects();
     const zones: CustomizationZone[] = canvasObjects.map((obj, index) => {
       const customProps = obj.get('customProps' as any);
-      
       const width = obj.width! * (obj.scaleX || 1);
       const height = obj.height! * (obj.scaleY || 1);
-
       return {
-        id: customProps.zoneId, // This is undefined for new zones
+        id: customProps.zoneId,
         name: customProps.name,
         type: customProps.zoneType,
         x: obj.left!,
@@ -106,19 +121,16 @@ const TemplateEditor = () => {
         z_index: index,
       };
     });
-
     return zones;
   };
-  
+
+  // Save template
   const handleSaveTemplate = async () => {
     setIsLoading(true);
-    
     try {
       const currentZones = getZonesFromCanvas();
-      
-      // Prepare template data
       const templateToSave = {
-        id: isEditing ? id : undefined,
+        id: templateId,
         name: template.name,
         description: template.description,
         category: template.category,
@@ -127,9 +139,7 @@ const TemplateEditor = () => {
         base_image_url: templateData?.base_image_url,
         customization_zones: currentZones,
       };
-      
       const savedTemplate = await saveTemplate(templateToSave);
-      
       if (savedTemplate) {
         toast.success(isEditing ? "Template updated successfully" : "Template created successfully");
         navigate("/admin/templates");
@@ -146,14 +156,25 @@ const TemplateEditor = () => {
 
   // Refresh pages when PDF upload completes
   const reloadPages = async () => {
-    if (id) {
+    if (templateId) {
       setIsLoading(true);
-      const results = await getTemplatePages(id);
+      const results = await getTemplatePages(templateId);
       setPages(results);
       setIsLoading(false);
     }
   };
-  
+
+  // UI for no pages yet
+  const renderNoPages = () => (
+    <Card className="mb-6">
+      <CardContent className="p-16 text-center">
+        <div className="text-lg text-gray-700 mb-2 font-medium">No pages yet</div>
+        <div className="text-gray-500 mb-4">Upload a PDF to generate pages for your template.</div>
+        <span role="img" aria-label="PDF">📄</span>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div>
       <Breadcrumb className="mb-6">
@@ -183,40 +204,41 @@ const TemplateEditor = () => {
         </Button>
       </div>
 
-      {/* 1. PDF Upload section for new/existing template */}
-      {id && (
+      {/* 1. PDF Upload section — always render when templateId */}
+      {templateId && (
         <PdfUploadSection
-          templateId={id}
+          templateId={templateId}
           onProcessingComplete={reloadPages}
         />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              {pages.length > 0 && (
+          {/* If pages exist, show navigator/canvas. Else show helper */}
+          {pages.length > 0 ? (
+            <Card className="mb-6">
+              <CardContent className="p-6">
                 <TemplatePageNavigator
                   pages={pages}
                   activePageIndex={activePageIndex}
                   setActivePageIndex={setActivePageIndex}
                 />
-              )}
-              <TemplateCanvas 
-                isEditing={isEditing}
-                templateId={id}
-                templateData={templateData}
-                isLoading={isLoading}
-                setIsLoading={setIsLoading}
-                fabricCanvasRef={fabricCanvasRef}
-                // TODO: pass activePage info as needed in next phase
-              />
-            </CardContent>
-          </Card>
+                <TemplateCanvas
+                  isEditing={!!templateId}
+                  templateId={templateId}
+                  templateData={templateData}
+                  isLoading={isLoading}
+                  setIsLoading={setIsLoading}
+                  fabricCanvasRef={fabricCanvasRef}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            renderNoPages()
+          )}
         </div>
-
         <div>
-          <TemplateSettings 
+          <TemplateSettings
             template={template}
             setTemplate={setTemplate}
           />
