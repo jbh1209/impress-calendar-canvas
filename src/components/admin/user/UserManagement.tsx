@@ -4,6 +4,7 @@ import { getUsersWithRoles, assignRole, removeRole, inviteAdmin } from "@/servic
 import { UserTable } from "./UserTable";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import type { Enums } from "@/integrations/supabase/types"; // <-- Import Enums
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState([]);
@@ -38,7 +39,7 @@ const UserManagement: React.FC = () => {
     setLoading(false);
   };
 
-  const handleAssignRole = async (userId: string, role: string) => {
+  const handleAssignRole = async (userId: string, role: Enums<"app_role">) => {
     setLoading(true);
     try {
       await assignRole(userId, role);

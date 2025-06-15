@@ -2,6 +2,7 @@
 import React from "react";
 import { RoleBadge } from "./RoleBadge";
 import { Button } from "@/components/ui/button";
+import type { Enums } from "@/integrations/supabase/types"; // <-- Import Enums
 
 type User = {
   user_id: string;
@@ -18,7 +19,7 @@ type User = {
 
 type UserTableProps = {
   users: User[];
-  onAssignRole: (userId: string, role: string) => void;
+  onAssignRole: (userId: string, role: Enums<"app_role">) => void;
   onRemoveRole: (roleRowId: string) => void;
   currentUserId: string;
 };
