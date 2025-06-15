@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Canvas as FabricCanvas } from "fabric";
@@ -15,6 +14,11 @@ import PdfUploadSection from "@/components/admin/template/PdfUploadSection";
 import { useTemplateEditor } from "@/hooks/admin/template/useTemplateEditor";
 import { saveTemplate } from "@/services/templateService";
 import { getTemplatePages } from "@/services/templatePageService";
+
+// Load pages when editing an existing template
+// (Pages cannot exist for draft templates)
+// FIX: Use useEffect, not useState, for side-effects
+import { useEffect } from "react";
 
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,13 +38,11 @@ const TemplateEditor = () => {
   const navigate = useNavigate();
   const fabricCanvasRef = useRef<FabricCanvas | null>(null);
 
-  // We'll only fetch pages if editing an existing template
   const [pages, setPages] = useState([]);
   const [activePageIndex, setActivePageIndex] = useState(0);
 
-  // Load pages when editing an existing template
-  // (Pages cannot exist for draft templates)
-  useState(() => {
+  // Use useEffect for side-effects
+  useEffect(() => {
     if (mode === "edit" && templateId) {
       setIsLoading(true);
       getTemplatePages(templateId)
@@ -223,4 +225,3 @@ const TemplateEditor = () => {
 };
 
 export default TemplateEditor;
-
