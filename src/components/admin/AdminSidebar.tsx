@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -92,6 +91,12 @@ const AdminSidebar = () => {
             icon={<Settings className="h-4 w-4" />}
             label="Settings"
             isActive={path.includes("/admin/settings")}
+          />
+          <SidebarLink
+            to="/admin/users"
+            icon={<Users className="h-4 w-4" />}
+            label="User Management"
+            isActive={path.includes("/admin/users")}
           />
         </nav>
       </div>
