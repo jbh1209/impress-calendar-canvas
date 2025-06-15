@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -63,10 +62,10 @@ export default function AdminProtectedRoute({ children }: { children?: React.Rea
           <div className="mb-4">No administrators exist yet for this project.<br />You can promote yourself as the first admin.</div>
           <Button
             onClick={() => assignSelfAdmin.mutate()}
-            disabled={assignSelfAdmin.isLoading}
+            disabled={assignSelfAdmin.isPending}
             className="mt-2"
           >
-            {assignSelfAdmin.isLoading ? "Promoting..." : "Make me the first Admin"}
+            {assignSelfAdmin.isPending ? "Promoting..." : "Make me the first Admin"}
           </Button>
           {assignSelfAdmin.isError && (
             <div className="text-red-600 mt-2 text-sm">
