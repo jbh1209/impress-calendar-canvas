@@ -102,7 +102,7 @@
   }
   
   .outline-button {
-    @apply border border-current text-current font-medium py-2 px-4 rounded hover:bg-current/10 transition-all;
+    @apply border border-current text-current font-medium py-2 px-4 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-all;
   }
   
   .section-title {
