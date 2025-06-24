@@ -1,11 +1,17 @@
 
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useTemplateEditor } from "@/hooks/admin/template/useTemplateEditor";
 import TemplateSettings from "@/components/admin/template/TemplateSettings";
 
 export default function TemplateEditor() {
   const { id } = useParams<{ id: string }>();
-  const templateEditorState = useTemplateEditor(id || null);
+  const location = useLocation();
+  
+  // Determine if we're in create mode based on the route
+  const isCreateMode = location.pathname.includes('/create');
+  const templateId = isCreateMode ? null : id || null;
+  
+  const templateEditorState = useTemplateEditor(templateId);
 
   // Full-screen, light or gradient background
   return (

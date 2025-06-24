@@ -18,8 +18,8 @@ const DEFAULT_TEMPLATE: UITemplateState = {
 export type TemplateEditorMode = "create" | "edit";
 
 export function useTemplateEditor(templateIdFromParams?: string | null) {
-  const [mode, setMode] = useState<TemplateEditorMode>(templateIdFromParams ? "edit" : "create");
-  const [isLoading, setIsLoading] = useState(!!templateIdFromParams);
+  const [mode, setMode] = useState<TemplateEditorMode>(!templateIdFromParams ? "create" : "edit");
+  const [isLoading, setIsLoading] = useState(false);
   const [templateId, setTemplateId] = useState<string | null>(templateIdFromParams || null);
 
   // UI state for the form (includes UI-only fields like units, bleed)
@@ -31,14 +31,26 @@ export function useTemplateEditor(templateIdFromParams?: string | null) {
 
   useEffect(() => {
     if (!templateIdFromParams) {
+      console.log("[useTemplateEditor] Create mode - no template ID provided");
       setMode("create");
       setIsLoading(false);
       setTemplate({ ...DEFAULT_TEMPLATE });
       setTemplateData(null);
+      setTemplateId(null);
+      return;
+    }
+
+    // Validate that the templateId is a valid UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(templateIdFromParams)) {
+      console.error("[useTemplateEditor] Invalid UUID format:", templateIdFromParams);
+      setErrorMsg("Invalid template ID format.");
+      setIsLoading(false);
       return;
     }
 
     // Edit mode: fetch the template and transform to UI format
+    console.log("[useTemplateEditor] Edit mode - loading template:", templateIdFromParams);
     setIsLoading(true);
     getTemplateById(templateIdFromParams)
       .then((data) => {

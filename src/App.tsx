@@ -66,7 +66,15 @@ function App() {
                 }
               />
               <Route
-                path="templates/:id"
+                path="templates/create"
+                element={
+                  <AdminProtectedRoute>
+                    <TemplateEditor />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="templates/edit/:id"
                 element={
                   <AdminProtectedRoute>
                     <TemplateEditor />
