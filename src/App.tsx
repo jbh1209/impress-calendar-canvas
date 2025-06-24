@@ -41,14 +41,9 @@ function App() {
             </Route>
             
             {/* Protected Routes */}
-            <Route
-              path="/shutterstock"
-              element={
-                <ProtectedRoute>
-                  <ShutterstockPage />
-                </ProtectedRoute>
-              }
-            />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/shutterstock" element={<ShutterstockPage />} />
+            </Route>
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminLayout />}>
