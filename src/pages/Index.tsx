@@ -1,27 +1,25 @@
 
-import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
+import FeaturesSection from "@/components/FeaturesSection";
 import CalendarDesigns from "@/components/CalendarDesigns";
 import PersonalizeSection from "@/components/PersonalizeSection";
-import FeaturesSection from "@/components/FeaturesSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
+import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-darkBg">
+    <div className="min-h-screen">
       <Navbar />
-      <main className="flex-1">
-        <HeroSection />
-        <CalendarDesigns />
-        <PersonalizeSection />
-        <FeaturesSection />
-        <TestimonialsSection />
-        <FAQSection />
-        <CTASection />
-      </main>
+      <HeroSection />
+      <FeaturesSection />
+      <CalendarDesigns />
+      <PersonalizeSection />
+      <TestimonialsSection />
+      <FAQSection />
+      <CTASection />
       <Footer />
     </div>
   );
