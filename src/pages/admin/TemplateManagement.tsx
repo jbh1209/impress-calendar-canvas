@@ -57,22 +57,22 @@ const TemplateManagement = () => {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Template Management</h1>
-        <Button onClick={() => navigate("/admin/templates/create")}>
-          <FilePlus className="mr-2 h-4 w-4" />
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Template Management</h1>
+        <Button onClick={() => navigate("/admin/templates/create")} className="gap-2">
+          <FilePlus className="h-4 w-4" />
           Create Template
         </Button>
       </div>
 
-      <Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-8 text-center">Loading templates...</div>
+            <div className="p-8 text-center text-gray-600 dark:text-gray-300">Loading templates...</div>
           ) : templates.length === 0 ? (
             <div className="p-8 text-center">
-              <p className="text-muted-foreground mb-4">No templates found</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">No templates found</p>
               <Button onClick={() => navigate("/admin/templates/create")}>
                 Create your first template
               </Button>
@@ -80,20 +80,20 @@ const TemplateManagement = () => {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Preview</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="hidden md:table-cell">Category</TableHead>
-                  <TableHead className="hidden md:table-cell">Dimensions</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="border-gray-200 dark:border-gray-700">
+                  <TableHead className="text-gray-900 dark:text-white">Preview</TableHead>
+                  <TableHead className="text-gray-900 dark:text-white">Name</TableHead>
+                  <TableHead className="hidden md:table-cell text-gray-900 dark:text-white">Category</TableHead>
+                  <TableHead className="hidden md:table-cell text-gray-900 dark:text-white">Dimensions</TableHead>
+                  <TableHead className="text-gray-900 dark:text-white">Status</TableHead>
+                  <TableHead className="text-right text-gray-900 dark:text-white">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {templates.map((template) => (
-                  <TableRow key={template.id}>
+                  <TableRow key={template.id} className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                     <TableCell>
-                      <div className="w-16 h-16 overflow-hidden rounded">
+                      <div className="w-16 h-16 overflow-hidden rounded border border-gray-200 dark:border-gray-600">
                         <AspectRatio ratio={1}>
                           <img 
                             src={template.base_image_url || 'https://placehold.co/600x400/gray/white?text=No+Image'} 
@@ -103,14 +103,14 @@ const TemplateManagement = () => {
                         </AspectRatio>
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium text-gray-900 dark:text-white">
                       <div>{template.name}</div>
-                      <div className="text-sm text-muted-foreground md:hidden">{template.category}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 md:hidden">{template.category}</div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">{template.category}</TableCell>
-                    <TableCell className="hidden md:table-cell">{template.dimensions}</TableCell>
+                    <TableCell className="hidden md:table-cell text-gray-700 dark:text-gray-300">{template.category}</TableCell>
+                    <TableCell className="hidden md:table-cell text-gray-700 dark:text-gray-300">{template.dimensions}</TableCell>
                     <TableCell>
-                      <Badge variant={template.is_active ? "default" : "outline"}>
+                      <Badge variant={template.is_active ? "default" : "outline"} className={template.is_active ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-700 border-gray-300"}>
                         {template.is_active ? "Active" : "Draft"}
                       </Badge>
                     </TableCell>
@@ -119,6 +119,7 @@ const TemplateManagement = () => {
                         <Button 
                           variant="ghost" 
                           size="icon"
+                          className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => navigate(`/admin/templates/edit/${template.id}`)}
                         >
                           <Edit className="h-4 w-4" />
@@ -126,21 +127,21 @@ const TemplateManagement = () => {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700 hover:bg-red-50">
                               <Trash className="h-4 w-4" />
                               <span className="sr-only">Delete</span>
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
+                              <AlertDialogTitle className="text-gray-900 dark:text-white">Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-gray-600 dark:text-gray-300">
                                 This will permanently delete the template "{template.name}". This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteTemplate(template.id)}>Delete</AlertDialogAction>
+                              <AlertDialogCancel className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteTemplate(template.id)} className="bg-red-600 hover:bg-red-700 text-white">Delete</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>

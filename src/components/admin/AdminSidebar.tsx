@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -30,8 +31,8 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({
     className={cn(
       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
       isActive 
-        ? "bg-gray-800 text-white dark:bg-gray-700" 
-        : "text-gray-600 dark:text-gray-300 hover:bg-gray-700 hover:text-white"
+        ? "bg-blue-600 text-white shadow-sm" 
+        : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
     )}
   >
     {icon}
@@ -44,12 +45,12 @@ const AdminSidebar = () => {
   const path = location.pathname;
 
   return (
-    <div className="flex h-screen flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-      <div className="p-4 text-xl font-semibold border-b border-gray-200 dark:border-gray-700">
+    <div className="flex h-screen flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 w-64">
+      <div className="p-4 text-xl font-semibold border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white">
         Admin Dashboard
       </div>
-      <div className="flex-1 overflow-auto py-2">
-        <nav className="grid items-start px-2 text-sm font-medium gap-1">
+      <div className="flex-1 overflow-auto py-4">
+        <nav className="grid items-start px-3 text-sm font-medium gap-2">
           <SidebarLink
             to="/admin"
             icon={<LayoutDashboard className="h-4 w-4" />}

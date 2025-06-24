@@ -3,8 +3,9 @@ import React, { useState, useEffect } from "react";
 import { getUsersWithRoles, assignRole, removeRole, inviteAdmin } from "@/services/userService";
 import { UserTable } from "./UserTable";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import type { Enums } from "@/integrations/supabase/types"; // <-- Import Enums
+import type { Enums } from "@/integrations/supabase/types";
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState([]);
@@ -64,25 +65,37 @@ const UserManagement: React.FC = () => {
   };
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">User Management</h2>
-      <div className="flex mb-6 items-center gap-2">
-        <input
-          type="email"
-          placeholder="Invite new admin by email"
-          className="input px-2 py-1 border rounded"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-        />
-        <Button onClick={handleInvite} disabled={loading || !email}>Invite Admin</Button>
+    <div className="space-y-6">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white">User Management</h2>
+      
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Invite New Admin</h3>
+        <div className="flex gap-3 items-center">
+          <Input
+            type="email"
+            placeholder="Enter email address"
+            className="flex-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+          />
+          <Button onClick={handleInvite} disabled={loading || !email}>
+            {loading ? "Inviting..." : "Invite Admin"}
+          </Button>
+        </div>
       </div>
-      {loading ? <div>Loading…</div> :
-        <UserTable
-          users={users}
-          onAssignRole={handleAssignRole}
-          onRemoveRole={handleRemoveRole}
-          currentUserId={currentUserId}
-        />}
+
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        {loading && !users.length ? (
+          <div className="p-8 text-center text-gray-600 dark:text-gray-300">Loading users...</div>
+        ) : (
+          <UserTable
+            users={users}
+            onAssignRole={handleAssignRole}
+            onRemoveRole={handleRemoveRole}
+            currentUserId={currentUserId}
+          />
+        )}
+      </div>
     </div>
   );
 };
