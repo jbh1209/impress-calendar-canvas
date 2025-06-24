@@ -9,6 +9,7 @@ import ForgotPassword from "@/pages/auth/ForgotPassword";
 import NotFound from "@/pages/NotFound";
 import ShutterstockPage from "@/pages/ShutterstockPage";
 import CalendarCustomizer from "@/pages/CalendarCustomizer";
+import CustomerOrders from "@/pages/CustomerOrders";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import TemplateManagement from "@/pages/admin/TemplateManagement";
 import ProductManagement from "@/pages/admin/ProductManagement";

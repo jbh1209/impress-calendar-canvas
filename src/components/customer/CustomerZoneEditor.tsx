@@ -5,212 +5,259 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Image, Type, Upload, Palette, Settings } from "lucide-react";
+import { Canvas as FabricCanvas } from "fabric";
 import { TemplatePage } from "@/services/types/templateTypes";
-import { getZoneAssignmentsByPageId } from "@/services/zonePageAssignmentService";
-import { toast } from "sonner";
+import { Type, Image, Edit3, Trash2 } from "lucide-react";
 
-interface CustomerZoneEditorProps {
+export interface CustomerZoneEditorProps {
   activePage?: TemplatePage;
-  customerDesign: any;
-  setCustomerDesign: (design: any) => void;
+  customizations: any[];
+  onZoneUpdate: (zoneId: string, updates: any) => void;
+  fabricCanvasRef: React.MutableRefObject<FabricCanvas | null>;
 }
 
 const CustomerZoneEditor: React.FC<CustomerZoneEditorProps> = ({
   activePage,
-  customerDesign,
-  setCustomerDesign
+  customizations,
+  onZoneUpdate,
+  fabricCanvasRef
 }) => {
-  const [zoneAssignments, setZoneAssignments] = useState<any[]>([]);
-  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
-  const [textContent, setTextContent] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [selectedZone, setSelectedZone] = useState<any>(null);
+  const [editingContent, setEditingContent] = useState("");
+  const [editingType, setEditingType] = useState<"text" | "image">("text");
 
   useEffect(() => {
-    const loadZones = async () => {
-      if (!activePage) return;
-      
-      try {
-        const assignments = await getZoneAssignmentsByPageId(activePage.id);
-        setZoneAssignments(assignments);
-      } catch (error) {
-        console.error("Error loading zones:", error);
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    
+    // Listen for object selection on canvas
+    const handleSelection = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject && activeObject.data?.zoneId) {
+        const zoneId = activeObject.data.zoneId;
+        const customization = customizations.find(c => c.zoneId === zoneId);
+        setSelectedZone({ zoneId, ...customization });
+        setEditingContent(customization?.content || "");
+        setEditingType(customization?.type || "text");
+      } else {
+        setSelectedZone(null);
       }
     };
 
-    loadZones();
-  }, [activePage]);
+    canvas.on('selection:created', handleSelection);
+    canvas.on('selection:updated', handleSelection);
+    canvas.on('selection:cleared', () => setSelectedZone(null));
 
-  const pageDesign = activePage ? (customerDesign[activePage.id] || { zones: {}, customizations: {} }) : { zones: {}, customizations: {} };
-
-  const handleTextUpdate = (zoneId: string, content: string) => {
-    if (!activePage) return;
-
-    const updatedPageDesign = {
-      ...pageDesign,
-      zones: {
-        ...pageDesign.zones,
-        [zoneId]: {
-          ...pageDesign.zones[zoneId],
-          content: content,
-          type: 'text'
-        }
-      }
+    return () => {
+      canvas.off('selection:created', handleSelection);
+      canvas.off('selection:updated', handleSelection);
+      canvas.off('selection:cleared');
     };
+  }, [customizations, fabricCanvasRef]);
 
-    setCustomerDesign({
-      ...customerDesign,
-      [activePage.id]: updatedPageDesign
+  const handleContentUpdate = () => {
+    if (!selectedZone) return;
+
+    onZoneUpdate(selectedZone.zoneId, {
+      type: editingType,
+      content: editingContent,
+      x: selectedZone.x || 0,
+      y: selectedZone.y || 0,
+      width: selectedZone.width || 100,
+      height: selectedZone.height || 50
     });
 
-    toast.success("Text updated");
+    // Update the canvas object
+    if (fabricCanvasRef.current) {
+      const canvas = fabricCanvasRef.current;
+      const activeObject = canvas.getActiveObject();
+      if (activeObject && editingType === "text") {
+        activeObject.set('text', editingContent);
+        canvas.renderAll();
+      }
+    }
   };
 
-  const handleImageUpload = (zoneId: string, file: File) => {
-    if (!activePage) return;
-
-    // Create object URL for preview
-    const imageUrl = URL.createObjectURL(file);
-
-    const updatedPageDesign = {
-      ...pageDesign,
-      zones: {
-        ...pageDesign.zones,
-        [zoneId]: {
-          ...pageDesign.zones[zoneId],
-          imageUrl: imageUrl,
-          imageFile: file,
-          type: 'image'
-        }
-      }
-    };
-
-    setCustomerDesign({
-      ...customerDesign,
-      [activePage.id]: updatedPageDesign
+  const handleRemoveCustomization = () => {
+    if (!selectedZone) return;
+    
+    // Remove from customizations by setting content to empty
+    onZoneUpdate(selectedZone.zoneId, {
+      type: editingType,
+      content: "",
+      x: selectedZone.x || 0,
+      y: selectedZone.y || 0,
+      width: selectedZone.width || 100,
+      height: selectedZone.height || 50
     });
 
-    toast.success("Image uploaded");
+    // Remove from canvas
+    if (fabricCanvasRef.current) {
+      const canvas = fabricCanvasRef.current;
+      const activeObject = canvas.getActiveObject();
+      if (activeObject) {
+        canvas.remove(activeObject);
+        canvas.renderAll();
+      }
+    }
+
+    setSelectedZone(null);
   };
 
-  const getZoneType = (assignment: any) => {
-    // Default mapping - in a real app this would come from zone definitions
-    return assignment.is_repeating ? 'text' : 'image';
-  };
+  if (!activePage) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <div className="text-gray-500">Select a page to start editing</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className="h-fit">
-      <CardHeader>
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Settings className="h-4 w-4" />
-          Customize Your Calendar
-        </CardTitle>
-        {activePage && (
-          <div>
-            <Badge variant="outline" className="text-xs">
-              Page {activePage.page_number}
-            </Badge>
-          </div>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {zoneAssignments.length > 0 ? (
-          <Tabs defaultValue="zones" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="zones">Content</TabsTrigger>
-              <TabsTrigger value="style">Style</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="zones" className="space-y-4">
-              <div className="space-y-3">
-                <Label className="text-xs font-medium">Customizable Areas</Label>
-                
-                {zoneAssignments.map((assignment, index) => {
-                  const zoneType = getZoneType(assignment);
-                  const zoneContent = pageDesign.zones[assignment.id];
-                  
-                  return (
-                    <Card key={assignment.id} className="p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          {zoneType === 'image' ? (
-                            <Image className="h-3 w-3" />
-                          ) : (
-                            <Type className="h-3 w-3" />
-                          )}
-                          <span className="text-xs font-medium">
-                            Zone {index + 1}
-                          </span>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {zoneType}
-                        </Badge>
-                      </div>
-                      
-                      {zoneType === 'text' ? (
-                        <div className="space-y-2">
-                          <Textarea
-                            placeholder="Enter your text..."
-                            value={zoneContent?.content || ''}
-                            onChange={(e) => setTextContent(e.target.value)}
-                            className="text-xs min-h-[60px]"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => handleTextUpdate(assignment.id, textContent)}
-                            className="w-full h-7 text-xs"
-                          >
-                            Update Text
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                setImageFile(file);
-                                handleImageUpload(assignment.id, file);
-                              }
-                            }}
-                            className="text-xs h-8"
-                          />
-                          {zoneContent?.imageUrl && (
-                            <div className="text-xs text-green-600">
-                              ✓ Image uploaded
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </Card>
-                  );
-                })}
+    <div className="space-y-4">
+      {/* Zone Selection Info */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Edit3 className="h-4 w-4" />
+            Customization Zones
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {selectedZone ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Badge variant="secondary" className="mb-2">
+                    Zone Selected
+                  </Badge>
+                  <div className="text-sm text-gray-600">
+                    ID: {selectedZone.zoneId.slice(0, 8)}...
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRemoveCustomization}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="style" className="space-y-4">
-              <div className="text-center text-gray-500 text-xs py-8">
-                <Palette className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                Style customization coming soon!
-                <div className="text-xs mt-1">
-                  Font selection, colors, and effects
+
+              <Separator />
+
+              {/* Content Type Selection */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Content Type</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={editingType === "text" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setEditingType("text")}
+                    className="flex items-center gap-2"
+                  >
+                    <Type className="h-4 w-4" />
+                    Text
+                  </Button>
+                  <Button
+                    variant={editingType === "image" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setEditingType("image")}
+                    className="flex items-center gap-2"
+                  >
+                    <Image className="h-4 w-4" />
+                    Image
+                  </Button>
                 </div>
               </div>
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <div className="text-center text-gray-500 text-xs py-8">
-            <div className="text-sm mb-2">No customizable areas</div>
-            <div>This page doesn't have any zones to customize</div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+
+              {/* Content Editor */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  {editingType === "text" ? "Text Content" : "Image URL"}
+                </Label>
+                {editingType === "text" ? (
+                  <Textarea
+                    value={editingContent}
+                    onChange={(e) => setEditingContent(e.target.value)}
+                    placeholder="Enter your text here..."
+                    className="min-h-[80px]"
+                  />
+                ) : (
+                  <Input
+                    type="url"
+                    value={editingContent}
+                    onChange={(e) => setEditingContent(e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                )}
+              </div>
+
+              <Button 
+                onClick={handleContentUpdate}
+                className="w-full"
+                disabled={!editingContent.trim()}
+              >
+                Update Content
+              </Button>
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <Edit3 className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <div className="text-sm text-gray-500 mb-1">No zone selected</div>
+              <div className="text-xs text-gray-400">
+                Click on a highlighted zone in the canvas to edit it
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Active Customizations Summary */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Current Customizations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {customizations.length > 0 ? (
+            <div className="space-y-2">
+              {customizations.map((custom, index) => (
+                <div key={custom.zoneId || index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div className="flex items-center gap-2">
+                    {custom.type === "text" ? (
+                      <Type className="h-4 w-4 text-blue-600" />
+                    ) : (
+                      <Image className="h-4 w-4 text-green-600" />
+                    )}
+                    <span className="text-sm">
+                      {custom.content ? 
+                        (custom.content.length > 20 ? 
+                          `${custom.content.substring(0, 20)}...` : 
+                          custom.content
+                        ) : 
+                        'Empty'
+                      }
+                    </span>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {custom.type}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-sm text-gray-500 py-4">
+              No customizations yet
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
