@@ -1,86 +1,130 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingCart } from "lucide-react";
+import { Canvas as FabricCanvas } from "fabric";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import CustomerCanvas from "@/components/customer/CustomerCanvas";
-import CustomerZoneEditor from "@/components/customer/CustomerZoneEditor";
-import CustomerPageNavigator from "@/components/customer/CustomerPageNavigator";
 import { getTemplateById } from "@/services/templateService";
 import { getTemplatePages } from "@/services/templatePageService";
 import { Template, TemplatePage } from "@/services/types/templateTypes";
+import CustomerCanvas from "@/components/customer/CustomerCanvas";
+import CustomerZoneEditor from "@/components/customer/CustomerZoneEditor";
+import CustomerPageNavigator from "@/components/customer/CustomerPageNavigator";
+import CustomerOrderSummary from "@/components/customer/CustomerOrderSummary";
+import CustomerToolbar from "@/components/customer/CustomerToolbar";
 
 const CalendarCustomizer: React.FC = () => {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
+  const fabricCanvasRef = useRef<FabricCanvas | null>(null);
+  
   const [template, setTemplate] = useState<Template | null>(null);
   const [pages, setPages] = useState<TemplatePage[]>([]);
   const [activePageIndex, setActivePageIndex] = useState(0);
+  const [customizations, setCustomizations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [customerDesign, setCustomerDesign] = useState<any>({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const activePage = pages[activePageIndex];
 
   useEffect(() => {
-    const loadTemplateData = async () => {
-      if (!templateId) {
-        toast.error("No template specified");
-        navigate("/");
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        
-        // Load template and pages
-        const [templateData, pagesData] = await Promise.all([
-          getTemplateById(templateId),
-          getTemplatePages(templateId)
-        ]);
-
-        if (!templateData) {
-          toast.error("Template not found");
-          navigate("/");
-          return;
-        }
-
-        setTemplate(templateData);
-        setPages(pagesData);
-        
-        // Initialize customer design state
-        const initialDesign: any = {};
-        pagesData.forEach(page => {
-          initialDesign[page.id] = {
-            zones: {},
-            customizations: {}
-          };
-        });
-        setCustomerDesign(initialDesign);
-        
-      } catch (error) {
-        console.error("Error loading template:", error);
-        toast.error("Failed to load template");
-        navigate("/");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (!templateId) {
+      toast.error("Invalid template ID");
+      navigate('/');
+      return;
+    }
 
     loadTemplateData();
   }, [templateId, navigate]);
 
-  const handleAddToCart = () => {
-    // TODO: Implement cart functionality
-    toast.success("Added to cart! (Cart functionality coming soon)");
+  const loadTemplateData = async () => {
+    if (!templateId) return;
+    
+    setIsLoading(true);
+    try {
+      // Load template details
+      const templateData = await getTemplateById(templateId);
+      if (!templateData) {
+        toast.error("Template not found");
+        navigate('/');
+        return;
+      }
+
+      if (!templateData.is_active) {
+        toast.error("This template is not available for customization");
+        navigate('/');
+        return;
+      }
+
+      setTemplate(templateData);
+
+      // Load template pages
+      const templatePages = await getTemplatePages(templateId);
+      setPages(templatePages || []);
+      
+      // Initialize customizations array
+      const initialCustomizations = (templatePages || []).map(page => ({
+        pageId: page.id,
+        zones: []
+      }));
+      setCustomizations(initialCustomizations);
+
+    } catch (error) {
+      console.error("Error loading template data:", error);
+      toast.error("Failed to load template");
+      navigate('/');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSaveDesign = () => {
-    // TODO: Implement design saving
-    console.log("Saving customer design:", customerDesign);
-    toast.success("Design saved! (Save functionality coming soon)");
+  const handleZoneUpdate = (pageId: string, zoneId: string, updates: any) => {
+    setCustomizations(prev => {
+      const newCustomizations = prev.map(customization => {
+        if (customization.pageId === pageId) {
+          const updatedZones = customization.zones.map((zone: any) => 
+            zone.zoneId === zoneId ? { ...zone, ...updates } : zone
+          );
+          
+          // Add zone if it doesn't exist
+          if (!updatedZones.find((zone: any) => zone.zoneId === zoneId)) {
+            updatedZones.push({ zoneId, ...updates });
+          }
+          
+          return { ...customization, zones: updatedZones };
+        }
+        return customization;
+      });
+      
+      setHasUnsavedChanges(true);
+      return newCustomizations;
+    });
+  };
+
+  const handleSaveChanges = () => {
+    // In a real implementation, this would save to localStorage or send to server
+    console.log("Saving customizations:", customizations);
+    setHasUnsavedChanges(false);
+    toast.success("Changes saved!");
+  };
+
+  const handleResetChanges = () => {
+    const resetCustomizations = pages.map(page => ({
+      pageId: page.id,
+      zones: []
+    }));
+    setCustomizations(resetCustomizations);
+    setHasUnsavedChanges(false);
+    toast.success("Customizations reset!");
+  };
+
+  const handlePreview = () => {
+    // Show preview modal or navigate to preview page
+    toast.info("Preview feature coming soon!");
+  };
+
+  const getTotalCustomizations = () => {
+    return customizations.reduce((total, page) => total + page.zones.length, 0);
   };
 
   if (isLoading) {
@@ -88,111 +132,96 @@ const CalendarCustomizer: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-lg font-medium text-gray-700">Loading Calendar Designer...</div>
-          <div className="text-sm text-gray-500">Preparing your customization canvas</div>
+          <div className="text-lg font-medium text-gray-700 mb-2">Loading Calendar Editor...</div>
+          <div className="text-sm text-gray-500">Preparing your customization workspace</div>
         </div>
+      </div>
+    );
+  }
+
+  if (!template) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="text-lg font-medium text-gray-700 mb-2">Template Not Found</div>
+            <div className="text-sm text-gray-500 mb-4">The requested template could not be loaded.</div>
+            <button 
+              onClick={() => navigate('/')}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Back to Templates
+            </button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/")}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Templates
-              </Button>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">
-                  Customize: {template?.name}
-                </h1>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary">{template?.category}</Badge>
-                  {template?.dimensions && (
-                    <Badge variant="outline">{template.dimensions}</Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSaveDesign}
-              >
-                Save Design
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleAddToCart}
-                className="flex items-center gap-2"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                Add to Cart
-              </Button>
-            </div>
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        {/* Toolbar */}
+        <CustomerToolbar
+          templateName={template.name}
+          totalCustomizations={getTotalCustomizations()}
+          onPreview={handlePreview}
+          onSave={handleSaveChanges}
+          onReset={handleResetChanges}
+          hasUnsavedChanges={hasUnsavedChanges}
+        />
+
+        {/* Page Navigation */}
+        {pages.length > 1 && (
+          <div className="mb-4">
+            <CustomerPageNavigator
+              pages={pages}
+              activePageIndex={activePageIndex}
+              setActivePageIndex={setActivePageIndex}
+            />
+          </div>
+        )}
+
+        {/* Main Editor Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Canvas Area */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardContent className="p-6">
+                <CustomerCanvas
+                  template={template}
+                  activePage={activePage}
+                  customizations={customizations.find(c => c.pageId === activePage?.id)?.zones || []}
+                  onZoneUpdate={(zoneId, updates) => 
+                    activePage && handleZoneUpdate(activePage.id, zoneId, updates)
+                  }
+                  fabricCanvasRef={fabricCanvasRef}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Zone Editor */}
+          <div className="lg:col-span-1">
+            <CustomerZoneEditor
+              activePage={activePage}
+              customizations={customizations.find(c => c.pageId === activePage?.id)?.zones || []}
+              onZoneUpdate={(zoneId, updates) => 
+                activePage && handleZoneUpdate(activePage.id, zoneId, updates)
+              }
+              fabricCanvasRef={fabricCanvasRef}
+            />
+          </div>
+
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <CustomerOrderSummary
+              template={template}
+              customizations={customizations}
+              totalZones={getTotalCustomizations()}
+            />
           </div>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {pages.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Canvas Area */}
-            <div className="lg:col-span-3 space-y-4">
-              <CustomerPageNavigator
-                pages={pages}
-                activePageIndex={activePageIndex}
-                setActivePageIndex={setActivePageIndex}
-              />
-              
-              <Card>
-                <CardContent className="p-6">
-                  <CustomerCanvas
-                    template={template}
-                    activePage={activePage}
-                    customerDesign={customerDesign}
-                    setCustomerDesign={setCustomerDesign}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Editing Panel */}
-            <div className="lg:col-span-1">
-              <CustomerZoneEditor
-                activePage={activePage}
-                customerDesign={customerDesign}
-                setCustomerDesign={setCustomerDesign}
-              />
-            </div>
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <div className="text-lg text-gray-700 mb-2">
-                Template Not Ready
-              </div>
-              <div className="text-gray-500 mb-4">
-                This template hasn't been processed yet. Please try again later.
-              </div>
-              <Button onClick={() => navigate("/")} variant="outline">
-                Browse Other Templates
-              </Button>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );

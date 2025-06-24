@@ -43,6 +43,7 @@ function App() {
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/shutterstock" element={<ShutterstockPage />} />
+              <Route path="/orders" element={<CustomerOrders />} />
             </Route>
             
             {/* Admin Routes */}
