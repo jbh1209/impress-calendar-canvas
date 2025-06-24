@@ -1,9 +1,10 @@
 
-// Core template CRUD (get/save/delete/export), NO zone/product logic
+// Core template CRUD with clean data mapping and proper error handling
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Template, TemplateRow } from "./types/templateTypes";
+import { transformUIToDatabase, transformDatabaseToUI, UITemplateState } from "./utils/templateDataTransformer";
 
 /**
  * Get template by ID ONLY
@@ -23,7 +24,6 @@ export const getTemplateById = async (id: string): Promise<Template | null> => {
     }
     if (!template) return null;
 
-    // Just a simple cast.
     return template as TemplateRow;
   } catch (error) {
     console.error('Unexpected error fetching template:', error);
@@ -52,75 +52,80 @@ export const getAllTemplates = async (): Promise<TemplateRow[]> => {
 };
 
 /**
- * Save a template row (NO zones here)
+ * Save a template with clean data mapping
  */
 export const saveTemplate = async (
-  template: Partial<Template>
+  uiTemplate: UITemplateState & { id?: string }
 ): Promise<Template | null> => {
   try {
-    // Log user authentication
-    const user = await supabase.auth.getUser();
-    const userId = user.data.user?.id;
-    console.log("[saveTemplate] Auth state:", user);
+    console.log("[saveTemplate] Input UI template:", uiTemplate);
 
-    if (!userId) {
-      toast.error("You must be logged in to create a template.");
+    // Check authentication first
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user?.id) {
+      console.error("[saveTemplate] Auth error:", authError);
+      toast.error("You must be logged in to save a template.");
       return null;
     }
-    const isNewTemplate = !template.id;
 
-    // Only core template fields, default as needed
-    const dataToSave: any = {
-      name: template.name?.trim() || "Untitled Template",
-      category: template.category || "Corporate",
-      is_active:
-        typeof (template as any).isActive === "boolean"
-          ? (template as any).isActive
-          : typeof template.is_active === "boolean"
-            ? template.is_active
-            : false,
-      description: template.description || "",
-      dimensions: template.dimensions || "11x8.5",
-      base_image_url: template.base_image_url || null,
-      isActive: undefined,
-    };
-
-    if (isNewTemplate) {
-      dataToSave.created_by = userId;
+    // Validate required fields
+    if (!uiTemplate.name?.trim()) {
+      toast.error("Template name is required.");
+      return null;
     }
+
+    if (!uiTemplate.dimensions?.trim()) {
+      toast.error("Template dimensions are required.");
+      return null;
+    }
+
+    const isNewTemplate = !uiTemplate.id;
+
+    // Transform UI data to database format
+    const dbData = transformUIToDatabase(uiTemplate);
+    
+    // Add created_by for new templates
+    if (isNewTemplate) {
+      (dbData as any).created_by = user.id;
+    }
+
+    console.log("[saveTemplate] Database data to save:", dbData);
 
     let templateResult;
     if (isNewTemplate) {
-      console.log("[saveTemplate] Inserting new template:", dataToSave);
       templateResult = await supabase
         .from("templates")
-        .insert([dataToSave])
+        .insert([dbData])
         .select()
         .maybeSingle();
     } else {
-      console.log("[saveTemplate] Updating template:", { ...dataToSave, id: template.id });
       templateResult = await supabase
         .from("templates")
-        .update(dataToSave)
-        .eq("id", template.id!)
+        .update(dbData)
+        .eq("id", uiTemplate.id!)
         .select()
         .maybeSingle();
     }
+
     const { data, error } = templateResult;
 
     if (error) {
-      // Log full error object for debugging
-      console.error("[saveTemplate] Error saving template:", error);
-      toast.error("Failed to save template: " + error.message);
+      console.error("[saveTemplate] Database error:", error);
+      toast.error(`Failed to save template: ${error.message}`);
       return null;
     }
+
     if (!data) {
+      console.error("[saveTemplate] No data returned after save");
       toast.error("No data returned after saving template");
       return null;
     }
+
+    console.log("[saveTemplate] Successfully saved:", data);
+    toast.success(isNewTemplate ? "Template created successfully!" : "Template updated successfully!");
     return data as Template;
   } catch (error) {
-    console.error("[saveTemplate] Unexpected error saving template:", error);
+    console.error("[saveTemplate] Unexpected error:", error);
     toast.error("An unexpected error occurred while saving");
     return null;
   }
@@ -158,4 +163,3 @@ export const exportTemplateAsJson = async (id: string): Promise<string | null> =
 };
 
 export type { Template, CustomizationZone } from "./types/templateTypes";
-

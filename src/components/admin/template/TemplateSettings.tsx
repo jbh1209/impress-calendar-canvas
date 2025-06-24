@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { toast } from "sonner";
 import TemplateSettingsPanelFrame from "./TemplateSettingsPanelFrame";
@@ -6,6 +7,7 @@ import TemplateDimensionsSection from "./TemplateDimensionsSection";
 import TemplateBleedSection from "./TemplateBleedSection";
 import TemplateStatusAndCategorySection from "./TemplateStatusAndCategorySection";
 import SectionPanel from "./SectionPanel";
+import { saveTemplate } from "@/services/templateService";
 
 const DEFAULT_BLEED = { top: 0.125, right: 0.125, bottom: 0.125, left: 0.125, units: "in" };
 
@@ -16,7 +18,6 @@ export default function TemplateSettings({
   templateId,
   setTemplateId
 }) {
-  // Responsive units state lives here, but can be refactored to context if needed.
   const [units, setUnits] = useState(template.units || "in");
   const [bleed, setBleed] = useState(template.bleed || { ...DEFAULT_BLEED });
   const [isSaving, setIsSaving] = useState(false);
@@ -38,26 +39,36 @@ export default function TemplateSettings({
 
   async function handleSaveTemplate(e) {
     e?.preventDefault?.();
+    
+    console.log("[TemplateSettings] Starting save with template:", template);
+    
     const validationErr = validateTemplate(template);
     setErrorMsg(validationErr || null);
     if (validationErr) {
       toast.error(validationErr);
       return;
     }
+
     setIsSaving(true);
     try {
-      // NOTE: saveTemplate must be imported from your service layer!
-      const { saveTemplate } = await import("@/services/templateService");
-      const result = await saveTemplate({ ...template, id: templateId });
+      // Prepare template data for saving (exclude UI-only fields)
+      const templateToSave = {
+        ...template,
+        id: templateId,
+      };
+      
+      console.log("[TemplateSettings] Saving template:", templateToSave);
+      
+      const result = await saveTemplate(templateToSave);
       if (result) {
-        toast.success("Template saved!");
+        console.log("[TemplateSettings] Save successful:", result);
+        // Set template ID for new templates
         if (!templateId && setTemplateId) {
           setTemplateId(result.id);
         }
-      } else {
-        toast.error("Failed to save template.");
       }
-    } catch (e) {
+    } catch (error) {
+      console.error("[TemplateSettings] Save error:", error);
       toast.error("Error saving template.");
     }
     setIsSaving(false);
