@@ -1,7 +1,7 @@
 
 import { Canvas as FabricCanvas } from "fabric";
 import Canvas from "./Canvas";
-import ZoneManager from "./ZoneManager";
+import AdvancedZoneManager from "./AdvancedZoneManager";
 import { Template, TemplatePage } from "@/services/types/templateTypes";
 
 interface TemplateCanvasProps {
@@ -22,8 +22,8 @@ const TemplateCanvas = (props: TemplateCanvasProps) => {
         {props.isLoading ? (
           <div className="w-full h-[600px] bg-gray-100 animate-pulse flex items-center justify-center rounded-lg">
             <div className="text-center">
-              <div className="text-lg font-medium text-gray-600 mb-2">Loading Editor...</div>
-              <div className="text-sm text-gray-500">Preparing canvas for page editing</div>
+              <div className="text-lg font-medium text-gray-600 mb-2">Loading Vector Editor...</div>
+              <div className="text-sm text-gray-500">Preparing canvas for high-quality template editing</div>
             </div>
           </div>
         ) : (
@@ -31,11 +31,12 @@ const TemplateCanvas = (props: TemplateCanvasProps) => {
         )}
       </div>
       
-      {/* Side Panel with Zone Management */}
+      {/* Advanced Zone Management Panel */}
       <div className="lg:col-span-1 space-y-4">
-        <ZoneManager 
+        <AdvancedZoneManager 
           fabricCanvasRef={props.fabricCanvasRef} 
           activePage={props.activePage}
+          templateId={props.templateId}
         />
       </div>
     </div>
