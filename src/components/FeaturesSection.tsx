@@ -5,8 +5,8 @@ const FeaturesSection = () => {
   return (
     <div className="py-16 bg-darkBg">
       <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-3">Premium Calendar Features</h2>
-        <p className="text-gray-400 text-center max-w-3xl mx-auto mb-12 text-lg">
+        <h2 className="text-4xl font-bold text-center mb-3 text-white">Premium Calendar Features</h2>
+        <p className="text-gray-300 text-center max-w-3xl mx-auto mb-12 text-lg">
           Our A2 Landscape Wire Bound Calendars combine quality materials with 
           professional design for the perfect business calendar.
         </p>
@@ -64,8 +64,8 @@ const FeatureCard = ({
       
       {/* Content */}
       <div className="relative z-10">
-        <h3 className="text-xl font-semibold mb-2">{title}</h3>
-        <p className="text-gray-400 text-sm">{description}</p>
+        <h3 className="text-xl font-semibold mb-2 text-white">{title}</h3>
+        <p className="text-gray-300 text-sm">{description}</p>
       </div>
     </div>
   );

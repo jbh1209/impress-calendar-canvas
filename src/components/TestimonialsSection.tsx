@@ -29,8 +29,8 @@ const TestimonialsSection = () => {
   return (
     <div className="py-16 bg-darkBg">
       <div className="container mx-auto px-4">
-        <h2 className="section-title text-center">What Our Customers Say</h2>
-        <p className="section-subtitle text-center">
+        <h2 className="text-2xl md:text-3xl font-bold mb-2 text-center text-white">What Our Customers Say</h2>
+        <p className="text-gray-300 mb-10 text-center">
           From personal users to major corporations, here's what people are saying about our premium calendars
         </p>
         
@@ -51,7 +51,7 @@ const TestimonialsSection = () => {
                   <span className="font-bold text-black">{testimonial.author.charAt(0)}</span>
                 </div>
                 <div>
-                  <p className="font-medium">{testimonial.author}</p>
+                  <p className="font-medium text-white">{testimonial.author}</p>
                   <p className="text-sm text-gray-400">{testimonial.position}</p>
                 </div>
               </div>

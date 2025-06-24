@@ -7,11 +7,11 @@ const HeroSection = () => {
     <div className="bg-darkBg py-16 md:py-24 relative">
       <div className="container mx-auto px-6 grid md:grid-cols-2 gap-8 items-center">
         <div className="z-10">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight leading-none">
+          <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight leading-none text-white">
             Premium A2 Landscape<br />
             Wire Bound Calendars
           </h1>
-          <p className="text-gray-400 text-lg mb-8 max-w-md leading-relaxed">
+          <p className="text-gray-300 text-lg mb-8 max-w-md leading-relaxed">
             Personalize your business calendar with high-quality prints that make a
             lasting impression all year round.
           </p>

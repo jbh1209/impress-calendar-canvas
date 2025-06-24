@@ -102,18 +102,36 @@
   }
   
   .outline-button {
-    @apply border border-current text-current font-medium py-2 px-4 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-all;
+    @apply border border-white text-white font-medium py-2 px-4 rounded hover:bg-white/10 transition-all;
   }
   
   .section-title {
-    @apply text-2xl md:text-3xl font-bold mb-2;
+    @apply text-2xl md:text-3xl font-bold mb-2 text-white;
   }
   
   .section-subtitle {
-    @apply text-muted-foreground mb-10;
+    @apply text-gray-300 mb-10;
   }
   
   .feature-icon {
     @apply w-10 h-10 mb-4 text-goldAccent;
+  }
+
+  /* Admin-specific styles to prevent global interference */
+  .admin-content {
+    @apply text-gray-900 dark:text-white;
+  }
+  
+  .admin-content h1,
+  .admin-content h2,
+  .admin-content h3,
+  .admin-content h4,
+  .admin-content h5,
+  .admin-content h6 {
+    @apply text-gray-900 dark:text-white;
+  }
+  
+  .admin-content p {
+    @apply text-gray-600 dark:text-gray-300;
   }
 }

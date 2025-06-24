@@ -39,8 +39,8 @@ const FAQSection = () => {
   return (
     <div className="py-16 bg-darkSecondary">
       <div className="container mx-auto px-4">
-        <h2 className="section-title text-center">Frequently Asked Questions</h2>
-        <p className="section-subtitle text-center">
+        <h2 className="text-2xl md:text-3xl font-bold mb-2 text-center text-white">Frequently Asked Questions</h2>
+        <p className="text-gray-300 mb-10 text-center">
           Find answers to common questions about our products, ordering process, and delivery options
         </p>
         
@@ -54,13 +54,13 @@ const FAQSection = () => {
                 className="w-full flex justify-between items-center py-4 text-left focus:outline-none"
                 onClick={() => toggleFAQ(index)}
               >
-                <h3 className="font-medium">{faq.question}</h3>
+                <h3 className="font-medium text-white">{faq.question}</h3>
                 <ChevronRight 
-                  className={`h-5 w-5 transition-transform ${openIndex === index ? 'transform rotate-90' : ''}`} 
+                  className={`h-5 w-5 transition-transform text-white ${openIndex === index ? 'transform rotate-90' : ''}`} 
                 />
               </button>
               {openIndex === index && (
-                <div className="pb-4 text-gray-400">
+                <div className="pb-4 text-gray-300">
                   {faq.answer}
                 </div>
               )}

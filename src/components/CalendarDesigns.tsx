@@ -34,8 +34,8 @@ const CalendarDesigns = () => {
   return (
     <div className="py-16 bg-darkSecondary">
       <div className="container mx-auto px-4">
-        <h2 className="section-title text-center">Choose Your Perfect Calendar Design</h2>
-        <p className="section-subtitle text-center">
+        <h2 className="text-2xl md:text-3xl font-bold mb-2 text-center text-white">Choose Your Perfect Calendar Design</h2>
+        <p className="text-gray-300 mb-10 text-center">
           Premium calendars with elegant designs, ready to be personalized to fit your style
         </p>
         
@@ -71,54 +71,54 @@ const CalendarDesigns = () => {
                 className="w-full h-64 object-cover rounded-lg"
               />
               <div className="mt-4 bg-darkBg p-4 rounded-lg">
-                <h3 className="text-xl font-semibold">{designs[activeDesign]?.name || "Corporate Elegance"}</h3>
-                <p className="text-gray-400 mt-1">Perfect for corporate gifting and modern offices</p>
+                <h3 className="text-xl font-semibold text-white">{designs[activeDesign]?.name || "Corporate Elegance"}</h3>
+                <p className="text-gray-300 mt-1">Perfect for corporate gifting and modern offices</p>
               </div>
             </div>
             
             <div className="bg-darkBg p-6 rounded-lg">
               <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-semibold">{designs[activeDesign]?.name || "Corporate Elegance"}</h3>
-                <span className="text-xl font-bold">{designs[activeDesign]?.price || "R799.95"}</span>
+                <h3 className="text-xl font-semibold text-white">{designs[activeDesign]?.name || "Corporate Elegance"}</h3>
+                <span className="text-xl font-bold text-white">{designs[activeDesign]?.price || "R799.95"}</span>
               </div>
-              <p className="text-gray-400 mb-6">{designs[activeDesign]?.description || "A classic luxury design perfect for corporate gifting. Features a sleek, modern look."}</p>
+              <p className="text-gray-300 mb-6">{designs[activeDesign]?.description || "A classic luxury design perfect for corporate gifting. Features a sleek, modern look."}</p>
               
-              <h4 className="font-medium mb-4">Features:</h4>
+              <h4 className="font-medium mb-4 text-white">Features:</h4>
               <ul className="space-y-2 mb-8">
                 {designs[activeDesign]?.features?.map((feature, index) => (
                   <li key={index} className="flex items-start">
                     <Check className="h-5 w-5 text-goldAccent mr-2 mt-0.5" />
-                    <span>{feature}</span>
+                    <span className="text-gray-300">{feature}</span>
                   </li>
                 )) || (
                   <>
                     <li className="flex items-start">
                       <Check className="h-5 w-5 text-goldAccent mr-2 mt-0.5" />
-                      <span>A3 premium matte paper</span>
+                      <span className="text-gray-300">A3 premium matte paper</span>
                     </li>
                     <li className="flex items-start">
                       <Check className="h-5 w-5 text-goldAccent mr-2 mt-0.5" />
-                      <span>High-quality spiral binding</span>
+                      <span className="text-gray-300">High-quality spiral binding</span>
                     </li>
                     <li className="flex items-start">
                       <Check className="h-5 w-5 text-goldAccent mr-2 mt-0.5" />
-                      <span>Premium card stock covers</span>
+                      <span className="text-gray-300">Premium card stock covers</span>
                     </li>
                     <li className="flex items-start">
                       <Check className="h-5 w-5 text-goldAccent mr-2 mt-0.5" />
-                      <span>12 months (Jan to Dec)</span>
+                      <span className="text-gray-300">12 months (Jan to Dec)</span>
                     </li>
                     <li className="flex items-start">
                       <Check className="h-5 w-5 text-goldAccent mr-2 mt-0.5" />
-                      <span>Each calendar is handmade</span>
+                      <span className="text-gray-300">Each calendar is handmade</span>
                     </li>
                   </>
                 )}
               </ul>
               
               <div className="flex gap-4">
-                <button className="gold-button">Customize This Design</button>
-                <Link to="/designs" className="outline-button">View All</Link>
+                <button className="bg-goldAccent text-black font-medium py-2 px-4 rounded hover:opacity-90 transition-opacity">Customize This Design</button>
+                <Link to="/designs" className="border border-white text-white font-medium py-2 px-4 rounded hover:bg-white/10 transition-all">View All</Link>
               </div>
             </div>
           </div>
