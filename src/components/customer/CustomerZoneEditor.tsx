@@ -36,8 +36,9 @@ const CustomerZoneEditor: React.FC<CustomerZoneEditorProps> = ({
     // Listen for object selection on canvas
     const handleSelection = () => {
       const activeObject = canvas.getActiveObject();
-      if (activeObject && activeObject.data?.zoneId) {
-        const zoneId = activeObject.data.zoneId;
+      if (activeObject && activeObject.get('customProps' as any)?.zoneId) {
+        const customProps = activeObject.get('customProps' as any);
+        const zoneId = customProps.zoneId;
         const customization = customizations.find(c => c.zoneId === zoneId);
         setSelectedZone({ zoneId, ...customization });
         setEditingContent(customization?.content || "");

@@ -3,6 +3,96 @@ import { Canvas, Group, Rect, Text as FabricText, Image as FabricImage } from "f
 import { ZonePageAssignment, TemplatePage } from "@/services/types/templateTypes";
 import { vectorToCanvasCoordinates } from "@/components/admin/template/utils/zoneUtils";
 
+export const setupCanvas = (canvas: Canvas, onZoneUpdate: (zoneId: string, updates: any) => void) => {
+  // Set up canvas event listeners for customer interactions
+  canvas.on('object:modified', (e) => {
+    const obj = e.target;
+    if (obj && obj.get('customProps' as any)?.zoneId) {
+      const zoneId = obj.get('customProps' as any).zoneId;
+      const updates = {
+        x: obj.left || 0,
+        y: obj.top || 0,
+        width: (obj.width || 0) * (obj.scaleX || 1),
+        height: (obj.height || 0) * (obj.scaleY || 1)
+      };
+      onZoneUpdate(zoneId, updates);
+    }
+  });
+
+  // Enable selection and interaction
+  canvas.selection = true;
+  canvas.preserveObjectStacking = true;
+};
+
+export const loadPageBackground = async (canvas: Canvas, backgroundImageUrl: string) => {
+  try {
+    const img = await FabricImage.fromURL(backgroundImageUrl, {
+      crossOrigin: 'anonymous',
+    });
+
+    // Scale image to fit canvas
+    const canvasWidth = canvas.width || 800;
+    const canvasHeight = canvas.height || 600;
+    const scaleX = canvasWidth / (img.width || 1);
+    const scaleY = canvasHeight / (img.height || 1);
+    const scale = Math.min(scaleX, scaleY);
+
+    img.scale(scale);
+    img.set({
+      left: 0,
+      top: 0,
+      selectable: false,
+      evented: false,
+    });
+
+    // Add as background
+    canvas.backgroundImage = img;
+    canvas.renderAll();
+  } catch (error) {
+    console.error("Error loading page background:", error);
+  }
+};
+
+export const loadCustomizationZones = async (
+  canvas: Canvas,
+  templateId: string,
+  pageId: string,
+  customizations: any[]
+) => {
+  // This would typically load zone assignments from the database
+  // For now, we'll use a placeholder implementation
+  console.log("Loading customization zones for page:", pageId);
+  
+  // Clear existing zones
+  const existingZones = canvas.getObjects().filter(obj => 
+    obj.get('customProps' as any)?.isCustomerContent
+  );
+  existingZones.forEach(obj => canvas.remove(obj));
+
+  // Apply customizations to zones
+  customizations.forEach(customization => {
+    if (customization.type === 'text' && customization.content) {
+      const text = new FabricText(customization.content, {
+        left: customization.x || 100,
+        top: customization.y || 100,
+        fontSize: 16,
+        fill: '#000000',
+        selectable: true,
+      });
+
+      text.set('customProps', {
+        isCustomerContent: true,
+        zoneId: customization.zoneId,
+        contentType: 'text'
+      });
+
+      canvas.add(text);
+    }
+  });
+
+  canvas.renderAll();
+};
+
 export const renderCustomerZones = async (
   canvas: Canvas,
   zoneAssignments: ZonePageAssignment[],

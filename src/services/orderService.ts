@@ -38,14 +38,15 @@ export const createOrder = async (orderData: {
       return null;
     }
 
-    // Use the raw query approach to avoid TypeScript issues with the generated types
-    const { data, error } = await supabase
-      .rpc('create_order', {
+    // Use the Supabase function to create the order
+    const { data, error } = await supabase.functions.invoke('create-order', {
+      body: {
         p_user_id: user.id,
         p_template_id: orderData.templateId,
         p_total_amount: orderData.totalAmount,
         p_customization_data: orderData.customizationData
-      });
+      }
+    });
 
     if (error) {
       console.error("Error creating order:", error);
@@ -72,9 +73,10 @@ export const getUserOrders = async (): Promise<Order[]> => {
       return [];
     }
 
-    // Use raw query to get orders
-    const { data, error } = await supabase
-      .rpc('get_user_orders', { p_user_id: user.id });
+    // Use the Supabase function to get orders
+    const { data, error } = await supabase.functions.invoke('get-user-orders', {
+      body: { p_user_id: user.id }
+    });
 
     if (error) {
       console.error("Error fetching orders:", error);
@@ -98,12 +100,13 @@ export const updateOrderStatus = async (
   pdfUrl?: string
 ): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .rpc('update_order_status', {
+    const { error } = await supabase.functions.invoke('update-order-status', {
+      body: {
         p_order_id: orderId,
         p_status: status,
         p_pdf_url: pdfUrl
-      });
+      }
+    });
 
     if (error) {
       console.error("Error updating order status:", error);
