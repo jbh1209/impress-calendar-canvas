@@ -48,12 +48,13 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
         setIsUploading(false);
         setUploadProgress(null);
         if (req.status >= 200 && req.status < 300) {
-          toast.success("PDF uploaded! Pages are being processed.");
+          const response = JSON.parse(req.responseText);
+          toast.success(`PDF processed! ${response.pagesCreated} pages ready for zone editing.`);
           if (onProcessingComplete) onProcessingComplete();
         } else {
           try {
             const { error } = JSON.parse(req.responseText);
-            toast.error(error || "An error occurred.");
+            toast.error(error || "An error occurred during PDF processing.");
           } catch {
             toast.error("An error occurred during PDF upload.");
           }
@@ -64,13 +65,13 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
       req.onerror = () => {
         setIsUploading(false);
         setUploadProgress(null);
-        toast.error("An error occurred while uploading.");
+        toast.error("An error occurred while uploading the PDF.");
         if (fileInputRef.current) fileInputRef.current.value = "";
       };
 
       req.send(formData);
     } catch (error: any) {
-      toast.error(error.message || "An error occurred.");
+      toast.error(error.message || "An error occurred during PDF processing.");
       setIsUploading(false);
       setUploadProgress(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -110,7 +111,7 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
       tabIndex={0}  // for accessibility
     >
       <label className="font-semibold mb-1 text-sm">
-        Upload New PDF Template
+        Upload Vector PDF Template
       </label>
       <input
         type="file"
@@ -128,15 +129,17 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
       >
         {isUploading
           ? uploadProgress !== null
-            ? `Uploading (${uploadProgress}%)...`
-            : "Uploading..."
-          : "Select PDF"}
+            ? `Processing (${uploadProgress}%)...`
+            : "Processing..."
+          : "Select Vector PDF"}
       </Button>
       <div className="text-xs text-muted-foreground mt-2">
-        <span>
-          (Each page will appear in the page navigator after upload.
-          <span className="ml-1">You may also drag and drop a PDF here.)</span>
-        </span>
+        <div className="space-y-1">
+          <p>📄 Upload your PDF template to preserve vector quality for print-ready output.</p>
+          <p>🎯 Each page will become editable with customizable zones for user content.</p>
+          <p>✨ Original vector format maintained for crisp text and graphics.</p>
+          <span className="text-blue-600">You may also drag and drop a PDF here.</span>
+        </div>
       </div>
     </div>
   );

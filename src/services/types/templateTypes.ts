@@ -1,3 +1,4 @@
+
 // Shared type definitions for templates and customization zones
 
 export interface CustomizationZone {
@@ -22,6 +23,14 @@ export interface Template {
   dimensions: string | null;
   created_at: string;
   created_by?: string | null;
+  original_pdf_url?: string | null;
+  pdf_metadata?: {
+    pageCount?: number;
+    originalFileName?: string;
+    fileSize?: number;
+    units?: string;
+    processingDate?: string;
+  } | null;
   customization_zones?: CustomizationZone[];
   products?: Array<{
     product_id: string;
@@ -44,6 +53,8 @@ export interface TemplateRow {
   created_at: string;
   created_by: string | null;
   updated_at: string;
+  original_pdf_url?: string | null;
+  pdf_metadata?: any | null;
 }
 
 export interface ZoneRow {
@@ -60,12 +71,15 @@ export interface ZoneRow {
   updated_at: string;
 }
 
-// Add TemplatePage type
+// Add TemplatePage type with PDF dimensions
 export interface TemplatePage {
   id: string;
   template_id: string;
   page_number: number;
   preview_image_url: string | null;
+  pdf_page_width?: number | null;
+  pdf_page_height?: number | null;
+  pdf_units?: string | null;
   created_at: string;
   updated_at: string;
 }

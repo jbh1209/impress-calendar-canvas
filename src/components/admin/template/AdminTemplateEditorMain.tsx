@@ -3,9 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import TemplatePageNavigator from "@/components/admin/template/TemplatePageNavigator";
 import TemplateCanvas from "@/components/admin/template/TemplateCanvas";
 import PdfUploadSection from "@/components/admin/template/PdfUploadSection";
+import PdfMetadataDisplay from "@/components/admin/template/PdfMetadataDisplay";
 import { getTemplatePages } from "@/services/templatePageService";
 import { useRef, useEffect, useState } from "react";
-import { Canvas } from "fabric"; // <-- Correct import
+import { Canvas } from "fabric";
 
 const AdminTemplateEditorMain = ({
   mode,
@@ -16,7 +17,7 @@ const AdminTemplateEditorMain = ({
 }) => {
   const [pages, setPages] = useState([]);
   const [activePageIndex, setActivePageIndex] = useState(0);
-  const fabricCanvasRef = useRef<Canvas | null>(null); // <-- Use Canvas
+  const fabricCanvasRef = useRef<Canvas | null>(null);
 
   useEffect(() => {
     if (mode === "edit" && templateId) {
@@ -29,6 +30,12 @@ const AdminTemplateEditorMain = ({
 
   return (
     <>
+      {/* Show PDF metadata if we have a processed PDF */}
+      <PdfMetadataDisplay 
+        templateData={templateData} 
+        isVisible={mode === "edit" && !!templateData}
+      />
+
       {mode === "edit" && templateId && (
         <PdfUploadSection
           templateId={templateId}
@@ -64,15 +71,15 @@ const AdminTemplateEditorMain = ({
           <CardContent className="p-16 text-center">
             <div className="text-lg text-gray-700 mb-2 font-medium">
               {mode === "edit"
-                ? "No pages yet"
+                ? "Ready for PDF Upload"
                 : "Set template details and save to start"}
             </div>
             <div className="text-gray-500 mb-4">
               {mode === "edit"
-                ? "Upload a PDF to generate pages."
+                ? "Upload a vector PDF to start defining customization zones."
                 : "Enter required info, then save to create your new template."}
             </div>
-            <span role="img" aria-label="PDF">
+            <span role="img" aria-label="PDF" className="text-4xl">
               📄
             </span>
           </CardContent>
@@ -83,4 +90,3 @@ const AdminTemplateEditorMain = ({
 };
 
 export default AdminTemplateEditorMain;
-

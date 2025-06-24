@@ -323,6 +323,9 @@ export type Database = {
           created_at: string
           id: string
           page_number: number
+          pdf_page_height: number | null
+          pdf_page_width: number | null
+          pdf_units: string | null
           preview_image_url: string | null
           template_id: string
           updated_at: string
@@ -331,6 +334,9 @@ export type Database = {
           created_at?: string
           id?: string
           page_number: number
+          pdf_page_height?: number | null
+          pdf_page_width?: number | null
+          pdf_units?: string | null
           preview_image_url?: string | null
           template_id: string
           updated_at?: string
@@ -339,6 +345,9 @@ export type Database = {
           created_at?: string
           id?: string
           page_number?: number
+          pdf_page_height?: number | null
+          pdf_page_width?: number | null
+          pdf_units?: string | null
           preview_image_url?: string | null
           template_id?: string
           updated_at?: string
@@ -364,6 +373,8 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          original_pdf_url: string | null
+          pdf_metadata: Json | null
           updated_at: string
         }
         Insert: {
@@ -376,6 +387,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          original_pdf_url?: string | null
+          pdf_metadata?: Json | null
           updated_at?: string
         }
         Update: {
@@ -388,6 +401,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          original_pdf_url?: string | null
+          pdf_metadata?: Json | null
           updated_at?: string
         }
         Relationships: []
