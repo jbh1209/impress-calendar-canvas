@@ -1,25 +1,26 @@
 
 import { ReactNode } from "react";
 
-// Visual wrapper for each section/block in the template editor
-export default function SectionPanel({
-  title,
-  description,
-  children
-}: {
+interface SectionPanelProps {
   title: string;
   description?: string;
   children: ReactNode;
-}) {
-  return (
-    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 sm:px-8 py-8 flex flex-col gap-4 relative">
-      <header className="mb-2">
-        <h2 className="font-bold text-lg md:text-xl text-slate-900 tracking-tight">{title}</h2>
-        {description && (
-          <p className="text-sm text-gray-400 mt-1">{description}</p>
-        )}
-      </header>
-      {children}
-    </section>
-  );
 }
+
+const SectionPanel = ({ title, description, children }: SectionPanelProps) => {
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+        {description && (
+          <p className="text-xs text-gray-600">{description}</p>
+        )}
+      </div>
+      <div className="space-y-3">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+export default SectionPanel;
