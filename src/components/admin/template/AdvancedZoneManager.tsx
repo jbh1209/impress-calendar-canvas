@@ -26,6 +26,7 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
   const [zones, setZones] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("create");
+  const [previewError, setPreviewError] = useState(false);
 
   const refreshZones = useCallback(() => {
     if (!fabricCanvasRef.current) return;
@@ -145,6 +146,11 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
     setSelectedZone(zone);
   }, [fabricCanvasRef]);
 
+  // Handle preview image error
+  const handlePreviewError = () => {
+    setPreviewError(true);
+  };
+
   return (
     <div className="h-full flex flex-col bg-gray-50">
       <AdvancedZoneManagerHeader 
@@ -153,19 +159,36 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
       />
       
       {/* PDF Preview */}
-      {activePage?.preview_image_url && (
+      {activePage && (
         <div className="p-4 bg-white border-b border-gray-200">
           <div className="text-xs font-medium text-gray-700 mb-2">PDF Preview</div>
           <div className="relative">
-            <img 
-              src={activePage.preview_image_url} 
-              alt={`Page ${activePage.page_number} preview`}
-              className="w-full h-32 object-contain bg-gray-50 rounded border"
-            />
-            <div className="absolute inset-0 bg-blue-500 bg-opacity-10 rounded border border-blue-300 border-dashed"></div>
+            {activePage.preview_image_url && !previewError ? (
+              <img 
+                src={activePage.preview_image_url} 
+                alt={`Page ${activePage.page_number} preview`}
+                className="w-full h-40 object-contain bg-white border rounded shadow-sm"
+                onError={handlePreviewError}
+                onLoad={() => setPreviewError(false)}
+              />
+            ) : (
+              <div className="w-full h-40 bg-gray-100 border rounded flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <div className="text-sm font-medium">PDF Preview</div>
+                  <div className="text-xs">Page {activePage.page_number}</div>
+                  {activePage.pdf_page_width && activePage.pdf_page_height && (
+                    <div className="text-xs mt-1">
+                      {Math.round(activePage.pdf_page_width * 0.352778)} × {Math.round(activePage.pdf_page_height * 0.352778)} mm
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {/* Zone placement overlay */}
+            <div className="absolute inset-0 bg-blue-500 bg-opacity-5 rounded border border-blue-200 border-dashed pointer-events-none"></div>
           </div>
           <div className="text-xs text-gray-500 mt-1">
-            Zone placement preview - drag zones on the canvas above
+            Zone placement reference - position zones on the canvas to match this layout
           </div>
         </div>
       )}

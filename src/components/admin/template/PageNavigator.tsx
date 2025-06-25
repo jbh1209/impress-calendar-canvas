@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TemplatePage } from "@/services/types/templateTypes";
 import { FileText, Eye } from "lucide-react";
+import { formatDimensions } from "./utils/unitConversions";
 
 interface PageNavigatorProps {
   pages: TemplatePage[];
@@ -56,7 +57,11 @@ const PageNavigator: React.FC<PageNavigatorProps> = ({
           </div>
           {activePage.pdf_page_width && activePage.pdf_page_height && (
             <span className="text-gray-500">
-              {activePage.pdf_page_width} × {activePage.pdf_page_height} {activePage.pdf_units || 'pt'}
+              {formatDimensions(
+                activePage.pdf_page_width, 
+                activePage.pdf_page_height, 
+                activePage.pdf_units || 'pt'
+              )}
             </span>
           )}
         </div>
