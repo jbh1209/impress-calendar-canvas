@@ -27,22 +27,22 @@ const ZoneCreationTab: React.FC<ZoneCreationTabProps> = ({
   onAddZone
 }) => {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <div>
-        <Label htmlFor="zone-name" className="text-xs">Zone Name</Label>
+        <Label htmlFor="zone-name" className="text-xs leading-tight">Name</Label>
         <Input
           id="zone-name"
           placeholder="Zone name..."
           value={zoneName}
           onChange={(e) => setZoneName(e.target.value)}
-          className="h-7 text-xs"
+          className="h-6 text-xs px-1.5"
         />
       </div>
       
       <div>
-        <Label className="text-xs">Type</Label>
+        <Label className="text-xs leading-tight">Type</Label>
         <Select value={zoneType} onValueChange={(value: 'image' | 'text') => setZoneType(value)}>
-          <SelectTrigger className="h-7 text-xs">
+          <SelectTrigger className="h-6 text-xs px-1.5">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -52,31 +52,31 @@ const ZoneCreationTab: React.FC<ZoneCreationTabProps> = ({
         </Select>
       </div>
       
-      <div className="flex items-center space-x-1.5">
+      <div className="flex items-center space-x-1">
         <Switch
           id="repeating"
           checked={isRepeating}
           onCheckedChange={setIsRepeating}
           className="scale-75"
         />
-        <Label htmlFor="repeating" className="text-xs">Repeat all pages</Label>
+        <Label htmlFor="repeating" className="text-xs leading-tight">Repeat all pages</Label>
       </div>
       
       <div className="flex gap-1">
         <Button 
           size="sm" 
           onClick={() => onAddZone('image')}
-          className="flex-1 h-7 text-xs px-2"
+          className="flex-1 h-6 text-xs px-1"
         >
-          <Image className="h-3 w-3 mr-1" />
+          <Image className="h-2.5 w-2.5 mr-0.5" />
           Image
         </Button>
         <Button 
           size="sm" 
           onClick={() => onAddZone('text')}
-          className="flex-1 h-7 text-xs px-2"
+          className="flex-1 h-6 text-xs px-1"
         >
-          <Type className="h-3 w-3 mr-1" />
+          <Type className="h-2.5 w-2.5 mr-0.5" />
           Text
         </Button>
       </div>

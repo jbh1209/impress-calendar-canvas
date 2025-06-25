@@ -14,17 +14,17 @@ const AdvancedZoneManagerHeader: React.FC<AdvancedZoneManagerHeaderProps> = ({
   zoneCount
 }) => {
   return (
-    <div className="p-2 border-b border-gray-200 bg-white">
-      <div className="flex items-center gap-1.5 mb-1">
-        <Layers className="h-3 w-3" />
-        <h3 className="text-xs font-medium">Zone Manager</h3>
+    <div className="p-1.5 border-b border-gray-200 bg-white flex-shrink-0">
+      <div className="flex items-center gap-1 mb-0.5">
+        <Layers className="h-2.5 w-2.5" />
+        <h3 className="text-xs font-medium leading-tight">Zone Manager</h3>
       </div>
       <div className="flex items-center gap-1">
-        <Badge variant="outline" className="text-xs px-1 py-0">
-          Page {activePage?.page_number || '?'}
+        <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+          P{activePage?.page_number || '?'}
         </Badge>
-        <Badge variant="secondary" className="text-xs px-1 py-0">
-          {zoneCount} zones
+        <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
+          {zoneCount}
         </Badge>
       </div>
     </div>

@@ -45,14 +45,14 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
         throw error;
       }
 
-      toast.success(`PDF processed! ${data.pagesCreated} pages ready for zone editing.`);
+      toast.success(`PDF processed! ${data.pagesCreated} pages ready.`);
       
       if (onProcessingComplete) {
         onProcessingComplete();
       }
     } catch (error: any) {
       console.error("[PdfUploadSection] Upload error:", error);
-      toast.error(error.message || "An error occurred during PDF processing.");
+      toast.error(error.message || "PDF processing error.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -83,7 +83,7 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
 
   return (
     <div
-      className={`border-2 border-dashed rounded-md p-3 flex flex-col items-center gap-2 transition-all ${
+      className={`border-2 border-dashed rounded p-2 flex flex-col items-center gap-1.5 transition-all ${
         dragOver ? "bg-blue-50 border-blue-300" : "bg-gray-50 border-gray-200 hover:border-gray-300"
       }`}
       onDragOver={handleDragOver}
@@ -92,12 +92,12 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
       tabIndex={0}
     >
       <div className="text-center">
-        <div className="text-2xl mb-1">📄</div>
-        <h3 className="font-medium text-gray-900 mb-1 text-sm">
-          Upload Vector PDF Template
+        <div className="text-lg mb-0.5">📄</div>
+        <h3 className="font-medium text-gray-900 mb-0.5 text-xs leading-tight">
+          Upload Vector PDF
         </h3>
-        <p className="text-xs text-gray-600 mb-2 max-w-sm leading-tight">
-          Upload your PDF template to preserve vector quality. Each page will become editable.
+        <p className="text-xs text-gray-600 mb-1 max-w-xs leading-tight">
+          Upload PDF to preserve vector quality.
         </p>
       </div>
       
@@ -113,20 +113,20 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
       <Button
         onClick={handleButtonClick}
         disabled={isUploading}
-        className="px-4 h-7 text-xs"
+        className="px-2 h-6 text-xs"
       >
         {isUploading ? (
           <>
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+            <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-white mr-1"></div>
             Processing...
           </>
         ) : (
-          "Select PDF File"
+          "Select PDF"
         )}
       </Button>
       
-      <p className="text-xs text-gray-500 text-center">
-        Or drag and drop a PDF file here
+      <p className="text-xs text-gray-500 text-center leading-tight">
+        Or drag and drop PDF here
       </p>
     </div>
   );

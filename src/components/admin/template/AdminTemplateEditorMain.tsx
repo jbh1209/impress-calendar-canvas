@@ -46,11 +46,11 @@ const AdminTemplateEditorMain = ({
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
-      {/* Compact Top Section */}
+      {/* Ultra-compact Top Section */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200">
-        {/* PDF Metadata - Compact */}
+        {/* PDF Metadata - Ultra-compact */}
         {mode === "edit" && templateData && (
-          <div className="px-3 py-2">
+          <div className="px-2 py-1.5">
             <PdfMetadataDisplay 
               templateData={templateData} 
               isVisible={true}
@@ -58,9 +58,9 @@ const AdminTemplateEditorMain = ({
           </div>
         )}
 
-        {/* PDF Upload - Compact */}
+        {/* PDF Upload - Ultra-compact */}
         {mode === "edit" && templateId && (
-          <div className="px-3 pb-2">
+          <div className="px-2 pb-1.5">
             <PdfUploadSection
               templateId={templateId}
               onProcessingComplete={handleProcessingComplete}
@@ -68,9 +68,9 @@ const AdminTemplateEditorMain = ({
           </div>
         )}
 
-        {/* Page Navigation - Compact */}
+        {/* Page Navigation - Ultra-compact */}
         {mode === "edit" && pages.length > 0 && (
-          <div className="px-3 py-2 border-t border-gray-100">
+          <div className="px-2 py-1.5 border-t border-gray-100">
             <PageNavigator
               pages={pages}
               activePageIndex={activePageIndex}
@@ -81,8 +81,8 @@ const AdminTemplateEditorMain = ({
         )}
       </div>
 
-      {/* Main Content Area - Maximized */}
-      <div className="flex-1 overflow-hidden">
+      {/* Main Content Area - Fully Maximized */}
+      <div className="flex-1 overflow-hidden min-h-0">
         {mode === "edit" && pages.length > 0 ? (
           <div className="h-full">
             <TemplateCanvas
@@ -97,25 +97,25 @@ const AdminTemplateEditorMain = ({
           </div>
         ) : mode === "create" ? (
           <div className="h-full flex items-center justify-center">
-            <div className="max-w-md mx-auto text-center p-6">
-              <div className="text-3xl mb-3">⚙️</div>
-              <h3 className="text-base font-medium text-gray-900 mb-2">
+            <div className="max-w-md mx-auto text-center p-4">
+              <div className="text-2xl mb-2">⚙️</div>
+              <h3 className="text-sm font-medium text-gray-900 mb-1">
                 Ready to Create Template
               </h3>
-              <p className="text-sm text-gray-600">
-                Fill out the template details in the sidebar and save to create your new template.
+              <p className="text-xs text-gray-600">
+                Fill out template details and save to create.
               </p>
             </div>
           </div>
         ) : (
           <div className="h-full flex items-center justify-center">
-            <div className="max-w-md mx-auto text-center p-6">
-              <div className="text-3xl mb-3">📄</div>
-              <h3 className="text-base font-medium text-gray-900 mb-2">
+            <div className="max-w-md mx-auto text-center p-4">
+              <div className="text-2xl mb-2">📄</div>
+              <h3 className="text-sm font-medium text-gray-900 mb-1">
                 Ready for PDF Upload
               </h3>
-              <p className="text-sm text-gray-600">
-                Upload a vector PDF above to start defining customization zones.
+              <p className="text-xs text-gray-600">
+                Upload PDF above to start defining zones.
               </p>
             </div>
           </div>

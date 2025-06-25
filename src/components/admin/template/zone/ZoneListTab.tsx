@@ -23,50 +23,52 @@ const ZoneListTab: React.FC<ZoneListTabProps> = ({
   isLoading
 }) => {
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <Label className="text-xs font-medium">Zones</Label>
+    <div className="space-y-1.5 h-full flex flex-col">
+      <div className="flex justify-between items-center flex-shrink-0">
+        <Label className="text-xs font-medium leading-tight">Zones</Label>
         <Button 
           size="sm" 
           onClick={onSaveZones}
-          className="h-6 text-xs px-2"
+          className="h-5 text-xs px-1.5"
           disabled={isLoading}
         >
-          <Save className="h-3 w-3 mr-1" />
+          <Save className="h-2.5 w-2.5 mr-0.5" />
           Save
         </Button>
       </div>
       
-      <div className="space-y-1 max-h-32 overflow-y-auto">
-        {zones.map((zone, idx) => (
-          <ZoneListItem
-            key={idx}
-            zone={zone}
-            isSelected={selectedZone === zone}
-            onClick={() => onZoneSelect(zone)}
-          />
-        ))}
-        
-        {zones.length === 0 && (
-          <div className="text-center text-gray-500 text-xs py-3">
-            No zones created
-          </div>
-        )}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="space-y-0.5">
+          {zones.map((zone, idx) => (
+            <ZoneListItem
+              key={idx}
+              zone={zone}
+              isSelected={selectedZone === zone}
+              onClick={() => onZoneSelect(zone)}
+            />
+          ))}
+          
+          {zones.length === 0 && (
+            <div className="text-center text-gray-500 text-xs py-2">
+              No zones created
+            </div>
+          )}
+        </div>
       </div>
       
       {selectedZone && (
-        <div className="flex gap-1 pt-1 border-t">
-          <Button size="sm" variant="outline" className="h-6 text-xs px-2 flex-1">
-            <Copy className="h-3 w-3 mr-1" />
-            Duplicate
+        <div className="flex gap-0.5 pt-1 border-t flex-shrink-0">
+          <Button size="sm" variant="outline" className="h-5 text-xs px-1 flex-1">
+            <Copy className="h-2.5 w-2.5 mr-0.5" />
+            Copy
           </Button>
           <Button 
             size="sm" 
             variant="destructive" 
             onClick={onDeleteZone}
-            className="h-6 text-xs px-2"
+            className="h-5 text-xs px-1"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-2.5 w-2.5" />
           </Button>
         </div>
       )}
