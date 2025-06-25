@@ -22,8 +22,8 @@ const TemplateCanvas = (props: TemplateCanvasProps) => {
         {props.isLoading ? (
           <div className="w-full h-full bg-gray-100 animate-pulse flex items-center justify-center">
             <div className="text-center">
-              <div className="text-sm font-medium text-gray-600 mb-1">Loading Editor...</div>
-              <div className="text-xs text-gray-500">Preparing canvas</div>
+              <div className="text-xs font-medium text-gray-600 mb-0.5">Loading Editor...</div>
+              <div className="text-2xs text-gray-500">Preparing canvas</div>
             </div>
           </div>
         ) : (
@@ -31,8 +31,8 @@ const TemplateCanvas = (props: TemplateCanvasProps) => {
         )}
       </div>
       
-      {/* Ultra-compact Zone Management Panel */}
-      <div className="w-56 border-l border-gray-200 bg-gray-50 overflow-y-auto flex-shrink-0">
+      {/* Optimized Zone Management Panel - 200px */}
+      <div className="w-50 border-l border-gray-200 bg-gray-50 overflow-y-auto flex-shrink-0">
         <AdvancedZoneManager 
           fabricCanvasRef={props.fabricCanvasRef} 
           activePage={props.activePage}

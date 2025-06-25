@@ -15,8 +15,8 @@ export default function TemplateEditor() {
 
   return (
     <div className="flex h-screen w-full bg-gray-50 overflow-hidden">
-      {/* Ultra-compact Settings Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0">
+      {/* Optimized Settings Sidebar - 240px */}
+      <div className="w-60 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0">
         <TemplateSettings
           template={templateEditorState.template}
           setTemplate={templateEditorState.setTemplate}

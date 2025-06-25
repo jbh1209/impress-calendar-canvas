@@ -1,9 +1,8 @@
 
-import { Card, CardContent } from "@/components/ui/card";
-import PageNavigator from "@/components/admin/template/PageNavigator";
-import TemplateCanvas from "@/components/admin/template/TemplateCanvas";
 import PdfUploadSection from "@/components/admin/template/PdfUploadSection";
 import PdfMetadataDisplay from "@/components/admin/template/PdfMetadataDisplay";
+import PageNavigator from "@/components/admin/template/PageNavigator";
+import TemplateCanvas from "@/components/admin/template/TemplateCanvas";
 import { getTemplatePages } from "@/services/templatePageService";
 import { useRef, useEffect, useState } from "react";
 import { Canvas } from "fabric";
@@ -46,11 +45,11 @@ const AdminTemplateEditorMain = ({
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
-      {/* Ultra-compact Top Section */}
+      {/* Ultra-compact Top Section - Removed all card wrappers */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200">
-        {/* PDF Metadata - Ultra-compact */}
+        {/* PDF Metadata - Single line, ultra-compact */}
         {mode === "edit" && templateData && (
-          <div className="px-2 py-1.5">
+          <div className="px-2 py-1">
             <PdfMetadataDisplay 
               templateData={templateData} 
               isVisible={true}
@@ -60,7 +59,7 @@ const AdminTemplateEditorMain = ({
 
         {/* PDF Upload - Ultra-compact */}
         {mode === "edit" && templateId && (
-          <div className="px-2 pb-1.5">
+          <div className="px-2 pb-1">
             <PdfUploadSection
               templateId={templateId}
               onProcessingComplete={handleProcessingComplete}
@@ -68,9 +67,9 @@ const AdminTemplateEditorMain = ({
           </div>
         )}
 
-        {/* Page Navigation - Ultra-compact */}
+        {/* Page Navigation - Ultra-compact, horizontal scroll */}
         {mode === "edit" && pages.length > 0 && (
-          <div className="px-2 py-1.5 border-t border-gray-100">
+          <div className="px-2 py-1 border-t border-gray-100">
             <PageNavigator
               pages={pages}
               activePageIndex={activePageIndex}
@@ -98,11 +97,11 @@ const AdminTemplateEditorMain = ({
         ) : mode === "create" ? (
           <div className="h-full flex items-center justify-center">
             <div className="max-w-md mx-auto text-center p-4">
-              <div className="text-2xl mb-2">⚙️</div>
-              <h3 className="text-sm font-medium text-gray-900 mb-1">
+              <div className="text-xl mb-1">⚙️</div>
+              <h3 className="text-xs font-medium text-gray-900 mb-0.5">
                 Ready to Create Template
               </h3>
-              <p className="text-xs text-gray-600">
+              <p className="text-2xs text-gray-600">
                 Fill out template details and save to create.
               </p>
             </div>
@@ -110,11 +109,11 @@ const AdminTemplateEditorMain = ({
         ) : (
           <div className="h-full flex items-center justify-center">
             <div className="max-w-md mx-auto text-center p-4">
-              <div className="text-2xl mb-2">📄</div>
-              <h3 className="text-sm font-medium text-gray-900 mb-1">
+              <div className="text-xl mb-1">📄</div>
+              <h3 className="text-xs font-medium text-gray-900 mb-0.5">
                 Ready for PDF Upload
               </h3>
-              <p className="text-xs text-gray-600">
+              <p className="text-2xs text-gray-600">
                 Upload PDF above to start defining zones.
               </p>
             </div>

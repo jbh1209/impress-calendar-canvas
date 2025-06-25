@@ -9,14 +9,14 @@ interface SectionPanelProps {
 
 const SectionPanel = ({ title, description, children }: SectionPanelProps) => {
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       <div className="space-y-0">
-        <h3 className="text-xs font-medium text-gray-900 leading-tight">{title}</h3>
+        <h3 className="text-2xs font-medium text-gray-900 leading-none">{title}</h3>
         {description && (
-          <p className="text-xs text-gray-500 leading-tight">{description}</p>
+          <p className="text-2xs text-gray-500 leading-none">{description}</p>
         )}
       </div>
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         {children}
       </div>
     </div>

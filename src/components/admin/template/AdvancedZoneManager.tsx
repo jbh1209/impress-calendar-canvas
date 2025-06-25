@@ -154,13 +154,13 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
       
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 m-1 h-6">
-            <TabsTrigger value="create" className="text-xs px-1 py-0.5">Create</TabsTrigger>
-            <TabsTrigger value="manage" className="text-xs px-1 py-0.5">Manage</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 m-0.5 h-5">
+            <TabsTrigger value="create" className="text-2xs px-0.5 py-0">Create</TabsTrigger>
+            <TabsTrigger value="manage" className="text-2xs px-0.5 py-0">Manage</TabsTrigger>
           </TabsList>
           
           <div className="flex-1 overflow-hidden">
-            <TabsContent value="create" className="p-1.5 m-0 h-full">
+            <TabsContent value="create" className="p-1 m-0 h-full">
               <ZoneCreationTab
                 zoneName={zoneName}
                 setZoneName={setZoneName}
@@ -172,7 +172,7 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
               />
             </TabsContent>
             
-            <TabsContent value="manage" className="p-1.5 m-0 h-full">
+            <TabsContent value="manage" className="p-1 m-0 h-full">
               <ZoneListTab
                 zones={zones}
                 selectedZone={selectedZone}

@@ -69,27 +69,27 @@ export default function TemplateSettings({
   return (
     <div className="h-full flex flex-col">
       {/* Ultra-compact Header */}
-      <div className="border-b border-gray-200 p-2 bg-white flex-shrink-0">
-        <h1 className="text-sm font-medium text-gray-900 truncate leading-tight">
+      <div className="border-b border-gray-200 p-1.5 bg-white flex-shrink-0">
+        <h1 className="text-xs font-medium text-gray-900 truncate leading-none">
           {template.name || "New Template"}
         </h1>
-        <p className="text-xs text-gray-500 mt-0">
+        <p className="text-2xs text-gray-500 mt-0.5 leading-none">
           Configuration
         </p>
       </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        <form className="p-2 space-y-2" onSubmit={handleSaveTemplate} autoComplete="off">
+        <form className="p-1.5 space-y-1.5" onSubmit={handleSaveTemplate} autoComplete="off">
           {/* Ultra-compact Save Button */}
           <Button
             type="submit"
-            className="w-full h-7 text-xs px-2 py-1"
+            className="w-full h-5 text-2xs px-1.5 py-0.5"
             disabled={isSaving || isLoading}
           >
             {isSaving || isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-white mr-1"></div>
+                <div className="animate-spin rounded-full h-2 w-2 border-b-2 border-white mr-0.5"></div>
                 Saving...
               </>
             ) : (
@@ -98,12 +98,12 @@ export default function TemplateSettings({
           </Button>
 
           {errorMsg && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded px-1.5 py-1 text-xs">
+            <div className="bg-red-50 border border-red-200 text-red-700 rounded px-1 py-0.5 text-2xs">
               {errorMsg}
             </div>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <SectionPanel
               title="Details"
               description="Name and describe template"

@@ -23,16 +23,16 @@ const ZoneListTab: React.FC<ZoneListTabProps> = ({
   isLoading
 }) => {
   return (
-    <div className="space-y-1.5 h-full flex flex-col">
+    <div className="space-y-1 h-full flex flex-col">
       <div className="flex justify-between items-center flex-shrink-0">
-        <Label className="text-xs font-medium leading-tight">Zones</Label>
+        <Label className="text-2xs font-medium leading-none">Zones</Label>
         <Button 
           size="sm" 
           onClick={onSaveZones}
-          className="h-5 text-xs px-1.5"
+          className="h-4 text-2xs px-1"
           disabled={isLoading}
         >
-          <Save className="h-2.5 w-2.5 mr-0.5" />
+          <Save className="h-2 w-2 mr-0.5" />
           Save
         </Button>
       </div>
@@ -49,7 +49,7 @@ const ZoneListTab: React.FC<ZoneListTabProps> = ({
           ))}
           
           {zones.length === 0 && (
-            <div className="text-center text-gray-500 text-xs py-2">
+            <div className="text-center text-gray-500 text-2xs py-1">
               No zones created
             </div>
           )}
@@ -57,18 +57,18 @@ const ZoneListTab: React.FC<ZoneListTabProps> = ({
       </div>
       
       {selectedZone && (
-        <div className="flex gap-0.5 pt-1 border-t flex-shrink-0">
-          <Button size="sm" variant="outline" className="h-5 text-xs px-1 flex-1">
-            <Copy className="h-2.5 w-2.5 mr-0.5" />
+        <div className="flex gap-0.5 pt-0.5 border-t flex-shrink-0">
+          <Button size="sm" variant="outline" className="h-4 text-2xs px-0.5 flex-1">
+            <Copy className="h-2 w-2 mr-0.5" />
             Copy
           </Button>
           <Button 
             size="sm" 
             variant="destructive" 
             onClick={onDeleteZone}
-            className="h-5 text-xs px-1"
+            className="h-4 text-2xs px-0.5"
           >
-            <Trash2 className="h-2.5 w-2.5" />
+            <Trash2 className="h-2 w-2" />
           </Button>
         </div>
       )}

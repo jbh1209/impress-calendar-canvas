@@ -83,7 +83,7 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
 
   return (
     <div
-      className={`border-2 border-dashed rounded p-2 flex flex-col items-center gap-1.5 transition-all ${
+      className={`border border-dashed rounded p-1 flex items-center justify-between gap-1 transition-all ${
         dragOver ? "bg-blue-50 border-blue-300" : "bg-gray-50 border-gray-200 hover:border-gray-300"
       }`}
       onDragOver={handleDragOver}
@@ -91,14 +91,11 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
       onDrop={handleDrop}
       tabIndex={0}
     >
-      <div className="text-center">
-        <div className="text-lg mb-0.5">📄</div>
-        <h3 className="font-medium text-gray-900 mb-0.5 text-xs leading-tight">
+      <div className="flex items-center gap-1">
+        <div className="text-xs">📄</div>
+        <span className="text-2xs font-medium text-gray-900 leading-none">
           Upload Vector PDF
-        </h3>
-        <p className="text-xs text-gray-600 mb-1 max-w-xs leading-tight">
-          Upload PDF to preserve vector quality.
-        </p>
+        </span>
       </div>
       
       <input
@@ -113,21 +110,17 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
       <Button
         onClick={handleButtonClick}
         disabled={isUploading}
-        className="px-2 h-6 text-xs"
+        className="px-1.5 h-4 text-2xs"
       >
         {isUploading ? (
           <>
-            <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-white mr-1"></div>
+            <div className="animate-spin rounded-full h-2 w-2 border-b-2 border-white mr-0.5"></div>
             Processing...
           </>
         ) : (
           "Select PDF"
         )}
       </Button>
-      
-      <p className="text-xs text-gray-500 text-center leading-tight">
-        Or drag and drop PDF here
-      </p>
     </div>
   );
 };

@@ -1,6 +1,5 @@
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,54 +26,33 @@ const PdfMetadataDisplay: React.FC<PdfMetadataDisplayProps> = ({
   };
 
   return (
-    <Card className="mb-6 bg-green-50 border-green-200">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-green-800">
-          <FileText className="h-5 w-5" />
-          Vector PDF Loaded
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <span className="font-medium text-gray-600">Pages:</span>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">{metadata.pageCount}</Badge>
-            </div>
-          </div>
-          <div>
-            <span className="font-medium text-gray-600">File Size:</span>
-            <div className="text-gray-800">{formatFileSize(metadata.fileSize)}</div>
-          </div>
-          <div>
-            <span className="font-medium text-gray-600">Units:</span>
-            <div className="text-gray-800">{metadata.units || 'pt'}</div>
-          </div>
-          <div>
-            <span className="font-medium text-gray-600">Original File:</span>
-            <div className="text-gray-800 truncate" title={metadata.originalFileName}>
-              {metadata.originalFileName}
-            </div>
-          </div>
+    <div className="bg-green-50 border border-green-200 rounded p-1">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1 min-w-0">
+          <FileText className="h-2.5 w-2.5 text-green-600 flex-shrink-0" />
+          <span className="text-2xs font-medium text-green-800">Vector PDF Loaded</span>
+          <Badge variant="secondary" className="text-2xs px-1 py-0 h-3">
+            {metadata.pageCount}p
+          </Badge>
+          <span className="text-2xs text-green-700">{formatFileSize(metadata.fileSize)}</span>
         </div>
-
-        <div className="flex items-center gap-3 pt-2">
+        <div className="flex items-center gap-1">
           <Button
             variant="outline"
             size="sm"
             onClick={() => window.open(templateData.original_pdf_url, '_blank')}
-            className="flex items-center gap-2"
+            className="h-4 text-2xs px-1"
           >
-            <Download className="h-4 w-4" />
-            Download Original PDF
+            <Download className="h-2 w-2 mr-0.5" />
+            PDF
           </Button>
-          <div className="flex items-center gap-1 text-xs text-green-700">
-            <Info className="h-3 w-3" />
-            Vector format preserved for print quality
+          <div className="flex items-center gap-0.5 text-2xs text-green-700">
+            <Info className="h-2 w-2" />
+            Vector
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
