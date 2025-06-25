@@ -2,6 +2,7 @@
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PdfUploadSectionProps {
   templateId: string;
@@ -13,7 +14,6 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
   onProcessingComplete
 }) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
@@ -26,55 +26,45 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
 
   // Main upload handler (file from input/dnd)
   const uploadPdfFile = async (file: File) => {
-    if (!file || !templateId) return;
+    if (!file || !templateId) {
+      console.error("Missing file or template ID");
+      return;
+    }
+    
+    console.log("[PdfUploadSection] Starting upload for template:", templateId);
     setIsUploading(true);
-    setUploadProgress(0);
 
     try {
       const formData = new FormData();
       formData.append("pdf", file);
       formData.append("template_id", templateId);
 
-      // Use fetch and track progress
-      const req = new XMLHttpRequest();
-      req.open("POST", "/functions/v1/split-pdf");
-      req.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          setUploadProgress(Math.round((event.loaded / event.total) * 100));
-        }
-      };
+      console.log("[PdfUploadSection] Calling split-pdf function...");
+      
+      // Use Supabase client to call the edge function
+      const { data, error } = await supabase.functions.invoke('split-pdf', {
+        body: formData,
+      });
 
-      req.onload = () => {
-        setIsUploading(false);
-        setUploadProgress(null);
-        if (req.status >= 200 && req.status < 300) {
-          const response = JSON.parse(req.responseText);
-          toast.success(`PDF processed! ${response.pagesCreated} pages ready for zone editing.`);
-          if (onProcessingComplete) onProcessingComplete();
-        } else {
-          try {
-            const { error } = JSON.parse(req.responseText);
-            toast.error(error || "An error occurred during PDF processing.");
-          } catch {
-            toast.error("An error occurred during PDF upload.");
-          }
-        }
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      };
+      if (error) {
+        console.error("[PdfUploadSection] Error from split-pdf:", error);
+        throw error;
+      }
 
-      req.onerror = () => {
-        setIsUploading(false);
-        setUploadProgress(null);
-        toast.error("An error occurred while uploading the PDF.");
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      };
-
-      req.send(formData);
+      console.log("[PdfUploadSection] Success response:", data);
+      toast.success(`PDF processed! ${data.pagesCreated} pages ready for zone editing.`);
+      
+      if (onProcessingComplete) {
+        onProcessingComplete();
+      }
     } catch (error: any) {
+      console.error("[PdfUploadSection] Upload error:", error);
       toast.error(error.message || "An error occurred during PDF processing.");
+    } finally {
       setIsUploading(false);
-      setUploadProgress(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -102,17 +92,25 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
 
   return (
     <div
-      className={`border border-gray-200 rounded p-6 mb-8 flex flex-col items-start gap-3 transition-colors ${
-        dragOver ? "bg-blue-50 border-blue-300" : "bg-white"
+      className={`border-2 border-dashed rounded-lg p-6 mb-4 flex flex-col items-center gap-3 transition-all ${
+        dragOver ? "bg-blue-50 border-blue-300" : "bg-gray-50 border-gray-200 hover:border-gray-300"
       }`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      tabIndex={0}  // for accessibility
+      tabIndex={0}
     >
-      <label className="font-semibold mb-1 text-sm">
-        Upload Vector PDF Template
-      </label>
+      <div className="text-center">
+        <div className="text-4xl mb-2">📄</div>
+        <h3 className="font-semibold text-gray-900 mb-1">
+          Upload Vector PDF Template
+        </h3>
+        <p className="text-sm text-gray-600 mb-4 max-w-md">
+          Upload your PDF template to preserve vector quality for print-ready output. 
+          Each page will become editable with customizable zones.
+        </p>
+      </div>
+      
       <input
         type="file"
         accept="application/pdf"
@@ -121,26 +119,25 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
         ref={fileInputRef}
         className="hidden"
       />
+      
       <Button
-        size="sm"
         onClick={handleButtonClick}
         disabled={isUploading}
-        className="mt-1"
+        className="px-6"
       >
-        {isUploading
-          ? uploadProgress !== null
-            ? `Processing (${uploadProgress}%)...`
-            : "Processing..."
-          : "Select Vector PDF"}
+        {isUploading ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            Processing PDF...
+          </>
+        ) : (
+          "Select PDF File"
+        )}
       </Button>
-      <div className="text-xs text-muted-foreground mt-2">
-        <div className="space-y-1">
-          <p>📄 Upload your PDF template to preserve vector quality for print-ready output.</p>
-          <p>🎯 Each page will become editable with customizable zones for user content.</p>
-          <p>✨ Original vector format maintained for crisp text and graphics.</p>
-          <span className="text-blue-600">You may also drag and drop a PDF here.</span>
-        </div>
-      </div>
+      
+      <p className="text-xs text-gray-500 text-center">
+        Or drag and drop a PDF file here
+      </p>
     </div>
   );
 };

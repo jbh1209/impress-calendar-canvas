@@ -76,80 +76,79 @@ export default function TemplateSettings({
   }
 
   return (
-    <Card className="h-fit sticky top-6">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-bold">
+    <div className="space-y-4">
+      <div className="border-b border-gray-200 pb-4">
+        <h1 className="text-xl font-bold text-gray-900">
           {template.name || "New Template"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form className="space-y-6" onSubmit={handleSaveTemplate} autoComplete="off">
-          {/* Save Button */}
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isSaving || isLoading}
-          >
-            {isSaving || isLoading ? (
-              <>
-                <svg className="mr-2 animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path d="M12 2a10 10 0 1 1-8.246 4.905" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-                </svg>
-                Saving...
-              </>
-            ) : (
-              "Save Template"
-            )}
-          </Button>
+        </h1>
+        <p className="text-sm text-gray-600 mt-1">
+          Configure your template settings
+        </p>
+      </div>
 
-          {errorMsg && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded px-3 py-2 text-sm">
-              {errorMsg}
-            </div>
+      <form className="space-y-4" onSubmit={handleSaveTemplate} autoComplete="off">
+        {/* Save Button */}
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isSaving || isLoading}
+        >
+          {isSaving || isLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Saving...
+            </>
+          ) : (
+            "Save Template"
           )}
+        </Button>
 
-          <div className="space-y-6">
-            <SectionPanel
-              title="Details"
-              description="Name and describe your template"
-            >
-              <TemplateDetailsSection template={template} setTemplate={setTemplate} />
-            </SectionPanel>
-
-            <SectionPanel
-              title="Status & Category"
-              description="Control visibility and categorization"
-            >
-              <TemplateStatusAndCategorySection template={template} setTemplate={setTemplate} />
-            </SectionPanel>
-
-            <SectionPanel
-              title="Dimensions"
-              description="Set page size and units"
-            >
-              <TemplateDimensionsSection
-                template={template}
-                setTemplate={setTemplate}
-                units={units}
-                setUnits={handleUnitChange}
-              />
-            </SectionPanel>
-
-            <SectionPanel
-              title="Bleed Settings"
-              description="Configure print margins"
-            >
-              <TemplateBleedSection
-                bleed={template.bleed || bleed}
-                setBleed={b => setTemplate({ ...template, bleed: b })}
-                units={units}
-                setUnits={handleUnitChange}
-              />
-            </SectionPanel>
+        {errorMsg && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded px-3 py-2 text-sm">
+            {errorMsg}
           </div>
-        </form>
-      </CardContent>
-    </Card>
+        )}
+
+        <div className="space-y-4">
+          <SectionPanel
+            title="Details"
+            description="Name and describe your template"
+          >
+            <TemplateDetailsSection template={template} setTemplate={setTemplate} />
+          </SectionPanel>
+
+          <SectionPanel
+            title="Status & Category"
+            description="Control visibility and categorization"
+          >
+            <TemplateStatusAndCategorySection template={template} setTemplate={setTemplate} />
+          </SectionPanel>
+
+          <SectionPanel
+            title="Dimensions"
+            description="Set page size and units"
+          >
+            <TemplateDimensionsSection
+              template={template}
+              setTemplate={setTemplate}
+              units={units}
+              setUnits={handleUnitChange}
+            />
+          </SectionPanel>
+
+          <SectionPanel
+            title="Bleed Settings"
+            description="Configure print margins"
+          >
+            <TemplateBleedSection
+              bleed={template.bleed || bleed}
+              setBleed={b => setTemplate({ ...template, bleed: b })}
+              units={units}
+              setUnits={handleUnitChange}
+            />
+          </SectionPanel>
+        </div>
+      </form>
+    </div>
   );
 }

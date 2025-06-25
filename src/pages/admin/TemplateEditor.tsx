@@ -15,28 +15,32 @@ export default function TemplateEditor() {
   const templateEditorState = useTemplateEditor(templateId);
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100">
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 p-6">
-        {/* Settings Panel - Left Side */}
-        <div className="xl:col-span-1">
-          <TemplateSettings
-            template={templateEditorState.template}
-            setTemplate={templateEditorState.setTemplate}
-            isLoading={templateEditorState.isLoading}
-            templateId={templateEditorState.templateId}
-            setTemplateId={templateEditorState.setTemplateId}
-          />
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex h-screen">
+        {/* Settings Sidebar - Fixed width */}
+        <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+          <div className="p-4">
+            <TemplateSettings
+              template={templateEditorState.template}
+              setTemplate={templateEditorState.setTemplate}
+              isLoading={templateEditorState.isLoading}
+              templateId={templateEditorState.templateId}
+              setTemplateId={templateEditorState.setTemplateId}
+            />
+          </div>
         </div>
         
-        {/* Main Editor Area - Right Side */}
-        <div className="xl:col-span-2">
-          <AdminTemplateEditorMain
-            mode={templateEditorState.mode}
-            templateId={templateEditorState.templateId}
-            templateData={templateEditorState.templateData}
-            isLoading={templateEditorState.isLoading}
-            setIsLoading={templateEditorState.setIsLoading}
-          />
+        {/* Main Editor Area - Flexible width */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4">
+            <AdminTemplateEditorMain
+              mode={templateEditorState.mode}
+              templateId={templateEditorState.templateId}
+              templateData={templateEditorState.templateData}
+              isLoading={templateEditorState.isLoading}
+              setIsLoading={templateEditorState.setIsLoading}
+            />
+          </div>
         </div>
       </div>
     </div>
