@@ -17,21 +17,18 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  // Open file dialog on button click
   const handleButtonClick = () => {
     if (!isUploading) {
       fileInputRef.current?.click();
     }
   };
 
-  // Main upload handler (file from input/dnd)
   const uploadPdfFile = async (file: File) => {
     if (!file || !templateId) {
       console.error("Missing file or template ID");
       return;
     }
     
-    console.log("[PdfUploadSection] Starting upload for template:", templateId);
     setIsUploading(true);
 
     try {
@@ -39,9 +36,6 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
       formData.append("pdf", file);
       formData.append("template_id", templateId);
 
-      console.log("[PdfUploadSection] Calling split-pdf function...");
-      
-      // Use Supabase client to call the edge function
       const { data, error } = await supabase.functions.invoke('split-pdf', {
         body: formData,
       });
@@ -51,7 +45,6 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
         throw error;
       }
 
-      console.log("[PdfUploadSection] Success response:", data);
       toast.success(`PDF processed! ${data.pagesCreated} pages ready for zone editing.`);
       
       if (onProcessingComplete) {
@@ -68,14 +61,12 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
     }
   };
 
-  // Input change handler
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     uploadPdfFile(file);
   };
 
-  // Drag & Drop handlers
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(true);
@@ -92,7 +83,7 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
 
   return (
     <div
-      className={`border-2 border-dashed rounded-lg p-6 mb-4 flex flex-col items-center gap-3 transition-all ${
+      className={`border-2 border-dashed rounded-md p-3 flex flex-col items-center gap-2 transition-all ${
         dragOver ? "bg-blue-50 border-blue-300" : "bg-gray-50 border-gray-200 hover:border-gray-300"
       }`}
       onDragOver={handleDragOver}
@@ -101,13 +92,12 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
       tabIndex={0}
     >
       <div className="text-center">
-        <div className="text-4xl mb-2">📄</div>
-        <h3 className="font-semibold text-gray-900 mb-1">
+        <div className="text-2xl mb-1">📄</div>
+        <h3 className="font-medium text-gray-900 mb-1 text-sm">
           Upload Vector PDF Template
         </h3>
-        <p className="text-sm text-gray-600 mb-4 max-w-md">
-          Upload your PDF template to preserve vector quality for print-ready output. 
-          Each page will become editable with customizable zones.
+        <p className="text-xs text-gray-600 mb-2 max-w-sm leading-tight">
+          Upload your PDF template to preserve vector quality. Each page will become editable.
         </p>
       </div>
       
@@ -123,12 +113,12 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
       <Button
         onClick={handleButtonClick}
         disabled={isUploading}
-        className="px-6"
+        className="px-4 h-7 text-xs"
       >
         {isUploading ? (
           <>
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            Processing PDF...
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+            Processing...
           </>
         ) : (
           "Select PDF File"

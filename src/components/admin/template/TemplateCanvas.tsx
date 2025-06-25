@@ -16,14 +16,14 @@ interface TemplateCanvasProps {
 
 const TemplateCanvas = (props: TemplateCanvasProps) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-      {/* Main Canvas Area */}
-      <div className="lg:col-span-3">
+    <div className="h-full flex bg-white">
+      {/* Main Canvas Area - Maximized */}
+      <div className="flex-1 overflow-hidden">
         {props.isLoading ? (
-          <div className="w-full h-[600px] bg-gray-100 animate-pulse flex items-center justify-center rounded-lg">
+          <div className="w-full h-full bg-gray-100 animate-pulse flex items-center justify-center">
             <div className="text-center">
-              <div className="text-lg font-medium text-gray-600 mb-2">Loading Vector Editor...</div>
-              <div className="text-sm text-gray-500">Preparing canvas for high-quality template editing</div>
+              <div className="text-base font-medium text-gray-600 mb-1">Loading Vector Editor...</div>
+              <div className="text-xs text-gray-500">Preparing canvas for template editing</div>
             </div>
           </div>
         ) : (
@@ -31,8 +31,8 @@ const TemplateCanvas = (props: TemplateCanvasProps) => {
         )}
       </div>
       
-      {/* Advanced Zone Management Panel */}
-      <div className="lg:col-span-1 space-y-4">
+      {/* Compact Zone Management Panel */}
+      <div className="w-64 border-l border-gray-200 bg-gray-50 overflow-y-auto">
         <AdvancedZoneManager 
           fabricCanvasRef={props.fabricCanvasRef} 
           activePage={props.activePage}

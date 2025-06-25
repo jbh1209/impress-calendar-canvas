@@ -19,7 +19,6 @@ const AdminTemplateEditorMain = ({
   const [activePageIndex, setActivePageIndex] = useState(0);
   const fabricCanvasRef = useRef<Canvas | null>(null);
 
-  // Get the currently active page
   const activePage = pages[activePageIndex];
 
   useEffect(() => {
@@ -27,9 +26,7 @@ const AdminTemplateEditorMain = ({
       setIsLoading(true);
       getTemplatePages(templateId)
         .then((results) => {
-          console.log("[AdminTemplateEditorMain] Loaded pages:", results);
           setPages(results || []);
-          // Reset to first page when pages change
           setActivePageIndex(0);
         })
         .finally(() => setIsLoading(false));
@@ -37,92 +34,93 @@ const AdminTemplateEditorMain = ({
   }, [templateId, mode, setIsLoading]);
 
   const handleProcessingComplete = async () => {
-    console.log("[AdminTemplateEditorMain] PDF processing complete, reloading pages...");
     setIsLoading(true);
     try {
       const results = await getTemplatePages(templateId);
-      console.log("[AdminTemplateEditorMain] Reloaded pages after processing:", results);
       setPages(results || []);
-      setActivePageIndex(0); // Reset to first page
+      setActivePageIndex(0);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="space-y-4">
-      {/* Show PDF metadata if we have a processed PDF */}
-      {mode === "edit" && templateData && (
-        <PdfMetadataDisplay 
-          templateData={templateData} 
-          isVisible={true}
-        />
-      )}
+    <div className="h-full flex flex-col bg-gray-50">
+      {/* Compact Top Section */}
+      <div className="flex-shrink-0 bg-white border-b border-gray-200">
+        {/* PDF Metadata - Compact */}
+        {mode === "edit" && templateData && (
+          <div className="px-3 py-2">
+            <PdfMetadataDisplay 
+              templateData={templateData} 
+              isVisible={true}
+            />
+          </div>
+        )}
 
-      {/* PDF Upload Section for edit mode */}
-      {mode === "edit" && templateId && (
-        <PdfUploadSection
-          templateId={templateId}
-          onProcessingComplete={handleProcessingComplete}
-        />
-      )}
+        {/* PDF Upload - Compact */}
+        {mode === "edit" && templateId && (
+          <div className="px-3 pb-2">
+            <PdfUploadSection
+              templateId={templateId}
+              onProcessingComplete={handleProcessingComplete}
+            />
+          </div>
+        )}
 
-      {/* Main Editor Content */}
-      {mode === "edit" && pages.length > 0 ? (
-        <div className="space-y-4">
-          {/* Page Navigation */}
-          <PageNavigator
-            pages={pages}
-            activePageIndex={activePageIndex}
-            setActivePageIndex={setActivePageIndex}
-            templateData={templateData}
-          />
-          
-          {/* Canvas Editor */}
-          <Card>
-            <CardContent className="p-4">
-              <TemplateCanvas
-                isEditing={true}
-                templateId={templateId}
-                templateData={templateData}
-                activePage={activePage}
-                isLoading={isLoading}
-                setIsLoading={setIsLoading}
-                fabricCanvasRef={fabricCanvasRef}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      ) : mode === "create" ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="text-4xl mb-4">⚙️</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        {/* Page Navigation - Compact */}
+        {mode === "edit" && pages.length > 0 && (
+          <div className="px-3 py-2 border-t border-gray-100">
+            <PageNavigator
+              pages={pages}
+              activePageIndex={activePageIndex}
+              setActivePageIndex={setActivePageIndex}
+              templateData={templateData}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Main Content Area - Maximized */}
+      <div className="flex-1 overflow-hidden">
+        {mode === "edit" && pages.length > 0 ? (
+          <div className="h-full">
+            <TemplateCanvas
+              isEditing={true}
+              templateId={templateId}
+              templateData={templateData}
+              activePage={activePage}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+              fabricCanvasRef={fabricCanvasRef}
+            />
+          </div>
+        ) : mode === "create" ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="max-w-md mx-auto text-center p-6">
+              <div className="text-3xl mb-3">⚙️</div>
+              <h3 className="text-base font-medium text-gray-900 mb-2">
                 Ready to Create Template
               </h3>
-              <p className="text-gray-600 mb-4">
-                Fill out the template details in the sidebar and save to create your new template. 
-                Once saved, you'll be able to upload a PDF and start defining customization zones.
+              <p className="text-sm text-gray-600">
+                Fill out the template details in the sidebar and save to create your new template.
               </p>
             </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="text-4xl mb-4">📄</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          </div>
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <div className="max-w-md mx-auto text-center p-6">
+              <div className="text-3xl mb-3">📄</div>
+              <h3 className="text-base font-medium text-gray-900 mb-2">
                 Ready for PDF Upload
               </h3>
-              <p className="text-gray-600 mb-4">
-                Upload a vector PDF above to start defining customization zones with preserved print quality.
+              <p className="text-sm text-gray-600">
+                Upload a vector PDF above to start defining customization zones.
               </p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

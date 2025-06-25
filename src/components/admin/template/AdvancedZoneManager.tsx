@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +32,6 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
   const [zoneAssignments, setZoneAssignments] = useState<ZonePageAssignment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load zone assignments for the active page
   useEffect(() => {
     if (activePage?.id) {
       loadZoneAssignments();
@@ -48,7 +46,6 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
       const assignments = await getZoneAssignmentsByPageId(activePage.id);
       setZoneAssignments(assignments);
       
-      // Render zones on canvas
       if (fabricCanvasRef.current && assignments.length > 0) {
         renderZoneAssignments(assignments);
       }
@@ -62,20 +59,17 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
     
     const canvas = fabricCanvasRef.current;
     
-    // Clear existing zones
     const existingZones = canvas.getObjects().filter(obj => 
       obj.get('customProps' as any)?.zoneType
     );
     existingZones.forEach(zone => canvas.remove(zone));
     
-    // Render each assignment
     assignments.forEach((assignment, index) => {
       let canvasX = assignment.x;
       let canvasY = assignment.y;
       let canvasWidth = assignment.width;
       let canvasHeight = assignment.height;
       
-      // Convert from vector coordinates if PDF dimensions are available
       if (activePage?.pdf_page_width && activePage?.pdf_page_height) {
         const canvasCoords = vectorToCanvasCoordinates(
           assignment.x,
@@ -103,7 +97,7 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
       
       const zoneGroup = createZoneGroup({
         name: `Zone ${index + 1}`,
-        type: assignment.is_repeating ? 'text' : 'image', // Default mapping
+        type: assignment.is_repeating ? 'text' : 'image',
         x: canvasX,
         y: canvasY,
         width: canvasWidth,
@@ -128,11 +122,11 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
     
     const name = zoneName || `${type.charAt(0).toUpperCase() + type.slice(1)} Zone ${zoneCount}`;
     
-    const defaultWidth = type === 'image' ? 200 : 150;
-    const defaultHeight = type === 'image' ? 150 : 40;
+    const defaultWidth = type === 'image' ? 150 : 120;
+    const defaultHeight = type === 'image' ? 100 : 30;
     
-    const gridX = 50 + (zoneCount % 4) * (defaultWidth + 20);
-    const gridY = 50 + Math.floor(zoneCount / 4) * (defaultHeight + 30);
+    const gridX = 30 + (zoneCount % 3) * (defaultWidth + 15);
+    const gridY = 30 + Math.floor(zoneCount / 3) * (defaultHeight + 20);
     
     try {
       const zoneGroup = createZoneGroup({
@@ -171,7 +165,6 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
       let vectorWidth = zone.width || 100;
       let vectorHeight = zone.height || 100;
       
-      // Convert to vector coordinates if PDF dimensions are available
       if (activePage.pdf_page_width && activePage.pdf_page_height) {
         const vectorCoords = canvasToVectorCoordinates(
           zone.left || 0,
@@ -198,7 +191,7 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
       }
       
       return {
-        zone_id: 'temp_zone_' + index, // Will be replaced with actual zone ID
+        zone_id: 'temp_zone_' + index,
         page_id: activePage.id,
         x: vectorX,
         y: vectorY,
@@ -211,7 +204,7 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
     
     const success = await saveZoneAssignments(assignments, activePage.id);
     if (success) {
-      await loadZoneAssignments(); // Reload to get updated data
+      await loadZoneAssignments();
     }
   };
 
@@ -234,103 +227,107 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Layers className="h-4 w-4" />
-          Advanced Zone Manager
-        </CardTitle>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">
+    <div className="h-full flex flex-col">
+      {/* Compact Header */}
+      <div className="p-2 border-b border-gray-200 bg-white">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Layers className="h-3 w-3" />
+          <h3 className="text-xs font-medium">Zone Manager</h3>
+        </div>
+        <div className="flex items-center gap-1">
+          <Badge variant="outline" className="text-xs px-1 py-0">
             Page {activePage?.page_number || '?'}
           </Badge>
-          <Badge variant="secondary" className="text-xs">
-            {zoneAssignments.length} assignments
+          <Badge variant="secondary" className="text-xs px-1 py-0">
+            {zoneAssignments.length} zones
           </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+
+      {/* Compact Content */}
+      <div className="flex-1 overflow-y-auto p-2">
         <Tabs defaultValue="create" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="create">Create</TabsTrigger>
-            <TabsTrigger value="manage">Manage</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 h-6 text-xs">
+            <TabsTrigger value="create" className="text-xs py-1">Create</TabsTrigger>
+            <TabsTrigger value="manage" className="text-xs py-1">Manage</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="create" className="space-y-3">
+          <TabsContent value="create" className="space-y-2 mt-2">
             <div>
               <Label htmlFor="zone-name" className="text-xs">Zone Name</Label>
               <Input
                 id="zone-name"
-                placeholder="Enter zone name..."
+                placeholder="Zone name..."
                 value={zoneName}
                 onChange={(e) => setZoneName(e.target.value)}
-                className="h-8 text-xs"
+                className="h-6 text-xs"
               />
             </div>
             
             <div>
-              <Label className="text-xs">Zone Type</Label>
+              <Label className="text-xs">Type</Label>
               <Select value={zoneType} onValueChange={(value: 'image' | 'text') => setZoneType(value)}>
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger className="h-6 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="image">Image Zone</SelectItem>
-                  <SelectItem value="text">Text Zone</SelectItem>
+                  <SelectItem value="image">Image</SelectItem>
+                  <SelectItem value="text">Text</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5">
               <Switch
                 id="repeating"
                 checked={isRepeating}
                 onCheckedChange={setIsRepeating}
+                className="scale-75"
               />
-              <Label htmlFor="repeating" className="text-xs">Repeat on all pages</Label>
+              <Label htmlFor="repeating" className="text-xs">Repeat all pages</Label>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-1">
               <Button 
                 size="sm" 
                 onClick={() => handleAddZone('image')}
-                className="flex-1 h-8 text-xs"
+                className="flex-1 h-6 text-xs px-2"
               >
-                <Image className="h-3 w-3 mr-1" />
-                Add Image
+                <Image className="h-2.5 w-2.5 mr-1" />
+                Image
               </Button>
               <Button 
                 size="sm" 
                 onClick={() => handleAddZone('text')}
-                className="flex-1 h-8 text-xs"
+                className="flex-1 h-6 text-xs px-2"
               >
-                <Type className="h-3 w-3 mr-1" />
-                Add Text
+                <Type className="h-2.5 w-2.5 mr-1" />
+                Text
               </Button>
             </div>
           </TabsContent>
           
-          <TabsContent value="manage" className="space-y-3">
+          <TabsContent value="manage" className="space-y-2 mt-2">
             <div className="flex justify-between items-center">
-              <Label className="text-xs font-medium">Page Zones</Label>
+              <Label className="text-xs font-medium">Zones</Label>
               <Button 
                 size="sm" 
                 onClick={handleSaveZones}
-                className="h-7 text-xs"
+                className="h-5 text-xs px-2"
                 disabled={isLoading}
               >
-                <Save className="h-3 w-3 mr-1" />
-                Save Layout
+                <Save className="h-2.5 w-2.5 mr-1" />
+                Save
               </Button>
             </div>
             
-            <div className="space-y-1 max-h-40 overflow-y-auto">
+            <div className="space-y-1 max-h-32 overflow-y-auto">
               {getZonesList().map((obj, idx) => {
                 const props = obj.get('customProps' as any);
                 return (
                   <div 
                     key={idx}
-                    className={`flex items-center justify-between p-2 rounded border text-xs cursor-pointer ${
+                    className={`flex items-center justify-between p-1.5 rounded border text-xs cursor-pointer ${
                       selectedZone === obj ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 hover:bg-gray-100'
                     }`}
                     onClick={() => {
@@ -338,51 +335,49 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
                       fabricCanvasRef.current?.setActiveObject(obj);
                     }}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
                       {props?.zoneType === 'image' ? 
-                        <Image className="h-3 w-3" /> : 
-                        <Type className="h-3 w-3" />
+                        <Image className="h-2.5 w-2.5 flex-shrink-0" /> : 
+                        <Type className="h-2.5 w-2.5 flex-shrink-0" />
                       }
-                      <span className="truncate">{props?.name || 'Unnamed Zone'}</span>
+                      <span className="truncate text-xs">{props?.name || 'Zone'}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs px-1 py-0">
                         {props?.zoneType}
                       </Badge>
-                      <Move className="h-3 w-3 text-gray-400" />
                     </div>
                   </div>
                 );
               })}
               
               {getZonesList().length === 0 && (
-                <div className="text-center text-gray-500 text-xs py-4">
-                  No zones on this page
+                <div className="text-center text-gray-500 text-xs py-3">
+                  No zones created
                 </div>
               )}
             </div>
             
             {selectedZone && (
-              <div className="flex gap-2 pt-2 border-t">
-                <Button size="sm" variant="outline" className="h-7 text-xs">
-                  <Copy className="h-3 w-3 mr-1" />
+              <div className="flex gap-1 pt-1 border-t">
+                <Button size="sm" variant="outline" className="h-5 text-xs px-2 flex-1">
+                  <Copy className="h-2.5 w-2.5 mr-1" />
                   Duplicate
                 </Button>
                 <Button 
                   size="sm" 
                   variant="destructive" 
                   onClick={handleDeleteZone}
-                  className="h-7 text-xs"
+                  className="h-5 text-xs px-2"
                 >
-                  <Trash2 className="h-3 w-3 mr-1" />
-                  Delete
+                  <Trash2 className="h-2.5 w-2.5" />
                 </Button>
               </div>
             )}
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
