@@ -14,9 +14,9 @@ export default function TemplateEditor() {
   const templateEditorState = useTemplateEditor(templateId);
 
   return (
-    <div className="flex h-screen w-full bg-gray-50 overflow-hidden">
-      {/* Optimized Settings Sidebar - 240px */}
-      <div className="w-60 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0">
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Professional Sidebar - 320px for proper form layout */}
+      <div className="w-80 bg-white border-r border-gray-200 flex-shrink-0">
         <TemplateSettings
           template={templateEditorState.template}
           setTemplate={templateEditorState.setTemplate}
@@ -26,8 +26,8 @@ export default function TemplateEditor() {
         />
       </div>
       
-      {/* Main Editor Area - Fully Maximized */}
-      <div className="flex-1 min-w-0 overflow-hidden">
+      {/* Main Editor Area - Natural flowing layout */}
+      <div className="flex-1 min-w-0">
         <AdminTemplateEditorMain
           mode={templateEditorState.mode}
           templateId={templateEditorState.templateId}

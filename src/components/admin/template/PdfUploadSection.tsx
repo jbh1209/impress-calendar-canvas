@@ -3,6 +3,8 @@ import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Upload, FileText } from "lucide-react";
 
 interface PdfUploadSectionProps {
   templateId: string;
@@ -45,14 +47,14 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
         throw error;
       }
 
-      toast.success(`PDF processed! ${data.pagesCreated} pages ready.`);
+      toast.success(`PDF processed successfully! ${data.pagesCreated} pages ready for editing.`);
       
       if (onProcessingComplete) {
         onProcessingComplete();
       }
     } catch (error: any) {
       console.error("[PdfUploadSection] Upload error:", error);
-      toast.error(error.message || "PDF processing error.");
+      toast.error(error.message || "PDF processing failed. Please try again.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -82,46 +84,55 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
   };
 
   return (
-    <div
-      className={`border border-dashed rounded p-1 flex items-center justify-between gap-1 transition-all ${
-        dragOver ? "bg-blue-50 border-blue-300" : "bg-gray-50 border-gray-200 hover:border-gray-300"
-      }`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      tabIndex={0}
-    >
-      <div className="flex items-center gap-1">
-        <div className="text-xs">📄</div>
-        <span className="text-2xs font-medium text-gray-900 leading-none">
-          Upload Vector PDF
-        </span>
-      </div>
-      
-      <input
-        type="file"
-        accept="application/pdf"
-        disabled={isUploading}
-        onChange={handleFileSelected}
-        ref={fileInputRef}
-        className="hidden"
-      />
-      
-      <Button
-        onClick={handleButtonClick}
-        disabled={isUploading}
-        className="px-1.5 h-4 text-2xs"
-      >
-        {isUploading ? (
-          <>
-            <div className="animate-spin rounded-full h-2 w-2 border-b-2 border-white mr-0.5"></div>
-            Processing...
-          </>
-        ) : (
-          "Select PDF"
-        )}
-      </Button>
-    </div>
+    <Card>
+      <CardContent className="p-4">
+        <div
+          className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${
+            dragOver 
+              ? "bg-blue-50 border-blue-300" 
+              : "bg-gray-50 border-gray-200 hover:border-gray-300 hover:bg-gray-100"
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={handleButtonClick}
+        >
+          <FileText className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+          <h3 className="text-sm font-medium text-gray-900 mb-1">
+            Upload Vector PDF
+          </h3>
+          <p className="text-xs text-gray-500 mb-4">
+            Drag and drop your PDF here, or click to select
+          </p>
+          
+          <input
+            type="file"
+            accept="application/pdf"
+            disabled={isUploading}
+            onChange={handleFileSelected}
+            ref={fileInputRef}
+            className="hidden"
+          />
+          
+          <Button
+            disabled={isUploading}
+            variant="outline"
+          >
+            {isUploading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 mr-2"></div>
+                Processing PDF...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-2" />
+                Select PDF File
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

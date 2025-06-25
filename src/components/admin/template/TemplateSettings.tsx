@@ -5,9 +5,10 @@ import TemplateDetailsSection from "./TemplateDetailsSection";
 import TemplateDimensionsSection from "./TemplateDimensionsSection";
 import TemplateBleedSection from "./TemplateBleedSection";
 import TemplateStatusAndCategorySection from "./TemplateStatusAndCategorySection";
-import SectionPanel from "./SectionPanel";
 import { saveTemplate } from "@/services/templateService";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 const DEFAULT_BLEED = { top: 0.125, right: 0.125, bottom: 0.125, left: 0.125, units: "in" };
 
@@ -68,81 +69,97 @@ export default function TemplateSettings({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Ultra-compact Header */}
-      <div className="border-b border-gray-200 p-1.5 bg-white flex-shrink-0">
-        <h1 className="text-xs font-medium text-gray-900 truncate leading-none">
+      {/* Header */}
+      <div className="border-b border-gray-200 p-6 bg-white">
+        <h1 className="text-lg font-semibold text-gray-900 mb-1">
           {template.name || "New Template"}
         </h1>
-        <p className="text-2xs text-gray-500 mt-0.5 leading-none">
-          Configuration
+        <p className="text-sm text-gray-500">
+          Configure template settings and properties
         </p>
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <form className="p-1.5 space-y-1.5" onSubmit={handleSaveTemplate} autoComplete="off">
-          {/* Ultra-compact Save Button */}
-          <Button
-            type="submit"
-            className="w-full h-5 text-2xs px-1.5 py-0.5"
-            disabled={isSaving || isLoading}
-          >
-            {isSaving || isLoading ? (
-              <>
-                <div className="animate-spin rounded-full h-2 w-2 border-b-2 border-white mr-0.5"></div>
-                Saving...
-              </>
-            ) : (
-              "Save Template"
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6">
+          <form onSubmit={handleSaveTemplate} className="space-y-6">
+            {/* Save Button */}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isSaving || isLoading}
+            >
+              {isSaving || isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving Template...
+                </>
+              ) : (
+                "Save Template"
+              )}
+            </Button>
+
+            {errorMsg && (
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-md px-4 py-3 text-sm">
+                {errorMsg}
+              </div>
             )}
-          </Button>
 
-          {errorMsg && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded px-1 py-0.5 text-2xs">
-              {errorMsg}
-            </div>
-          )}
+            {/* Template Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Template Details</CardTitle>
+                <CardDescription>Basic information about the template</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TemplateDetailsSection template={template} setTemplate={setTemplate} />
+              </CardContent>
+            </Card>
 
-          <div className="space-y-1.5">
-            <SectionPanel
-              title="Details"
-              description="Name and describe template"
-            >
-              <TemplateDetailsSection template={template} setTemplate={setTemplate} />
-            </SectionPanel>
+            {/* Status & Category */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Status & Category</CardTitle>
+                <CardDescription>Visibility and categorization settings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TemplateStatusAndCategorySection template={template} setTemplate={setTemplate} />
+              </CardContent>
+            </Card>
 
-            <SectionPanel
-              title="Status & Category"
-              description="Visibility and categorization"
-            >
-              <TemplateStatusAndCategorySection template={template} setTemplate={setTemplate} />
-            </SectionPanel>
+            {/* Dimensions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Dimensions</CardTitle>
+                <CardDescription>Page size and measurement units</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TemplateDimensionsSection
+                  template={template}
+                  setTemplate={setTemplate}
+                  units={units}
+                  setUnits={handleUnitChange}
+                />
+              </CardContent>
+            </Card>
 
-            <SectionPanel
-              title="Dimensions"
-              description="Page size and units"
-            >
-              <TemplateDimensionsSection
-                template={template}
-                setTemplate={setTemplate}
-                units={units}
-                setUnits={handleUnitChange}
-              />
-            </SectionPanel>
-
-            <SectionPanel
-              title="Bleed"
-              description="Print margins"
-            >
-              <TemplateBleedSection
-                bleed={template.bleed || bleed}
-                setBleed={b => setTemplate({ ...template, bleed: b })}
-                units={units}
-                setUnits={handleUnitChange}
-              />
-            </SectionPanel>
-          </div>
-        </form>
+            {/* Bleed Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Bleed Settings</CardTitle>
+                <CardDescription>Print margin settings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TemplateBleedSection
+                  bleed={template.bleed || bleed}
+                  setBleed={b => setTemplate({ ...template, bleed: b })}
+                  units={units}
+                  setUnits={handleUnitChange}
+                />
+              </CardContent>
+            </Card>
+          </form>
+        </div>
       </div>
     </div>
   );

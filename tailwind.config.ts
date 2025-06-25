@@ -19,6 +19,10 @@ export default {
 			}
 		},
 		extend: {
+			spacing: {
+				'70': '17.5rem', // 280px for zone manager
+				'80': '20rem',   // 320px for sidebar
+			},
 			fontSize: {
 				'2xs': '0.625rem', // 10px
 			},

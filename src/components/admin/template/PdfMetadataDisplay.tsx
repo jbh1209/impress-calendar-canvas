@@ -3,6 +3,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface PdfMetadataDisplayProps {
   templateData: any;
@@ -26,33 +27,40 @@ const PdfMetadataDisplay: React.FC<PdfMetadataDisplayProps> = ({
   };
 
   return (
-    <div className="bg-green-50 border border-green-200 rounded p-1">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 min-w-0">
-          <FileText className="h-2.5 w-2.5 text-green-600 flex-shrink-0" />
-          <span className="text-2xs font-medium text-green-800">Vector PDF Loaded</span>
-          <Badge variant="secondary" className="text-2xs px-1 py-0 h-3">
-            {metadata.pageCount}p
-          </Badge>
-          <span className="text-2xs text-green-700">{formatFileSize(metadata.fileSize)}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.open(templateData.original_pdf_url, '_blank')}
-            className="h-4 text-2xs px-1"
-          >
-            <Download className="h-2 w-2 mr-0.5" />
-            PDF
-          </Button>
-          <div className="flex items-center gap-0.5 text-2xs text-green-700">
-            <Info className="h-2 w-2" />
-            Vector
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <FileText className="h-5 w-5 text-green-600" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-green-800">Vector PDF Loaded</span>
+                <Badge variant="secondary">
+                  {metadata.pageCount} pages
+                </Badge>
+              </div>
+              <p className="text-xs text-green-700 mt-1">
+                {formatFileSize(metadata.fileSize)} • Vector format
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(templateData.original_pdf_url, '_blank')}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download PDF
+            </Button>
+            <div className="flex items-center gap-1 text-xs text-green-700">
+              <Info className="h-3 w-3" />
+              Vector Ready
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

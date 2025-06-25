@@ -6,6 +6,7 @@ import TemplateCanvas from "@/components/admin/template/TemplateCanvas";
 import { getTemplatePages } from "@/services/templatePageService";
 import { useRef, useEffect, useState } from "react";
 import { Canvas } from "fabric";
+import { Card, CardContent } from "@/components/ui/card";
 
 const AdminTemplateEditorMain = ({
   mode,
@@ -44,79 +45,77 @@ const AdminTemplateEditorMain = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
-      {/* Ultra-compact Top Section - Removed all card wrappers */}
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* Header Area */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200">
-        {/* PDF Metadata - Single line, ultra-compact */}
-        {mode === "edit" && templateData && (
-          <div className="px-2 py-1">
+        <div className="p-6 space-y-4">
+          {/* PDF Metadata */}
+          {mode === "edit" && templateData && (
             <PdfMetadataDisplay 
               templateData={templateData} 
               isVisible={true}
             />
-          </div>
-        )}
+          )}
 
-        {/* PDF Upload - Ultra-compact */}
-        {mode === "edit" && templateId && (
-          <div className="px-2 pb-1">
+          {/* PDF Upload */}
+          {mode === "edit" && templateId && (
             <PdfUploadSection
               templateId={templateId}
               onProcessingComplete={handleProcessingComplete}
             />
-          </div>
-        )}
+          )}
 
-        {/* Page Navigation - Ultra-compact, horizontal scroll */}
-        {mode === "edit" && pages.length > 0 && (
-          <div className="px-2 py-1 border-t border-gray-100">
+          {/* Page Navigation */}
+          {mode === "edit" && pages.length > 0 && (
             <PageNavigator
               pages={pages}
               activePageIndex={activePageIndex}
               setActivePageIndex={setActivePageIndex}
               templateData={templateData}
             />
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Main Content Area - Fully Maximized */}
-      <div className="flex-1 overflow-hidden min-h-0">
+      {/* Main Content Area */}
+      <div className="flex-1 min-h-0">
         {mode === "edit" && pages.length > 0 ? (
-          <div className="h-full">
-            <TemplateCanvas
-              isEditing={true}
-              templateId={templateId}
-              templateData={templateData}
-              activePage={activePage}
-              isLoading={isLoading}
-              setIsLoading={setIsLoading}
-              fabricCanvasRef={fabricCanvasRef}
-            />
-          </div>
+          <TemplateCanvas
+            isEditing={true}
+            templateId={templateId}
+            templateData={templateData}
+            activePage={activePage}
+            isLoading={isLoading}
+            setIsLoading={setIsLoading}
+            fabricCanvasRef={fabricCanvasRef}
+          />
         ) : mode === "create" ? (
           <div className="h-full flex items-center justify-center">
-            <div className="max-w-md mx-auto text-center p-4">
-              <div className="text-xl mb-1">⚙️</div>
-              <h3 className="text-xs font-medium text-gray-900 mb-0.5">
-                Ready to Create Template
-              </h3>
-              <p className="text-2xs text-gray-600">
-                Fill out template details and save to create.
-              </p>
-            </div>
+            <Card className="max-w-md mx-auto">
+              <CardContent className="p-8 text-center">
+                <div className="text-4xl mb-4">⚙️</div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Ready to Create Template
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Fill out template details in the sidebar and save to create your new template.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         ) : (
           <div className="h-full flex items-center justify-center">
-            <div className="max-w-md mx-auto text-center p-4">
-              <div className="text-xl mb-1">📄</div>
-              <h3 className="text-xs font-medium text-gray-900 mb-0.5">
-                Ready for PDF Upload
-              </h3>
-              <p className="text-2xs text-gray-600">
-                Upload PDF above to start defining zones.
-              </p>
-            </div>
+            <Card className="max-w-md mx-auto">
+              <CardContent className="p-8 text-center">
+                <div className="text-4xl mb-4">📄</div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Ready for PDF Upload
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Upload a PDF file above to start defining customizable zones.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
