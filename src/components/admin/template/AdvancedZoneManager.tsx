@@ -152,15 +152,33 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
         zoneCount={zones.length}
       />
       
+      {/* PDF Preview */}
+      {activePage?.preview_image_url && (
+        <div className="p-4 bg-white border-b border-gray-200">
+          <div className="text-xs font-medium text-gray-700 mb-2">PDF Preview</div>
+          <div className="relative">
+            <img 
+              src={activePage.preview_image_url} 
+              alt={`Page ${activePage.page_number} preview`}
+              className="w-full h-32 object-contain bg-gray-50 rounded border"
+            />
+            <div className="absolute inset-0 bg-blue-500 bg-opacity-10 rounded border border-blue-300 border-dashed"></div>
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            Zone placement preview - drag zones on the canvas above
+          </div>
+        </div>
+      )}
+      
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 m-0.5 h-5">
-            <TabsTrigger value="create" className="text-2xs px-0.5 py-0">Create</TabsTrigger>
-            <TabsTrigger value="manage" className="text-2xs px-0.5 py-0">Manage</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 m-2">
+            <TabsTrigger value="create">Create Zones</TabsTrigger>
+            <TabsTrigger value="manage">Manage Zones</TabsTrigger>
           </TabsList>
           
-          <div className="flex-1 overflow-hidden">
-            <TabsContent value="create" className="p-1 m-0 h-full">
+          <div className="flex-1 overflow-hidden p-2">
+            <TabsContent value="create" className="m-0 h-full">
               <ZoneCreationTab
                 zoneName={zoneName}
                 setZoneName={setZoneName}
@@ -172,7 +190,7 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
               />
             </TabsContent>
             
-            <TabsContent value="manage" className="p-1 m-0 h-full">
+            <TabsContent value="manage" className="m-0 h-full">
               <ZoneListTab
                 zones={zones}
                 selectedZone={selectedZone}

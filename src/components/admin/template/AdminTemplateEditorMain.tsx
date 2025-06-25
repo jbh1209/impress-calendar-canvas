@@ -1,6 +1,4 @@
 
-import PdfUploadSection from "@/components/admin/template/PdfUploadSection";
-import PdfMetadataDisplay from "@/components/admin/template/PdfMetadataDisplay";
 import PageNavigator from "@/components/admin/template/PageNavigator";
 import TemplateCanvas from "@/components/admin/template/TemplateCanvas";
 import { getTemplatePages } from "@/services/templatePageService";
@@ -33,92 +31,68 @@ const AdminTemplateEditorMain = ({
     }
   }, [templateId, mode, setIsLoading]);
 
-  const handleProcessingComplete = async () => {
-    setIsLoading(true);
-    try {
-      const results = await getTemplatePages(templateId);
-      setPages(results || []);
-      setActivePageIndex(0);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (mode === "create") {
+    return (
+      <div className="h-96 flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="p-8 text-center">
+            <div className="text-4xl mb-4">⚙️</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Ready to Create Template
+            </h3>
+            <p className="text-sm text-gray-600">
+              Fill out template details above and save to create your new template.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (mode === "edit" && pages.length === 0) {
+    return (
+      <div className="h-96 flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="p-8 text-center">
+            <div className="text-4xl mb-4">📄</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Ready for PDF Upload
+            </h3>
+            <p className="text-sm text-gray-600">
+              Upload a PDF file using the button above to start defining customizable zones.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      {/* Header Area */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200">
-        <div className="p-6 space-y-4">
-          {/* PDF Metadata */}
-          {mode === "edit" && templateData && (
-            <PdfMetadataDisplay 
-              templateData={templateData} 
-              isVisible={true}
-            />
-          )}
-
-          {/* PDF Upload */}
-          {mode === "edit" && templateId && (
-            <PdfUploadSection
-              templateId={templateId}
-              onProcessingComplete={handleProcessingComplete}
-            />
-          )}
-
-          {/* Page Navigation */}
-          {mode === "edit" && pages.length > 0 && (
-            <PageNavigator
-              pages={pages}
-              activePageIndex={activePageIndex}
-              setActivePageIndex={setActivePageIndex}
-              templateData={templateData}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 min-h-0">
-        {mode === "edit" && pages.length > 0 ? (
-          <TemplateCanvas
-            isEditing={true}
-            templateId={templateId}
+    <div className="bg-gray-50">
+      {/* Page Navigation */}
+      {pages.length > 0 && (
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <PageNavigator
+            pages={pages}
+            activePageIndex={activePageIndex}
+            setActivePageIndex={setActivePageIndex}
             templateData={templateData}
-            activePage={activePage}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-            fabricCanvasRef={fabricCanvasRef}
           />
-        ) : mode === "create" ? (
-          <div className="h-full flex items-center justify-center">
-            <Card className="max-w-md mx-auto">
-              <CardContent className="p-8 text-center">
-                <div className="text-4xl mb-4">⚙️</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Ready to Create Template
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Fill out template details in the sidebar and save to create your new template.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        ) : (
-          <div className="h-full flex items-center justify-center">
-            <Card className="max-w-md mx-auto">
-              <CardContent className="p-8 text-center">
-                <div className="text-4xl mb-4">📄</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Ready for PDF Upload
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Upload a PDF file above to start defining customizable zones.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Canvas and Zone Manager */}
+      {pages.length > 0 && (
+        <TemplateCanvas
+          isEditing={true}
+          templateId={templateId}
+          templateData={templateData}
+          activePage={activePage}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+          fabricCanvasRef={fabricCanvasRef}
+        />
+      )}
     </div>
   );
 };

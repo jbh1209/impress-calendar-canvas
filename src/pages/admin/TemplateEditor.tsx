@@ -1,7 +1,7 @@
 
 import { useParams, useLocation } from "react-router-dom";
 import { useTemplateEditor } from "@/hooks/admin/template/useTemplateEditor";
-import TemplateSettings from "@/components/admin/template/TemplateSettings";
+import TemplateToolbar from "@/components/admin/template/TemplateToolbar";
 import AdminTemplateEditorMain from "@/components/admin/template/AdminTemplateEditorMain";
 
 export default function TemplateEditor() {
@@ -13,21 +13,25 @@ export default function TemplateEditor() {
   
   const templateEditorState = useTemplateEditor(templateId);
 
+  const handleProcessingComplete = () => {
+    // This will be handled by AdminTemplateEditorMain
+    window.location.reload();
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Professional Sidebar - 320px for proper form layout */}
-      <div className="w-80 bg-white border-r border-gray-200 flex-shrink-0">
-        <TemplateSettings
-          template={templateEditorState.template}
-          setTemplate={templateEditorState.setTemplate}
-          isLoading={templateEditorState.isLoading}
-          templateId={templateEditorState.templateId}
-          setTemplateId={templateEditorState.setTemplateId}
-        />
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Horizontal Toolbar */}
+      <TemplateToolbar
+        template={templateEditorState.template}
+        setTemplate={templateEditorState.setTemplate}
+        isLoading={templateEditorState.isLoading}
+        templateId={templateEditorState.templateId}
+        setTemplateId={templateEditorState.setTemplateId}
+        onProcessingComplete={handleProcessingComplete}
+      />
       
-      {/* Main Editor Area - Natural flowing layout */}
-      <div className="flex-1 min-w-0">
+      {/* Main Content Area */}
+      <div className="flex-1">
         <AdminTemplateEditorMain
           mode={templateEditorState.mode}
           templateId={templateEditorState.templateId}
