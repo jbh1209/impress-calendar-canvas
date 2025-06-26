@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from "react";
 import { Canvas as FabricCanvas } from "fabric";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +6,8 @@ import { TemplatePage } from "@/services/types/templateTypes";
 import AdvancedZoneManagerHeader from "./zone/AdvancedZoneManagerHeader";
 import ZoneCreationTab from "./zone/ZoneCreationTab";
 import ZoneListTab from "./zone/ZoneListTab";
+import { Loader2, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface AdvancedZoneManagerProps {
   fabricCanvasRef: React.MutableRefObject<FabricCanvas | null>;
@@ -27,6 +28,8 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("create");
   const [previewError, setPreviewError] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
 
   const refreshZones = useCallback(() => {
     if (!fabricCanvasRef.current) return;
@@ -146,9 +149,22 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
     setSelectedZone(zone);
   }, [fabricCanvasRef]);
 
-  // Handle preview image error
+  // Handle preview image loading
+  const handlePreviewLoad = () => {
+    setPreviewLoading(false);
+    setPreviewError(false);
+    setRetryCount(0);
+  };
+
   const handlePreviewError = () => {
+    setPreviewLoading(false);
     setPreviewError(true);
+  };
+
+  const handleRetryPreview = () => {
+    setRetryCount(prev => prev + 1);
+    setPreviewLoading(true);
+    setPreviewError(false);
   };
 
   return (
@@ -164,22 +180,46 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
           <div className="text-xs font-medium text-gray-700 mb-2">PDF Preview</div>
           <div className="relative">
             {activePage.preview_image_url && !previewError ? (
-              <img 
-                src={activePage.preview_image_url} 
-                alt={`Page ${activePage.page_number} preview`}
-                className="w-full h-40 object-contain bg-white border rounded shadow-sm"
-                onError={handlePreviewError}
-                onLoad={() => setPreviewError(false)}
-              />
+              <div className="relative">
+                {previewLoading && (
+                  <div className="absolute inset-0 bg-gray-100 border rounded flex items-center justify-center">
+                    <div className="text-center text-gray-500">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                      <div className="text-sm">Loading preview...</div>
+                    </div>
+                  </div>
+                )}
+                <img 
+                  src={`${activePage.preview_image_url}?retry=${retryCount}`}
+                  alt={`Page ${activePage.page_number} preview`}
+                  className="w-full h-40 object-contain bg-white border rounded shadow-sm"
+                  onError={handlePreviewError}
+                  onLoad={handlePreviewLoad}
+                  style={{ display: previewLoading ? 'none' : 'block' }}
+                />
+              </div>
             ) : (
               <div className="w-full h-40 bg-gray-100 border rounded flex items-center justify-center">
                 <div className="text-center text-gray-500">
-                  <div className="text-sm font-medium">PDF Preview</div>
+                  <div className="text-sm font-medium">
+                    {previewError ? 'Preview Failed' : 'PDF Preview'}
+                  </div>
                   <div className="text-xs">Page {activePage.page_number}</div>
                   {activePage.pdf_page_width && activePage.pdf_page_height && (
                     <div className="text-xs mt-1">
                       {Math.round(activePage.pdf_page_width * 0.352778)} × {Math.round(activePage.pdf_page_height * 0.352778)} mm
                     </div>
+                  )}
+                  {previewError && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleRetryPreview}
+                      className="mt-2"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Retry
+                    </Button>
                   )}
                 </div>
               </div>
