@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from "react";
 import { Canvas as FabricCanvas } from "fabric";
 import { toast } from "sonner";
@@ -45,7 +44,7 @@ const Canvas = ({
           fabricCanvasRef.current.dispose();
         }
         
-        // Calculate optimal canvas dimensions from PDF page data
+        // Calculate canvas dimensions
         let canvasWidth = 800;
         let canvasHeight = 600;
         
@@ -55,20 +54,12 @@ const Canvas = ({
           const maxHeight = 700;
           
           if (aspectRatio > 1) {
-            // Landscape orientation
             canvasWidth = Math.min(maxWidth, activePage.pdf_page_width * 0.5);
             canvasHeight = canvasWidth / aspectRatio;
           } else {
-            // Portrait orientation
             canvasHeight = Math.min(maxHeight, activePage.pdf_page_height * 0.5);
             canvasWidth = canvasHeight * aspectRatio;
           }
-          
-          console.log("[Canvas] Using PDF-based dimensions:", {
-            pdfSize: { width: activePage.pdf_page_width, height: activePage.pdf_page_height },
-            canvasSize: { width: canvasWidth, height: canvasHeight },
-            aspectRatio
-          });
         }
         
         const canvas = new FabricCanvas(canvasRef.current, {
@@ -81,29 +72,11 @@ const Canvas = ({
         
         fabricCanvasRef.current = canvas;
         
-        // Enhanced canvas event handling
-        canvas.on('selection:created', (e) => {
-          console.log("[Canvas] Zone selected:", e.selected?.[0]?.get('customProps'));
-        });
-        
-        canvas.on('object:modified', (e) => {
-          const obj = e.target;
-          if (obj && activePage?.pdf_page_width && activePage?.pdf_page_height) {
-            const props = obj.get('customProps' as any);
-            if (props?.zoneType) {
-              console.log("[Canvas] Zone modified:", {
-                zone: props.name,
-                canvasCoords: { x: obj.left, y: obj.top, width: obj.width, height: obj.height },
-                pdfDimensions: { width: activePage.pdf_page_width, height: activePage.pdf_page_height }
-              });
-            }
-          }
-        });
-        
-        if (isEditing && templateId && templateData) {
-          // Load page-specific background
-          if (activePage?.preview_image_url) {
-            console.log("[Canvas] Loading page preview image:", activePage.preview_image_url);
+        // Load background if we have a preview URL
+        if (isEditing && templateId && activePage?.preview_image_url) {
+          console.log("[Canvas] Loading preview image:", activePage.preview_image_url);
+          
+          try {
             await loadTemplateBackground(
               canvas, 
               activePage.preview_image_url,
@@ -112,9 +85,10 @@ const Canvas = ({
                 height: canvasHeight
               }
             );
-          } else {
-            console.log("[Canvas] No preview image URL available");
-            toast.error("No preview image available for this page");
+            toast.success("PDF preview loaded successfully");
+          } catch (error) {
+            console.error("[Canvas] Failed to load preview:", error);
+            toast.error("Failed to load PDF preview - using placeholder");
           }
         }
         
@@ -123,8 +97,8 @@ const Canvas = ({
         
       } catch (error) {
         console.error("[Canvas] Error initializing canvas:", error);
-        toast.error(`Failed to initialize canvas: ${error.message}`);
         setIsLoading(false);
+        toast.error(`Failed to initialize canvas: ${error.message}`);
       }
     };
     
@@ -146,7 +120,6 @@ const Canvas = ({
         <canvas ref={canvasRef} className="max-w-full" />
       </div>
       
-      {/* Enhanced loading state with more info */}
       {isLoading && (
         <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-lg backdrop-blur-sm">
           <div className="text-center">
@@ -154,19 +127,18 @@ const Canvas = ({
             <div className="text-sm text-gray-600 font-medium">Loading Canvas...</div>
             {activePage && (
               <div className="text-xs text-gray-500 mt-1">
-                Page {activePage.page_number} • {activePage.pdf_page_width}×{activePage.pdf_page_height}pt
+                Page {activePage.page_number}
               </div>
             )}
           </div>
         </div>
       )}
       
-      {/* Debug info overlay */}
+      {/* Debug info */}
       {activePage && !isLoading && (
         <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
           Page {activePage.page_number} • 
-          {activePage.preview_image_url ? ' Preview Available' : ' No Preview'} • 
-          {activePage.pdf_page_width}×{activePage.pdf_page_height}pt
+          {activePage.preview_image_url ? ' Preview URL Available' : ' No Preview URL'}
         </div>
       )}
     </div>

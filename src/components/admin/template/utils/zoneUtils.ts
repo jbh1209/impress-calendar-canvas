@@ -149,103 +149,106 @@ export const loadTemplateBackground = async (
   pageData?: { width?: number; height?: number }
 ): Promise<void> => {
   try {
-    console.log("[loadTemplateBackground] Starting to load background image:", imageUrl);
+    console.log("[loadTemplateBackground] Starting to load:", imageUrl);
     
-    // Test if the image URL is accessible
-    try {
-      const testResponse = await fetch(imageUrl, { method: 'HEAD' });
-      console.log("[loadTemplateBackground] Image accessibility test:", testResponse.status);
+    // Simple direct image loading approach
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => {
+        console.log("[loadTemplateBackground] Image loaded successfully:", {
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight,
+          src: imageUrl
+        });
+        resolve();
+      };
       
-      if (!testResponse.ok) {
-        throw new Error(`Image not accessible: ${testResponse.status} ${testResponse.statusText}`);
-      }
-    } catch (fetchError) {
-      console.error("[loadTemplateBackground] Image fetch test failed:", fetchError);
-      toast.error("Preview image is not accessible");
-      return;
-    }
+      img.onerror = (error) => {
+        console.error("[loadTemplateBackground] Image load failed:", error);
+        reject(new Error(`Failed to load image: ${imageUrl}`));
+      };
+      
+      // Set the source to trigger loading
+      img.src = imageUrl;
+    });
     
-    // Load the image with better error handling
-    const img = await new Promise<FabricImage>((resolve, reject) => {
+    // Create Fabric image from the loaded HTML image
+    const fabricImg = await new Promise<FabricImage>((resolve, reject) => {
       FabricImage.fromURL(imageUrl, {
         crossOrigin: 'anonymous',
       }).then((loadedImg) => {
-        console.log("[loadTemplateBackground] Image loaded successfully:", {
-          width: loadedImg.width,
-          height: loadedImg.height,
-          src: imageUrl
-        });
+        console.log("[loadTemplateBackground] Fabric image created");
         resolve(loadedImg);
       }).catch((error) => {
-        console.error("[loadTemplateBackground] Fabric image loading failed:", error);
+        console.error("[loadTemplateBackground] Fabric image creation failed:", error);
         reject(error);
       });
     });
     
-    // Set canvas size based on PDF page data for accurate vector mapping
+    // Calculate canvas dimensions
     const canvasWidth = pageData?.width || 800;
     const canvasHeight = pageData?.height || 600;
     
-    console.log("[loadTemplateBackground] Setting canvas dimensions:", { canvasWidth, canvasHeight });
-    
+    console.log("[loadTemplateBackground] Setting canvas size:", { canvasWidth, canvasHeight });
     canvas.setWidth(canvasWidth);
     canvas.setHeight(canvasHeight);
     
-    // Maintain aspect ratio while fitting to canvas
-    const imgAspectRatio = (img.width || 1) / (img.height || 1);
+    // Scale the image to fit the canvas
+    const imgAspectRatio = (fabricImg.width || 1) / (fabricImg.height || 1);
     const canvasAspectRatio = canvasWidth / canvasHeight;
     
     let scale: number;
     if (imgAspectRatio > canvasAspectRatio) {
-      // Image is wider than canvas
-      scale = canvasWidth / (img.width || 1);
+      scale = canvasWidth / (fabricImg.width || 1);
     } else {
-      // Image is taller than canvas
-      scale = canvasHeight / (img.height || 1);
+      scale = canvasHeight / (fabricImg.height || 1);
     }
     
-    console.log("[loadTemplateBackground] Calculated scale:", scale);
-    
-    img.scale(scale);
-    img.set({
-      left: (canvasWidth - (img.width || 0) * scale) / 2,
-      top: (canvasHeight - (img.height || 0) * scale) / 2,
+    fabricImg.scale(scale);
+    fabricImg.set({
+      left: (canvasWidth - (fabricImg.width || 0) * scale) / 2,
+      top: (canvasHeight - (fabricImg.height || 0) * scale) / 2,
       selectable: false,
       evented: false,
-      hoverCursor: 'default',
-      moveCursor: 'default',
     });
     
-    // Set as background image
-    canvas.backgroundImage = img;
+    // Set as background image and render
+    canvas.backgroundImage = fabricImg;
     canvas.renderAll();
     
-    console.log("[loadTemplateBackground] Background image set successfully");
-    toast.success("PDF preview loaded successfully");
+    console.log("[loadTemplateBackground] Background set successfully");
     
   } catch (error) {
-    console.error("[loadTemplateBackground] Complete error:", error);
-    toast.error(`Failed to load PDF preview: ${error.message}`);
+    console.error("[loadTemplateBackground] Error:", error);
     
-    // Add fallback background
+    // Fallback: Create a simple placeholder
+    const canvasWidth = pageData?.width || 800;
+    const canvasHeight = pageData?.height || 600;
+    
+    canvas.setWidth(canvasWidth);
+    canvas.setHeight(canvasHeight);
     canvas.backgroundColor = '#f8f9fa';
-    canvas.renderAll();
     
-    // Add a placeholder text
-    const placeholderText = new FabricText('PDF Preview Failed to Load', {
-      left: canvas.width! / 2,
-      top: canvas.height! / 2,
-      fontSize: 16,
+    // Add placeholder text
+    const placeholderText = new FabricText('PDF Preview\nNot Available', {
+      left: canvasWidth / 2,
+      top: canvasHeight / 2,
+      fontSize: 24,
       fill: '#6b7280',
       fontFamily: 'Inter, system-ui, sans-serif',
       originX: 'center',
       originY: 'center',
       selectable: false,
       evented: false,
+      textAlign: 'center',
     });
     
     canvas.add(placeholderText);
     canvas.renderAll();
+    
+    throw error;
   }
 };
 

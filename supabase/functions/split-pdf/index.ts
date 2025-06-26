@@ -31,7 +31,7 @@ serve(async (req) => {
 
     console.log(`Processing PDF for template ${templateId}`)
 
-    // Step 1: Store original PDF in storage
+    // Store original PDF
     const pdfBuffer = await pdfFile.arrayBuffer()
     const pdfFileName = `${templateId}/original.pdf`
     
@@ -50,7 +50,7 @@ serve(async (req) => {
       )
     }
 
-    // Step 2: Extract PDF metadata using PDF-lib
+    // Extract PDF metadata
     const { PDFDocument } = await import('https://esm.sh/pdf-lib@1.17.1')
     
     const pdfDoc = await PDFDocument.load(pdfBuffer)
@@ -58,7 +58,7 @@ serve(async (req) => {
     
     console.log(`PDF has ${pageCount} pages`)
 
-    // Step 3: Clean up any existing pages for this template
+    // Clean up existing pages
     const { error: deleteError } = await supabaseClient
       .from('template_pages')
       .delete()
@@ -68,7 +68,7 @@ serve(async (req) => {
       console.warn('Warning: Could not clean up existing pages:', deleteError)
     }
 
-    // Step 4: Process each page and create records
+    // Process each page
     const pages = []
     const failedPages = []
     
@@ -79,10 +79,10 @@ serve(async (req) => {
         
         console.log(`Processing page ${i + 1} with dimensions ${width}x${height}pt`)
 
-        // Generate preview image
-        const previewImage = await generatePDFPagePreview(i + 1, width, height)
+        // Generate a better preview image
+        const previewImage = await generateBetterPreview(i + 1, width, height)
         
-        // Upload preview image to storage
+        // Upload preview image
         const previewFileName = `${templateId}/page-${i + 1}.png`
         const { data: imageUpload, error: imageUploadError } = await supabaseClient.storage
           .from('pdf-previews')
@@ -97,6 +97,7 @@ serve(async (req) => {
             .from('pdf-previews')
             .getPublicUrl(previewFileName)
           previewUrl = previewUrlData.publicUrl
+          console.log(`Preview URL for page ${i + 1}: ${previewUrl}`)
         } else {
           console.warn(`Could not upload preview for page ${i + 1}:`, imageUploadError)
         }
@@ -129,7 +130,7 @@ serve(async (req) => {
       }
     }
 
-    // Step 5: Update template with PDF metadata
+    // Update template with metadata
     const { data: pdfUrlData } = supabaseClient.storage
       .from('template-files')
       .getPublicUrl(pdfFileName)
@@ -156,15 +157,10 @@ serve(async (req) => {
       console.error('Error updating template:', templateUpdateError)
     }
 
-    // Step 6: Return results
     const isSuccess = pages.length > 0
     const message = isSuccess 
       ? `Successfully processed PDF with ${pageCount} pages. Created ${pages.length} pages.`
       : `Failed to process PDF. No pages were created.`
-
-    if (failedPages.length > 0) {
-      console.warn('Some pages failed to process:', failedPages)
-    }
 
     return new Response(
       JSON.stringify({
@@ -191,25 +187,26 @@ serve(async (req) => {
   }
 })
 
-async function generatePDFPagePreview(pageNumber: number, width: number, height: number): Promise<Uint8Array> {
+async function generateBetterPreview(pageNumber: number, width: number, height: number): Promise<Uint8Array> {
   try {
-    // Create a basic preview image using canvas-like approach
-    const canvasWidth = Math.min(800, Math.round(width * 0.5))
-    const canvasHeight = Math.min(600, Math.round(height * 0.5))
+    // Create a better preview with proper dimensions
+    const canvasWidth = Math.min(1200, Math.round(width * 0.8))  // Higher resolution
+    const canvasHeight = Math.min(900, Math.round(height * 0.8))
     
-    // Generate a simple PNG with page information
-    const imageData = createPreviewImageData(canvasWidth, canvasHeight, pageNumber, width, height)
+    console.log(`Generating preview for page ${pageNumber}: ${canvasWidth}x${canvasHeight}`)
+    
+    // Create image data
+    const imageData = createBetterImageData(canvasWidth, canvasHeight, pageNumber, width, height)
     
     return createPNGFromImageData(imageData)
     
   } catch (error) {
     console.error('Error generating preview:', error)
-    // Fallback to minimal PNG
     return createMinimalPNG()
   }
 }
 
-function createPreviewImageData(width: number, height: number, pageNumber: number, pdfWidth: number, pdfHeight: number) {
+function createBetterImageData(width: number, height: number, pageNumber: number, pdfWidth: number, pdfHeight: number) {
   const pixels = new Uint8Array(width * height * 4) // RGBA
   
   // Fill with white background
@@ -220,66 +217,71 @@ function createPreviewImageData(width: number, height: number, pageNumber: numbe
     pixels[i + 3] = 255 // A
   }
   
-  // Add simple grid pattern
-  const gridSize = 40
-  for (let y = 0; y < height; y += gridSize) {
-    for (let x = 0; x < width; x++) {
+  // Add a more detailed grid pattern
+  const gridSize = Math.max(20, Math.min(width, height) / 20)
+  
+  // Vertical lines
+  for (let x = 0; x < width; x += gridSize) {
+    for (let y = 0; y < height; y++) {
       if (x < width && y < height) {
         const idx = (y * width + x) * 4
-        pixels[idx] = 240     // Light gray
-        pixels[idx + 1] = 240
-        pixels[idx + 2] = 240
+        pixels[idx] = 230     // Light gray
+        pixels[idx + 1] = 230
+        pixels[idx + 2] = 230
         pixels[idx + 3] = 255
       }
     }
   }
   
-  for (let x = 0; x < width; x += gridSize) {
-    for (let y = 0; y < height; y++) {
+  // Horizontal lines
+  for (let y = 0; y < height; y += gridSize) {
+    for (let x = 0; x < width; x++) {
       if (x < width && y < height) {
         const idx = (y * width + x) * 4
-        pixels[idx] = 240     // Light gray
-        pixels[idx + 1] = 240
-        pixels[idx + 2] = 240
+        pixels[idx] = 230     // Light gray
+        pixels[idx + 1] = 230
+        pixels[idx + 2] = 230
         pixels[idx + 3] = 255
       }
     }
   }
   
   // Add border
-  for (let x = 0; x < width; x++) {
-    // Top border
-    if (x < width) {
-      const idx = x * 4
-      pixels[idx] = 200
-      pixels[idx + 1] = 200
-      pixels[idx + 2] = 200
-      pixels[idx + 3] = 255
+  const borderWidth = 2
+  for (let i = 0; i < borderWidth; i++) {
+    // Top and bottom borders
+    for (let x = 0; x < width; x++) {
+      // Top
+      const topIdx = (i * width + x) * 4
+      pixels[topIdx] = 100
+      pixels[topIdx + 1] = 100
+      pixels[topIdx + 2] = 100
+      pixels[topIdx + 3] = 255
+      
+      // Bottom
+      const bottomIdx = ((height - 1 - i) * width + x) * 4
+      pixels[bottomIdx] = 100
+      pixels[bottomIdx + 1] = 100
+      pixels[bottomIdx + 2] = 100
+      pixels[bottomIdx + 3] = 255
     }
-    // Bottom border
-    if (x < width) {
-      const idx = ((height - 1) * width + x) * 4
-      pixels[idx] = 200
-      pixels[idx + 1] = 200
-      pixels[idx + 2] = 200
-      pixels[idx + 3] = 255
-    }
-  }
-  
-  for (let y = 0; y < height; y++) {
-    // Left border
-    const leftIdx = (y * width) * 4
-    pixels[leftIdx] = 200
-    pixels[leftIdx + 1] = 200
-    pixels[leftIdx + 2] = 200
-    pixels[leftIdx + 3] = 255
     
-    // Right border
-    const rightIdx = (y * width + width - 1) * 4
-    pixels[rightIdx] = 200
-    pixels[rightIdx + 1] = 200
-    pixels[rightIdx + 2] = 200
-    pixels[rightIdx + 3] = 255
+    // Left and right borders
+    for (let y = 0; y < height; y++) {
+      // Left
+      const leftIdx = (y * width + i) * 4
+      pixels[leftIdx] = 100
+      pixels[leftIdx + 1] = 100
+      pixels[leftIdx + 2] = 100
+      pixels[leftIdx + 3] = 255
+      
+      // Right
+      const rightIdx = (y * width + width - 1 - i) * 4
+      pixels[rightIdx] = 100
+      pixels[rightIdx + 1] = 100
+      pixels[rightIdx + 2] = 100
+      pixels[rightIdx + 3] = 255
+    }
   }
   
   return { width, height, pixels }
