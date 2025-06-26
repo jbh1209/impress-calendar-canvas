@@ -35,8 +35,15 @@ export default function TemplateToolbar({
   const [showUpload, setShowUpload] = useState(false);
   const [showBleedSettings, setShowBleedSettings] = useState(false);
 
-  // Initialize bleed settings if not present
-  const bleed = template.bleed || { top: 0.125, right: 0.125, bottom: 0.125, left: 0.125, units: 'in' };
+  // Initialize bleed settings with template units
+  const currentUnits = template.units || 'mm';
+  const bleed = template.bleed || { 
+    top: 0.125, 
+    right: 0.125, 
+    bottom: 0.125, 
+    left: 0.125, 
+    units: currentUnits 
+  };
 
   const handleSave = async () => {
     if (!template.name?.trim()) {
@@ -68,6 +75,16 @@ export default function TemplateToolbar({
   const handleBleedUnitChange = (unit: string) => {
     const newBleed = { ...bleed, units: unit };
     setTemplate({ ...template, bleed: newBleed });
+  };
+
+  const handleUnitsChange = (newUnits: string) => {
+    // Update both template units and bleed units
+    const updatedBleed = { ...bleed, units: newUnits };
+    setTemplate({ 
+      ...template, 
+      units: newUnits,
+      bleed: updatedBleed 
+    });
   };
 
   return (
@@ -146,15 +163,15 @@ export default function TemplateToolbar({
           <div className="space-y-2">
             <Label>Units</Label>
             <Select
-              value={template.units || "in"}
-              onValueChange={(value) => setTemplate({ ...template, units: value })}
+              value={currentUnits}
+              onValueChange={handleUnitsChange}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="in">Inches</SelectItem>
                 <SelectItem value="mm">Millimeters</SelectItem>
+                <SelectItem value="in">Inches</SelectItem>
                 <SelectItem value="pt">Points</SelectItem>
               </SelectContent>
             </Select>
@@ -209,13 +226,13 @@ export default function TemplateToolbar({
               ))}
               <div className="space-y-1">
                 <Label className="text-sm">Units</Label>
-                <Select value={bleed.units || "in"} onValueChange={handleBleedUnitChange}>
+                <Select value={bleed.units || currentUnits} onValueChange={handleBleedUnitChange}>
                   <SelectTrigger className="text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="in">Inches</SelectItem>
                     <SelectItem value="mm">Millimeters</SelectItem>
+                    <SelectItem value="in">Inches</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

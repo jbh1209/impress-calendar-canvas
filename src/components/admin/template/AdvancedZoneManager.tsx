@@ -8,6 +8,7 @@ import ZoneCreationTab from "./zone/ZoneCreationTab";
 import ZoneListTab from "./zone/ZoneListTab";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { createZoneGroup } from "./utils/zoneUtils";
 
 interface AdvancedZoneManagerProps {
   fabricCanvasRef: React.MutableRefObject<FabricCanvas | null>;
@@ -88,7 +89,6 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
     const gridY = 20 + Math.floor(zoneCount / 3) * (defaultHeight + 20);
     
     try {
-      const { createZoneGroup } = require('./utils/zoneUtils');
       const zoneGroup = createZoneGroup({
         name,
         type,
@@ -177,7 +177,7 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
       {/* PDF Preview */}
       {activePage && (
         <div className="p-4 bg-white border-b border-gray-200">
-          <div className="text-xs font-medium text-gray-700 mb-2">PDF Preview</div>
+          <div className="text-sm font-medium text-gray-700 mb-2">PDF Preview</div>
           <div className="relative">
             {activePage.preview_image_url && !previewError ? (
               <div className="relative">
