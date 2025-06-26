@@ -1,7 +1,7 @@
+
 import { useEffect, useRef } from "react";
 import { Canvas as FabricCanvas, Image as FabricImage } from "fabric";
 import { toast } from "sonner";
-import { loadSupabaseImage } from "./utils/imageLoader";
 import { Template, TemplatePage } from "@/services/types/templateTypes";
 
 interface CanvasProps {
@@ -79,51 +79,42 @@ const Canvas = ({
         
         // Load background if we have a preview URL
         if (isEditing && templateId && activePage?.preview_image_url) {
-          console.log("[Canvas] Loading preview image with new loader...");
+          console.log("[Canvas] Loading preview image with Fabric.js fromURL...");
           
           try {
-            const loadResult = await loadSupabaseImage(activePage.preview_image_url);
+            const fabricImg = await FabricImage.fromURL(activePage.preview_image_url, {
+              crossOrigin: 'anonymous',
+            });
             
-            if (loadResult.success && loadResult.imageElement) {
-              console.log("[Canvas] Image loaded successfully, creating Fabric image...");
-              
-              const fabricImg = new FabricImage(loadResult.imageElement, {
-                crossOrigin: 'anonymous',
-              });
-              
-              // Scale and position the image
-              const imgWidth = fabricImg.width || 1;
-              const imgHeight = fabricImg.height || 1;
-              const imgAspectRatio = imgWidth / imgHeight;
-              const canvasAspectRatio = canvasWidth / canvasHeight;
-              
-              let scale: number;
-              if (imgAspectRatio > canvasAspectRatio) {
-                scale = canvasWidth / imgWidth;
-              } else {
-                scale = canvasHeight / imgHeight;
-              }
-
-              fabricImg.scale(scale);
-              fabricImg.set({
-                left: (canvasWidth - imgWidth * scale) / 2,
-                top: (canvasHeight - imgHeight * scale) / 2,
-                selectable: false,
-                evented: false,
-              });
-
-              // Set as background and render
-              canvas.backgroundImage = fabricImg;
-              canvas.renderAll();
-              
-              console.log("[Canvas] Background image set successfully");
-              toast.success("PDF preview loaded successfully");
-              
+            console.log("[Canvas] Image loaded successfully, scaling and positioning...");
+            
+            // Scale and position the image
+            const imgWidth = fabricImg.width || 1;
+            const imgHeight = fabricImg.height || 1;
+            const imgAspectRatio = imgWidth / imgHeight;
+            const canvasAspectRatio = canvasWidth / canvasHeight;
+            
+            let scale: number;
+            if (imgAspectRatio > canvasAspectRatio) {
+              scale = canvasWidth / imgWidth;
             } else {
-              console.error("[Canvas] Image loading failed:", loadResult.error);
-              await createEnhancedFallback(canvas, { width: canvasWidth, height: canvasHeight });
-              toast.error(`Preview loading failed: ${loadResult.error}`);
+              scale = canvasHeight / imgHeight;
             }
+
+            fabricImg.scale(scale);
+            fabricImg.set({
+              left: (canvasWidth - imgWidth * scale) / 2,
+              top: (canvasHeight - imgHeight * scale) / 2,
+              selectable: false,
+              evented: false,
+            });
+
+            // Set as background and render
+            canvas.backgroundImage = fabricImg;
+            canvas.renderAll();
+            
+            console.log("[Canvas] Background image set successfully");
+            toast.success("PDF preview loaded successfully");
             
           } catch (error) {
             console.error("[Canvas] Preview loading error:", error);
