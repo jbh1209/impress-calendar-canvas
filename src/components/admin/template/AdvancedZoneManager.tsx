@@ -149,22 +149,38 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
     setSelectedZone(zone);
   }, [fabricCanvasRef]);
 
-  // Handle preview image loading
+  // Handle preview image loading with better error handling
   const handlePreviewLoad = () => {
+    console.log("[AdvancedZoneManager] Preview image loaded successfully");
     setPreviewLoading(false);
     setPreviewError(false);
     setRetryCount(0);
   };
 
-  const handlePreviewError = () => {
+  const handlePreviewError = (error: any) => {
+    console.error("[AdvancedZoneManager] Preview image failed to load:", error);
     setPreviewLoading(false);
     setPreviewError(true);
+    toast.error("Failed to load preview image");
   };
 
   const handleRetryPreview = () => {
+    console.log("[AdvancedZoneManager] Retrying preview image load");
     setRetryCount(prev => prev + 1);
     setPreviewLoading(true);
     setPreviewError(false);
+  };
+
+  // Test image URL accessibility
+  const testImageUrl = async (url: string): Promise<boolean> => {
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      console.log("[AdvancedZoneManager] Image URL test result:", response.status);
+      return response.ok;
+    } catch (error) {
+      console.error("[AdvancedZoneManager] Image URL test failed:", error);
+      return false;
+    }
   };
 
   return (
@@ -174,7 +190,7 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
         zoneCount={zones.length}
       />
       
-      {/* PDF Preview */}
+      {/* Enhanced PDF Preview with better error handling */}
       {activePage && (
         <div className="p-4 bg-white border-b border-gray-200">
           <div className="text-sm font-medium text-gray-700 mb-2">PDF Preview</div>
@@ -197,12 +213,17 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
                   onLoad={handlePreviewLoad}
                   style={{ display: previewLoading ? 'none' : 'block' }}
                 />
+                
+                {/* Debug info for preview URL */}
+                <div className="text-xs text-gray-400 mt-1 break-all">
+                  URL: {activePage.preview_image_url}
+                </div>
               </div>
             ) : (
               <div className="w-full h-40 bg-gray-100 border rounded flex items-center justify-center">
                 <div className="text-center text-gray-500">
                   <div className="text-sm font-medium">
-                    {previewError ? 'Preview Failed' : 'PDF Preview'}
+                    {previewError ? 'Preview Failed to Load' : 'No PDF Preview'}
                   </div>
                   <div className="text-xs">Page {activePage.page_number}</div>
                   {activePage.pdf_page_width && activePage.pdf_page_height && (
@@ -210,16 +231,20 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
                       {Math.round(activePage.pdf_page_width * 0.352778)} × {Math.round(activePage.pdf_page_height * 0.352778)} mm
                     </div>
                   )}
-                  {previewError && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleRetryPreview}
-                      className="mt-2"
-                    >
-                      <RefreshCw className="h-3 w-3 mr-1" />
-                      Retry
-                    </Button>
+                  {previewError && activePage.preview_image_url && (
+                    <div className="mt-2 space-y-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleRetryPreview}
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Retry
+                      </Button>
+                      <div className="text-xs text-red-500">
+                        Failed to load: {activePage.preview_image_url.substring(0, 50)}...
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
