@@ -9,6 +9,7 @@ import ZoneListTab from "./zone/ZoneListTab";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createZoneGroup } from "./utils/zoneUtils";
+import { testImageUrl } from "./utils/imageLoader";
 
 interface AdvancedZoneManagerProps {
   fabricCanvasRef: React.MutableRefObject<FabricCanvas | null>;
@@ -31,6 +32,7 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
   const [previewError, setPreviewError] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [previewUrlAccessible, setPreviewUrlAccessible] = useState(false);
 
   const refreshZones = useCallback(() => {
     if (!fabricCanvasRef.current) return;
@@ -71,6 +73,20 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
       canvas.off('selection:cleared');
     };
   }, [refreshZones, fabricCanvasRef]);
+
+  // Test preview URL accessibility when page changes
+  useEffect(() => {
+    const checkPreviewUrl = async () => {
+      if (activePage?.preview_image_url) {
+        console.log("[AdvancedZoneManager] Testing preview URL accessibility...");
+        const isAccessible = await testImageUrl(activePage.preview_image_url);
+        setPreviewUrlAccessible(isAccessible);
+        console.log("[AdvancedZoneManager] Preview URL accessible:", isAccessible);
+      }
+    };
+    
+    checkPreviewUrl();
+  }, [activePage?.preview_image_url]);
 
   const handleAddZone = useCallback((type: 'image' | 'text') => {
     if (!fabricCanvasRef.current) return;
@@ -149,7 +165,7 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
     setSelectedZone(zone);
   }, [fabricCanvasRef]);
 
-  // Handle preview image loading with better error handling
+  // Enhanced preview handlers
   const handlePreviewLoad = () => {
     console.log("[AdvancedZoneManager] Preview image loaded successfully");
     setPreviewLoading(false);
@@ -171,18 +187,6 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
     setPreviewError(false);
   };
 
-  // Test image URL accessibility
-  const testImageUrl = async (url: string): Promise<boolean> => {
-    try {
-      const response = await fetch(url, { method: 'HEAD' });
-      console.log("[AdvancedZoneManager] Image URL test result:", response.status);
-      return response.ok;
-    } catch (error) {
-      console.error("[AdvancedZoneManager] Image URL test failed:", error);
-      return false;
-    }
-  };
-
   return (
     <div className="h-full flex flex-col bg-gray-50">
       <AdvancedZoneManagerHeader 
@@ -190,7 +194,7 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
         zoneCount={zones.length}
       />
       
-      {/* Enhanced PDF Preview with better error handling */}
+      {/* Enhanced PDF Preview with better diagnostics */}
       {activePage && (
         <div className="p-4 bg-white border-b border-gray-200">
           <div className="text-sm font-medium text-gray-700 mb-2">PDF Preview</div>
@@ -214,9 +218,13 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
                   style={{ display: previewLoading ? 'none' : 'block' }}
                 />
                 
-                {/* Debug info for preview URL */}
-                <div className="text-xs text-gray-400 mt-1 break-all">
-                  URL: {activePage.preview_image_url}
+                {/* Enhanced debug info */}
+                <div className="text-xs text-gray-400 mt-1 space-y-1">
+                  <div className="break-all">URL: {activePage.preview_image_url}</div>
+                  <div className="flex justify-between">
+                    <span>URL Test: {previewUrlAccessible ? '✅ Accessible' : '❌ Failed'}</span>
+                    <span>Retry: {retryCount}</span>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -242,7 +250,10 @@ const AdvancedZoneManager: React.FC<AdvancedZoneManagerProps> = ({
                         Retry
                       </Button>
                       <div className="text-xs text-red-500">
-                        Failed to load: {activePage.preview_image_url.substring(0, 50)}...
+                        URL Test: {previewUrlAccessible ? 'Accessible' : 'Failed'}
+                      </div>
+                      <div className="text-xs text-red-500 break-all">
+                        {activePage.preview_image_url.substring(0, 60)}...
                       </div>
                     </div>
                   )}

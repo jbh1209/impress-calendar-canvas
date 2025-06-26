@@ -1,8 +1,7 @@
-
 import { useEffect, useRef } from "react";
-import { Canvas as FabricCanvas } from "fabric";
+import { Canvas as FabricCanvas, Image as FabricImage } from "fabric";
 import { toast } from "sonner";
-import { renderZones, loadTemplateBackground } from "./utils/zoneUtils";
+import { loadSupabaseImage } from "./utils/imageLoader";
 import { Template, TemplatePage } from "@/services/types/templateTypes";
 
 interface CanvasProps {
@@ -80,28 +79,60 @@ const Canvas = ({
         
         // Load background if we have a preview URL
         if (isEditing && templateId && activePage?.preview_image_url) {
-          console.log("[Canvas] Attempting to load preview image...");
+          console.log("[Canvas] Loading preview image with new loader...");
           
           try {
-            await loadTemplateBackground(
-              canvas, 
-              activePage.preview_image_url,
-              {
-                width: canvasWidth,
-                height: canvasHeight
+            const loadResult = await loadSupabaseImage(activePage.preview_image_url);
+            
+            if (loadResult.success && loadResult.imageElement) {
+              console.log("[Canvas] Image loaded successfully, creating Fabric image...");
+              
+              const fabricImg = new FabricImage(loadResult.imageElement, {
+                crossOrigin: 'anonymous',
+              });
+              
+              // Scale and position the image
+              const imgWidth = fabricImg.width || 1;
+              const imgHeight = fabricImg.height || 1;
+              const imgAspectRatio = imgWidth / imgHeight;
+              const canvasAspectRatio = canvasWidth / canvasHeight;
+              
+              let scale: number;
+              if (imgAspectRatio > canvasAspectRatio) {
+                scale = canvasWidth / imgWidth;
+              } else {
+                scale = canvasHeight / imgHeight;
               }
-            );
-            console.log("[Canvas] Preview image loaded successfully");
+
+              fabricImg.scale(scale);
+              fabricImg.set({
+                left: (canvasWidth - imgWidth * scale) / 2,
+                top: (canvasHeight - imgHeight * scale) / 2,
+                selectable: false,
+                evented: false,
+              });
+
+              // Set as background and render
+              canvas.backgroundImage = fabricImg;
+              canvas.renderAll();
+              
+              console.log("[Canvas] Background image set successfully");
+              toast.success("PDF preview loaded successfully");
+              
+            } else {
+              console.error("[Canvas] Image loading failed:", loadResult.error);
+              await createEnhancedFallback(canvas, { width: canvasWidth, height: canvasHeight });
+              toast.error(`Preview loading failed: ${loadResult.error}`);
+            }
+            
           } catch (error) {
-            console.error("[Canvas] Preview image loading failed:", error);
-            toast.error("Preview image could not be loaded - using fallback display");
+            console.error("[Canvas] Preview loading error:", error);
+            await createEnhancedFallback(canvas, { width: canvasWidth, height: canvasHeight });
+            toast.error(`Failed to load preview: ${error.message}`);
           }
         } else {
-          console.log("[Canvas] No preview image to load:", {
-            isEditing,
-            templateId: !!templateId,
-            hasPreviewUrl: !!activePage?.preview_image_url
-          });
+          console.log("[Canvas] No preview image to load");
+          await createEnhancedFallback(canvas, { width: canvasWidth, height: canvasHeight });
         }
         
         setIsLoading(false);
@@ -148,7 +179,6 @@ const Canvas = ({
         </div>
       )}
       
-      {/* Enhanced debug info */}
       {activePage && !isLoading && (
         <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white text-xs px-3 py-2 rounded-md">
           <div>Page {activePage.page_number}</div>
@@ -167,6 +197,86 @@ const Canvas = ({
       )}
     </div>
   );
+};
+
+// Enhanced fallback with better visual feedback
+const createEnhancedFallback = async (
+  canvas: FabricCanvas,
+  pageData?: { width?: number; height?: number }
+): Promise<void> => {
+  const canvasWidth = pageData?.width || 800;
+  const canvasHeight = pageData?.height || 600;
+  
+  console.log("[createEnhancedFallback] Creating fallback display");
+  
+  canvas.setWidth(canvasWidth);
+  canvas.setHeight(canvasHeight);
+  canvas.backgroundColor = '#f8f9fa';
+  
+  // Clear any existing objects
+  canvas.clear();
+  
+  // Add simple grid pattern using lines
+  const { Rect, Text: FabricText } = await import("fabric");
+  
+  // Add grid background
+  const gridRect = new Rect({
+    left: 0,
+    top: 0,
+    width: canvasWidth,
+    height: canvasHeight,
+    fill: 'transparent',
+    stroke: '#e5e7eb',
+    strokeWidth: 1,
+    strokeDashArray: [5, 5],
+    selectable: false,
+    evented: false,
+  });
+  canvas.add(gridRect);
+  
+  // Add central message
+  const mainText = new FabricText('PDF Preview', {
+    left: canvasWidth / 2,
+    top: canvasHeight / 2 - 30,
+    fontSize: 24,
+    fill: '#6b7280',
+    fontFamily: 'Inter, system-ui, sans-serif',
+    fontWeight: 'bold',
+    originX: 'center',
+    originY: 'center',
+    selectable: false,
+    evented: false,
+  });
+  
+  const subText = new FabricText('Could not load preview image', {
+    left: canvasWidth / 2,
+    top: canvasHeight / 2 + 10,
+    fontSize: 14,
+    fill: '#9ca3af',
+    fontFamily: 'Inter, system-ui, sans-serif',
+    originX: 'center',
+    originY: 'center',
+    selectable: false,
+    evented: false,
+  });
+  
+  const instructionText = new FabricText('You can still create customization zones', {
+    left: canvasWidth / 2,
+    top: canvasHeight / 2 + 40,
+    fontSize: 12,
+    fill: '#d1d5db',
+    fontFamily: 'Inter, system-ui, sans-serif',
+    originX: 'center',
+    originY: 'center',
+    selectable: false,
+    evented: false,
+  });
+  
+  canvas.add(mainText);
+  canvas.add(subText);
+  canvas.add(instructionText);
+  
+  canvas.renderAll();
 };
 
 export default Canvas;
