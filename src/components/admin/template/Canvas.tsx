@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from "react";
 import { Canvas as FabricCanvas } from "fabric";
 import { toast } from "sonner";
@@ -30,17 +31,19 @@ const Canvas = ({
       try {
         if (!canvasRef.current) return;
         
-        console.log("[Canvas] Initializing canvas for page:", {
+        console.log("[Canvas] Starting canvas initialization:", {
           pageNumber: activePage?.page_number,
           previewUrl: activePage?.preview_image_url,
           pdfDimensions: {
             width: activePage?.pdf_page_width,
             height: activePage?.pdf_page_height
-          }
+          },
+          timestamp: new Date().toISOString()
         });
         
         // Dispose of existing canvas
         if (fabricCanvasRef.current) {
+          console.log("[Canvas] Disposing existing canvas");
           fabricCanvasRef.current.dispose();
         }
         
@@ -62,6 +65,8 @@ const Canvas = ({
           }
         }
         
+        console.log("[Canvas] Calculated canvas dimensions:", { canvasWidth, canvasHeight });
+        
         const canvas = new FabricCanvas(canvasRef.current, {
           width: canvasWidth,
           height: canvasHeight,
@@ -71,10 +76,11 @@ const Canvas = ({
         });
         
         fabricCanvasRef.current = canvas;
+        console.log("[Canvas] Fabric canvas created successfully");
         
         // Load background if we have a preview URL
         if (isEditing && templateId && activePage?.preview_image_url) {
-          console.log("[Canvas] Loading preview image:", activePage.preview_image_url);
+          console.log("[Canvas] Attempting to load preview image...");
           
           try {
             await loadTemplateBackground(
@@ -85,29 +91,37 @@ const Canvas = ({
                 height: canvasHeight
               }
             );
-            toast.success("PDF preview loaded successfully");
+            console.log("[Canvas] Preview image loaded successfully");
           } catch (error) {
-            console.error("[Canvas] Failed to load preview:", error);
-            toast.error("Failed to load PDF preview - using placeholder");
+            console.error("[Canvas] Preview image loading failed:", error);
+            toast.error("Preview image could not be loaded - using fallback display");
           }
+        } else {
+          console.log("[Canvas] No preview image to load:", {
+            isEditing,
+            templateId: !!templateId,
+            hasPreviewUrl: !!activePage?.preview_image_url
+          });
         }
         
         setIsLoading(false);
         console.log("[Canvas] Canvas initialization complete");
         
       } catch (error) {
-        console.error("[Canvas] Error initializing canvas:", error);
+        console.error("[Canvas] Canvas initialization failed:", error);
         setIsLoading(false);
-        toast.error(`Failed to initialize canvas: ${error.message}`);
+        toast.error(`Canvas initialization failed: ${error.message}`);
       }
     };
     
     if (activePage) {
+      console.log("[Canvas] Active page changed, initializing canvas");
       initializeCanvas();
     }
     
     return () => {
       if (fabricCanvasRef.current) {
+        console.log("[Canvas] Cleaning up canvas");
         fabricCanvasRef.current.dispose();
         fabricCanvasRef.current = null;
       }
@@ -134,11 +148,21 @@ const Canvas = ({
         </div>
       )}
       
-      {/* Debug info */}
+      {/* Enhanced debug info */}
       {activePage && !isLoading && (
-        <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-          Page {activePage.page_number} • 
-          {activePage.preview_image_url ? ' Preview URL Available' : ' No Preview URL'}
+        <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white text-xs px-3 py-2 rounded-md">
+          <div>Page {activePage.page_number}</div>
+          <div className="text-xs opacity-75">
+            {activePage.preview_image_url ? 
+              `Preview: ${activePage.preview_image_url.split('/').pop()}` : 
+              'No preview URL'
+            }
+          </div>
+          {activePage.pdf_page_width && activePage.pdf_page_height && (
+            <div className="text-xs opacity-75">
+              {Math.round(activePage.pdf_page_width)}×{Math.round(activePage.pdf_page_height)}pt
+            </div>
+          )}
         </div>
       )}
     </div>
