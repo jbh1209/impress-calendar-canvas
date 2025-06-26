@@ -32,7 +32,7 @@ const PageNavigator: React.FC<PageNavigatorProps> = ({
           </Badge>
         </div>
 
-        {/* Page buttons */}
+        {/* Page buttons - Fixed sizing */}
         <div className="flex items-center gap-2">
           {pages.map((page, idx) => (
             <Button
@@ -40,7 +40,7 @@ const PageNavigator: React.FC<PageNavigatorProps> = ({
               size="sm"
               variant={idx === activePageIndex ? "default" : "outline"}
               onClick={() => setActivePageIndex(idx)}
-              className="min-w-0"
+              className="px-3 py-1 text-sm whitespace-nowrap"
             >
               Page {page.page_number}
             </Button>

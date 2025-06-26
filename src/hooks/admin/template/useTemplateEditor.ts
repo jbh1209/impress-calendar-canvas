@@ -10,9 +10,9 @@ const DEFAULT_TEMPLATE: UITemplateState = {
   description: "",
   category: "Corporate",
   isActive: false,
-  dimensions: "11x8.5",
-  units: "in",
-  bleed: { top: 0.125, right: 0.125, bottom: 0.125, left: 0.125, units: "in" },
+  dimensions: "297x210",
+  units: "mm",
+  bleed: { top: 3, right: 3, bottom: 3, left: 3, units: "mm" },
 };
 
 export type TemplateEditorMode = "create" | "edit";
@@ -69,9 +69,9 @@ export function useTemplateEditor(templateIdFromParams?: string | null) {
         const uiTemplate = transformDatabaseToUI(data);
         setTemplate({
           ...uiTemplate,
-          // Add UI-only fields with defaults
-          units: "in",
-          bleed: { top: 0.125, right: 0.125, bottom: 0.125, left: 0.125, units: "in" },
+          // Add UI-only fields with defaults in mm
+          units: "mm",
+          bleed: { top: 3, right: 3, bottom: 3, left: 3, units: "mm" },
         });
         
         setTemplateId(data.id);

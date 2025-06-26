@@ -35,13 +35,13 @@ export default function TemplateToolbar({
   const [showUpload, setShowUpload] = useState(false);
   const [showBleedSettings, setShowBleedSettings] = useState(false);
 
-  // Initialize bleed settings with template units
+  // Initialize with mm as default, use template units if available
   const currentUnits = template.units || 'mm';
   const bleed = template.bleed || { 
-    top: 0.125, 
-    right: 0.125, 
-    bottom: 0.125, 
-    left: 0.125, 
+    top: 3, 
+    right: 3, 
+    bottom: 3, 
+    left: 3, 
     units: currentUnits 
   };
 
@@ -78,13 +78,15 @@ export default function TemplateToolbar({
   };
 
   const handleUnitsChange = (newUnits: string) => {
-    // Update both template units and bleed units
+    // Update both template units and bleed units immediately
     const updatedBleed = { ...bleed, units: newUnits };
-    setTemplate({ 
+    const updatedTemplate = { 
       ...template, 
       units: newUnits,
       bleed: updatedBleed 
-    });
+    };
+    setTemplate(updatedTemplate);
+    console.log("[TemplateToolbar] Units changed to:", newUnits, "Template updated:", updatedTemplate);
   };
 
   return (
@@ -154,7 +156,7 @@ export default function TemplateToolbar({
           <div className="space-y-2">
             <Label>Dimensions</Label>
             <Input
-              placeholder="e.g., 8.5x11 inches"
+              placeholder="e.g., 297x210 mm"
               value={template.dimensions || ""}
               onChange={(e) => setTemplate({ ...template, dimensions: e.target.value })}
             />
@@ -200,7 +202,7 @@ export default function TemplateToolbar({
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="max-w-xs">
-                        Bleed is extra area beyond page edges for backgrounds/images that extend to paper edge. Standard is 0.125 inches.
+                        Bleed is extra area beyond page edges for backgrounds/images that extend to paper edge. Standard is 3mm.
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -218,7 +220,7 @@ export default function TemplateToolbar({
                     type="number"
                     value={bleed[side] || 0}
                     min={0}
-                    step={0.001}
+                    step={0.1}
                     onChange={(e) => handleBleedChange(side, e.target.value)}
                     className="text-sm"
                   />
