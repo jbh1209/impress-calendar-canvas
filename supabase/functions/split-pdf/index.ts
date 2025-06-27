@@ -68,7 +68,7 @@ serve(async (req) => {
       console.warn('Warning: Could not clean up existing pages:', deleteError)
     }
 
-    // Create template page records without previews (client will generate them)
+    // Create template page records and generate simple preview placeholders
     const pages = []
     const failedPages = []
     
@@ -79,13 +79,16 @@ serve(async (req) => {
         
         console.log(`Creating page ${i + 1} with dimensions ${width}x${height}pt`)
 
-        // Create template page record without preview (client will handle this)
+        // Create a simple placeholder image URL (we'll enhance this later)
+        const placeholderUrl = `https://via.placeholder.com/800x600/f8f9fa/6b7280?text=Page+${i + 1}`
+
+        // Create template page record with placeholder preview
         const { data: pageData, error: pageError } = await supabaseClient
           .from('template_pages')
           .insert({
             template_id: templateId,
             page_number: i + 1,
-            preview_image_url: null, // Will be updated by client
+            preview_image_url: placeholderUrl,
             pdf_page_width: width,
             pdf_page_height: height,
             pdf_units: 'pt'
@@ -136,7 +139,7 @@ serve(async (req) => {
 
     const isSuccess = pages.length > 0
     const message = isSuccess 
-      ? `Successfully processed PDF with ${pageCount} pages. Client will generate preview images.`
+      ? `Successfully processed PDF with ${pageCount} pages.`
       : `Failed to process PDF. No pages were created.`
 
     return new Response(

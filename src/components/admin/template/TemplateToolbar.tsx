@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,7 @@ import { Save, Upload, ChevronDown, Info } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { saveTemplate } from "@/services/templateService";
-import PdfUploadSection from "./PdfUploadSection";
+import SimplePdfUpload from "./SimplePdfUpload";
 
 interface TemplateToolbarProps {
   template: any;
@@ -242,12 +241,12 @@ export default function TemplateToolbar({
           </CollapsibleContent>
         </Collapsible>
 
-        {/* PDF Upload Section */}
+        {/* PDF Upload Section - Now Simplified */}
         {showUpload && templateId && (
           <div className="pt-4 border-t">
-            <PdfUploadSection
+            <SimplePdfUpload
               templateId={templateId}
-              onProcessingComplete={onProcessingComplete}
+              onComplete={onProcessingComplete}
             />
           </div>
         )}
