@@ -1,24 +1,5 @@
 
-import * as pdfjsLib from 'pdfjs-dist';
 import { supabase } from '@/integrations/supabase/client';
-
-// Configure PDF.js worker with proper fallback
-const configurePdfWorker = () => {
-  try {
-    // Try to use the worker from node_modules
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-      'pdfjs-dist/build/pdf.worker.min.js',
-      import.meta.url
-    ).toString();
-  } catch (error) {
-    console.warn('[PDFPreviewGenerator] Local worker failed, using CDN fallback:', error);
-    // Fallback to CDN
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-  }
-};
-
-// Initialize worker configuration
-configurePdfWorker();
 
 export interface PDFPreviewResult {
   success: boolean;
@@ -55,6 +36,39 @@ const createDebugLogger = (templateId: string, pageNumber: number): DebugLogger 
   };
 };
 
+// Lazy PDF.js initialization
+let pdfLibLoaded = false;
+let pdfjsLib: any = null;
+
+const initializePDFJS = async (): Promise<any> => {
+  if (pdfLibLoaded && pdfjsLib) {
+    return pdfjsLib;
+  }
+
+  try {
+    console.log('[PDFPreviewGenerator] Loading PDF.js library...');
+    
+    // Dynamic import of PDF.js
+    pdfjsLib = await import('pdfjs-dist');
+    
+    // Configure worker with CDN fallback
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      console.log('[PDFPreviewGenerator] Worker configured with CDN URL');
+    } catch (workerError) {
+      console.warn('[PDFPreviewGenerator] Worker configuration warning:', workerError);
+    }
+    
+    pdfLibLoaded = true;
+    console.log('[PDFPreviewGenerator] PDF.js loaded successfully');
+    return pdfjsLib;
+    
+  } catch (error) {
+    console.error('[PDFPreviewGenerator] Failed to load PDF.js:', error);
+    throw new Error(`PDF.js initialization failed: ${error.message}`);
+  }
+};
+
 const createCanvas = (width: number, height: number): { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D } => {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
@@ -64,7 +78,7 @@ const createCanvas = (width: number, height: number): { canvas: HTMLCanvasElemen
   }
   
   // Set canvas dimensions with reasonable limits
-  const maxDimension = 4096; // Prevent memory issues
+  const maxDimension = 2048; // Reduced to prevent memory issues
   const actualWidth = Math.min(width, maxDimension);
   const actualHeight = Math.min(height, maxDimension);
   
@@ -82,7 +96,7 @@ const canvasToBlob = (canvas: HTMLCanvasElement): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       reject(new Error('Canvas to blob conversion timed out'));
-    }, 30000); // 30 second timeout
+    }, 15000); // Reduced timeout
     
     canvas.toBlob((blob) => {
       clearTimeout(timeout);
@@ -91,7 +105,7 @@ const canvasToBlob = (canvas: HTMLCanvasElement): Promise<Blob> => {
       } else {
         reject(new Error('Failed to create blob from canvas'));
       }
-    }, 'image/png', 0.85); // Reduced quality for better performance
+    }, 'image/png', 0.8);
   });
 };
 
@@ -101,6 +115,7 @@ export const generatePDFPreview = async (
   templateId: string
 ): Promise<PDFPreviewResult> => {
   const debugLogger = createDebugLogger(templateId, pageNumber);
+  let pdf: any = null;
   
   try {
     debugLogger.log('Starting PDF preview generation', { pdfUrl, pageNumber, templateId });
@@ -110,13 +125,21 @@ export const generatePDFPreview = async (
       throw new Error('Missing required parameters: pdfUrl, pageNumber, or templateId');
     }
     
+    // Initialize PDF.js
+    debugLogger.log('Initializing PDF.js');
+    const pdfLib = await initializePDFJS();
+    
+    if (!pdfLib) {
+      throw new Error('PDF.js failed to initialize');
+    }
+    
     debugLogger.log('Loading PDF document');
     
-    // Load PDF with timeout and proper error handling
-    const loadingTask = pdfjsLib.getDocument({
+    // Load PDF with proper configuration
+    const loadingTask = pdfLib.getDocument({
       url: pdfUrl,
-      verbosity: 0, // Reduce console noise
-      maxImageSize: 1024 * 1024 * 10, // 10MB limit
+      verbosity: 0,
+      maxImageSize: 1024 * 1024 * 5, // 5MB limit
       disableFontFace: false,
       disableStream: false,
       disableAutoFetch: false,
@@ -124,10 +147,11 @@ export const generatePDFPreview = async (
     
     // Set up timeout for PDF loading
     const loadTimeout = setTimeout(() => {
-      loadingTask.destroy();
-    }, 60000); // 60 second timeout
+      if (loadingTask && typeof loadingTask.destroy === 'function') {
+        loadingTask.destroy();
+      }
+    }, 30000); // 30 second timeout
     
-    let pdf: pdfjsLib.PDFDocumentProxy;
     try {
       pdf = await loadingTask.promise;
       clearTimeout(loadTimeout);
@@ -148,8 +172,8 @@ export const generatePDFPreview = async (
     
     // Calculate optimal viewport
     const baseViewport = page.getViewport({ scale: 1.0 });
-    const targetWidth = 1200; // Reasonable target width
-    const scale = Math.min(2.0, targetWidth / baseViewport.width); // Cap at 2x scale
+    const targetWidth = 800; // Reasonable target width
+    const scale = Math.min(1.5, targetWidth / baseViewport.width); // Cap at 1.5x scale
     const viewport = page.getViewport({ scale });
     
     debugLogger.log('Viewport calculated', {
@@ -167,7 +191,7 @@ export const generatePDFPreview = async (
     const renderContext = {
       canvasContext: context,
       viewport: viewport,
-      enableWebGL: false, // Disable WebGL for better compatibility
+      enableWebGL: false,
     };
     
     debugLogger.log('Starting page render');
@@ -180,9 +204,8 @@ export const generatePDFPreview = async (
     
     debugLogger.log('Canvas converted to blob', { size: blob.size });
     
-    // Clean up
+    // Clean up canvas
     canvas.remove();
-    pdf.destroy();
     
     // Upload to Supabase
     const fileName = `${templateId}/page-${pageNumber}-${Date.now()}.png`;
@@ -194,7 +217,7 @@ export const generatePDFPreview = async (
       .upload(fileName, blob, {
         contentType: 'image/png',
         upsert: true,
-        cacheControl: '3600' // 1 hour cache
+        cacheControl: '3600'
       });
     
     if (uploadError) {
@@ -238,6 +261,15 @@ export const generatePDFPreview = async (
         details: debugLogger.getDebugInfo()
       }
     };
+  } finally {
+    // Clean up PDF document
+    if (pdf && typeof pdf.destroy === 'function') {
+      try {
+        pdf.destroy();
+      } catch (cleanupError) {
+        console.warn('[PDFPreviewGenerator] PDF cleanup warning:', cleanupError);
+      }
+    }
   }
 };
 
@@ -298,7 +330,7 @@ export const generateAllPDFPreviews = async (
     
     // Small delay to prevent overwhelming the browser
     if (i < pages.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
   

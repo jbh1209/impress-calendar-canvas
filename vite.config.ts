@@ -21,7 +21,8 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: ['pdfjs-dist']
+    include: ['pdfjs-dist'],
+    exclude: ['pdfjs-dist/build/pdf.worker.min.js']
   },
   build: {
     rollupOptions: {
@@ -29,7 +30,6 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
-    // Help PDF.js find its worker
     'process.env': {}
   }
 }));
