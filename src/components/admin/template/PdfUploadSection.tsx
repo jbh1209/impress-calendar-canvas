@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, FileText } from "lucide-react";
+import { Upload, FileText, Image } from "lucide-react";
+import { generateAllPDFPreviews } from "@/utils/pdfPreviewGenerator";
 
 interface PdfUploadSectionProps {
   templateId: string;
@@ -16,11 +17,13 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
   onProcessingComplete
 }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [isGeneratingPreviews, setIsGeneratingPreviews] = useState(false);
+  const [previewProgress, setPreviewProgress] = useState({ current: 0, total: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
   const handleButtonClick = () => {
-    if (!isUploading) {
+    if (!isUploading && !isGeneratingPreviews) {
       fileInputRef.current?.click();
     }
   };
@@ -34,6 +37,7 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
     setIsUploading(true);
 
     try {
+      // Step 1: Upload PDF and create page records
       const formData = new FormData();
       formData.append("pdf", file);
       formData.append("template_id", templateId);
@@ -47,16 +51,46 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
         throw error;
       }
 
-      toast.success(`PDF processed successfully! ${data.pagesCreated} pages ready for editing.`);
+      toast.success(`PDF uploaded successfully! ${data.pagesCreated} pages created.`);
+      
+      setIsUploading(false);
+      
+      // Step 2: Generate preview images client-side
+      if (data.success && data.pages && data.pdfUrl) {
+        setIsGeneratingPreviews(true);
+        toast.info("Generating preview images...");
+        
+        const previewResults = await generateAllPDFPreviews(
+          data.pdfUrl,
+          data.pages,
+          templateId,
+          (current, total) => {
+            setPreviewProgress({ current, total });
+          }
+        );
+        
+        setIsGeneratingPreviews(false);
+        
+        if (previewResults.success > 0) {
+          toast.success(`Successfully generated ${previewResults.success} preview images!`);
+        }
+        
+        if (previewResults.failed > 0) {
+          toast.error(`Failed to generate ${previewResults.failed} preview images`);
+        }
+      }
       
       if (onProcessingComplete) {
         onProcessingComplete();
       }
+      
     } catch (error: any) {
       console.error("[PdfUploadSection] Upload error:", error);
       toast.error(error.message || "PDF processing failed. Please try again.");
     } finally {
       setIsUploading(false);
+      setIsGeneratingPreviews(false);
+      setPreviewProgress({ current: 0, total: 0 });
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -83,6 +117,8 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
     if (file) uploadPdfFile(file);
   };
 
+  const isProcessing = isUploading || isGeneratingPreviews;
+
   return (
     <Card>
       <CardContent className="p-4">
@@ -108,20 +144,25 @@ const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
           <input
             type="file"
             accept="application/pdf"
-            disabled={isUploading}
+            disabled={isProcessing}
             onChange={handleFileSelected}
             ref={fileInputRef}
             className="hidden"
           />
           
           <Button
-            disabled={isUploading}
+            disabled={isProcessing}
             variant="outline"
           >
             {isUploading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 mr-2"></div>
                 Processing PDF...
+              </>
+            ) : isGeneratingPreviews ? (
+              <>
+                <Image className="h-4 w-4 mr-2" />
+                Generating Previews ({previewProgress.current}/{previewProgress.total})
               </>
             ) : (
               <>

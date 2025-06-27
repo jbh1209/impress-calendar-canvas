@@ -79,10 +79,13 @@ const Canvas = ({
         
         // Load background if we have a preview URL
         if (isEditing && templateId && activePage?.preview_image_url) {
-          console.log("[Canvas] Loading preview image with Fabric.js fromURL...");
+          console.log("[Canvas] Loading preview image:", activePage.preview_image_url);
           
           try {
-            const fabricImg = await FabricImage.fromURL(activePage.preview_image_url, {
+            // Add cache busting parameter
+            const imageUrl = `${activePage.preview_image_url}?t=${Date.now()}`;
+            
+            const fabricImg = await FabricImage.fromURL(imageUrl, {
               crossOrigin: 'anonymous',
             });
             
@@ -118,12 +121,12 @@ const Canvas = ({
             
           } catch (error) {
             console.error("[Canvas] Preview loading error:", error);
-            await createEnhancedFallback(canvas, { width: canvasWidth, height: canvasHeight });
+            createEnhancedFallback(canvas, { width: canvasWidth, height: canvasHeight });
             toast.error(`Failed to load preview: ${error.message}`);
           }
         } else {
-          console.log("[Canvas] No preview image to load");
-          await createEnhancedFallback(canvas, { width: canvasWidth, height: canvasHeight });
+          console.log("[Canvas] No preview image to load, creating fallback");
+          createEnhancedFallback(canvas, { width: canvasWidth, height: canvasHeight });
         }
         
         setIsLoading(false);
@@ -176,7 +179,7 @@ const Canvas = ({
           <div className="text-xs opacity-75">
             {activePage.preview_image_url ? 
               `Preview: ${activePage.preview_image_url.split('/').pop()}` : 
-              'No preview URL'
+              'Preview will be generated after PDF upload'
             }
           </div>
           {activePage.pdf_page_width && activePage.pdf_page_height && (
