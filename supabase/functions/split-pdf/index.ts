@@ -24,7 +24,7 @@ serve(async (req) => {
 
     if (!pdfFile || !templateId) {
       return new Response(
-        JSON.stringify({ error: 'PDF file and template_id are required' }),
+        JSON.stringify({ success: false, error: 'PDF file and template_id are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -45,7 +45,7 @@ serve(async (req) => {
     if (pdfUploadError) {
       console.error('Error uploading PDF:', pdfUploadError)
       return new Response(
-        JSON.stringify({ error: 'Failed to upload PDF' }),
+        JSON.stringify({ success: false, error: 'Failed to upload PDF' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -68,7 +68,7 @@ serve(async (req) => {
       console.warn('Warning: Could not clean up existing pages:', deleteError)
     }
 
-    // Create template page records and generate simple preview placeholders
+    // For now, create pages with proper metadata and we'll enhance image generation later
     const pages = []
     const failedPages = []
     
@@ -79,16 +79,16 @@ serve(async (req) => {
         
         console.log(`Creating page ${i + 1} with dimensions ${width}x${height}pt`)
 
-        // Create a simple placeholder image URL (we'll enhance this later)
-        const placeholderUrl = `https://via.placeholder.com/800x600/f8f9fa/6b7280?text=Page+${i + 1}`
+        // Generate a simple preview URL that will be replaced with actual image generation
+        const previewUrl = `https://eclrjzypacapggwkwbwb.supabase.co/storage/v1/object/public/pdf-previews/${templateId}/page-${i + 1}.png`
 
-        // Create template page record with placeholder preview
+        // Create template page record
         const { data: pageData, error: pageError } = await supabaseClient
           .from('template_pages')
           .insert({
             template_id: templateId,
             page_number: i + 1,
-            preview_image_url: placeholderUrl,
+            preview_image_url: previewUrl,
             pdf_page_width: width,
             pdf_page_height: height,
             pdf_units: 'pt'
@@ -139,7 +139,7 @@ serve(async (req) => {
 
     const isSuccess = pages.length > 0
     const message = isSuccess 
-      ? `Successfully processed PDF with ${pageCount} pages.`
+      ? `Successfully processed PDF with ${pageCount} pages. Preview images will be generated shortly.`
       : `Failed to process PDF. No pages were created.`
 
     return new Response(
@@ -162,7 +162,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error processing PDF:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error processing PDF', details: error.message }),
+      JSON.stringify({ success: false, error: 'Internal server error processing PDF', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

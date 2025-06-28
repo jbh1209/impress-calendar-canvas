@@ -1,19 +1,20 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export interface UploadResult {
+export interface PdfUploadResult {
   success: boolean;
   message: string;
   pagesCreated?: number;
   pagesFailed?: number;
   error?: string;
+  pdfUrl?: string;
 }
 
 export const uploadPdfAndCreatePages = async (
   file: File,
   templateId: string,
   onProgress?: (status: string) => void
-): Promise<UploadResult> => {
+): Promise<PdfUploadResult> => {
   try {
     if (onProgress) onProgress('Uploading PDF...');
     
@@ -34,19 +35,20 @@ export const uploadPdfAndCreatePages = async (
       };
     }
 
-    if (!data.success) {
+    if (!data?.success) {
       return {
         success: false,
-        error: data.message,
-        message: 'PDF processing failed'
+        error: data?.error || 'Unknown error',
+        message: data?.message || 'PDF processing failed'
       };
     }
 
     return {
       success: true,
-      message: `Successfully processed ${data.pagesCreated} pages`,
+      message: data.message,
       pagesCreated: data.pagesCreated,
-      pagesFailed: data.pagesFailed
+      pagesFailed: data.pagesFailed,
+      pdfUrl: data.pdfUrl
     };
 
   } catch (error) {
