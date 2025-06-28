@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -89,10 +90,10 @@ const CleanTemplateEditor: React.FC = () => {
 
       const savedTemplate = await saveTemplate(templateToSave);
       if (savedTemplate) {
-        // Update local state with the full template data
+        // Update local state with the full template data - fix the property access
         setTemplate({
           ...savedTemplate,
-          is_active: savedTemplate.isActive || false,
+          is_active: savedTemplate.is_active || false,
         });
         toast.success('Template saved successfully');
         
