@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas, Image as FabricImage, Rect, Text as FabricText } from "fabric";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,8 +69,45 @@ const CleanTemplateCanvas: React.FC<CleanTemplateCanvasProps> = ({
     fabricCanvas.setWidth(canvasWidth);
     fabricCanvas.setHeight(canvasHeight);
 
-    // For now, create a clean placeholder background until we implement image generation
-    const createPlaceholderBackground = async () => {
+    // Load the actual preview image if available
+    if (activePage.preview_image_url) {
+      console.log('Loading preview image:', activePage.preview_image_url);
+      
+      FabricImage.fromURL(activePage.preview_image_url)
+        .then((img) => {
+          // Scale image to fit canvas
+          const imgScale = Math.min(
+            canvasWidth / img.width!,
+            canvasHeight / img.height!
+          );
+          
+          img.set({
+            left: 0,
+            top: 0,
+            scaleX: imgScale,
+            scaleY: imgScale,
+            selectable: false,
+            evented: false,
+          });
+
+          fabricCanvas.add(img);
+          fabricCanvas.sendToBack(img);
+          fabricCanvas.renderAll();
+          
+          setIsLoading(false);
+          toast.success(`Page ${activePage.page_number} loaded successfully`);
+        })
+        .catch((error) => {
+          console.error('Error loading preview image:', error);
+          // Fallback to placeholder if image fails to load
+          createPlaceholderBackground();
+        });
+    } else {
+      // No preview image available, show placeholder
+      createPlaceholderBackground();
+    }
+
+    const createPlaceholderBackground = () => {
       try {
         // Create a clean background with page info
         const bgRect = new Rect({
@@ -112,7 +150,7 @@ const CleanTemplateCanvas: React.FC<CleanTemplateCanvasProps> = ({
           }
         );
 
-        const instructionText = new FabricText('Add zones using the buttons above', {
+        const instructionText = new FabricText('Preview image not available - Add zones using the buttons above', {
           left: canvasWidth / 2,
           top: canvasHeight - 50,
           fontSize: 12,
@@ -131,7 +169,6 @@ const CleanTemplateCanvas: React.FC<CleanTemplateCanvasProps> = ({
         fabricCanvas.renderAll();
 
         setIsLoading(false);
-        toast.success(`Page ${activePage.page_number} loaded`);
 
       } catch (error) {
         console.error('Error creating placeholder:', error);
@@ -139,8 +176,6 @@ const CleanTemplateCanvas: React.FC<CleanTemplateCanvasProps> = ({
         toast.error('Failed to load page');
       }
     };
-
-    createPlaceholderBackground();
   }, [fabricCanvas, activePage, canvasReady]);
 
   const addImageZone = () => {
@@ -271,7 +306,7 @@ const CleanTemplateCanvas: React.FC<CleanTemplateCanvasProps> = ({
               <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-lg">
                 <div className="text-center">
                   <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <div className="text-sm text-gray-600">Loading page...</div>
+                  <div className="text-sm text-gray-600">Loading page preview...</div>
                 </div>
               </div>
             )}
