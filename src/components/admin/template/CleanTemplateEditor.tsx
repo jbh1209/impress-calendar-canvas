@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -78,14 +77,23 @@ const CleanTemplateEditor: React.FC = () => {
 
     setIsSaving(true);
     try {
+      // Transform to the format expected by saveTemplate
       const templateToSave = {
-        ...template,
+        name: template.name,
+        description: template.description,
+        category: template.category,
+        isActive: template.is_active,
+        dimensions: template.dimensions,
         id: isCreateMode ? undefined : template.id,
       };
 
       const savedTemplate = await saveTemplate(templateToSave);
       if (savedTemplate) {
-        setTemplate(savedTemplate);
+        // Update local state with the full template data
+        setTemplate({
+          ...savedTemplate,
+          is_active: savedTemplate.isActive || false,
+        });
         toast.success('Template saved successfully');
         
         if (isCreateMode) {

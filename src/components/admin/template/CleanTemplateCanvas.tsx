@@ -1,11 +1,10 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas, Image as FabricImage, Rect, Text as FabricText } from "fabric";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { TemplatePage } from "@/services/types/templateTypes";
-import { Plus, Square, Type } from "lucide-react";
+import { Plus, Square, Type, FileText } from "lucide-react";
 
 interface CleanTemplateCanvasProps {
   activePage?: TemplatePage;
