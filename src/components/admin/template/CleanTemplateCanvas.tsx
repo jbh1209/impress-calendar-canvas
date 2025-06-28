@@ -20,26 +20,6 @@ const CleanTemplateCanvas: React.FC<CleanTemplateCanvasProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
 
-  // Initialize canvas
-  useEffect(() => {
-    if (!canvasRef.current) return;
-
-    const canvas = new FabricCanvas(canvasRef.current, {
-      width: 800,
-      height: 600,
-      backgroundColor: "#f8f9fa",
-      selection: true,
-      preserveObjectStacking: true,
-    });
-
-    setFabricCanvas(canvas);
-    setCanvasReady(true);
-
-    return () => {
-      canvas.dispose();
-    };
-  }, []);
-
   // Helper function to create placeholder background
   const createPlaceholderBackground = (canvas: FabricCanvas, canvasWidth: number, canvasHeight: number, activePage: TemplatePage) => {
     try {
@@ -111,6 +91,26 @@ const CleanTemplateCanvas: React.FC<CleanTemplateCanvasProps> = ({
     }
   };
 
+  // Initialize canvas
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = new FabricCanvas(canvasRef.current, {
+      width: 800,
+      height: 600,
+      backgroundColor: "#f8f9fa",
+      selection: true,
+      preserveObjectStacking: true,
+    });
+
+    setFabricCanvas(canvas);
+    setCanvasReady(true);
+
+    return () => {
+      canvas.dispose();
+    };
+  }, []);
+
   // Load page background when activePage changes
   useEffect(() => {
     if (!fabricCanvas || !activePage || !canvasReady) return;
@@ -161,7 +161,7 @@ const CleanTemplateCanvas: React.FC<CleanTemplateCanvasProps> = ({
           });
 
           fabricCanvas.add(img);
-          fabricCanvas.bringObjectToBack(img);  // Fixed: use bringObjectToBack instead of sendToBack
+          fabricCanvas.sendObjectToBack(img);  // Fixed: use sendObjectToBack instead of bringObjectToBack
           fabricCanvas.renderAll();
           
           setIsLoading(false);
