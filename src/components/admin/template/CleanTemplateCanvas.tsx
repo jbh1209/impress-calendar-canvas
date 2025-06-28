@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas, Image as FabricImage, Rect, Text as FabricText } from "fabric";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +39,77 @@ const CleanTemplateCanvas: React.FC<CleanTemplateCanvasProps> = ({
       canvas.dispose();
     };
   }, []);
+
+  // Helper function to create placeholder background
+  const createPlaceholderBackground = (canvas: FabricCanvas, canvasWidth: number, canvasHeight: number, activePage: TemplatePage) => {
+    try {
+      // Create a clean background with page info
+      const bgRect = new Rect({
+        left: 0,
+        top: 0,
+        width: canvasWidth,
+        height: canvasHeight,
+        fill: '#ffffff',
+        stroke: '#e5e7eb',
+        strokeWidth: 2,
+        selectable: false,
+        evented: false,
+      });
+
+      const titleText = new FabricText(`Page ${activePage.page_number}`, {
+        left: canvasWidth / 2,
+        top: 50,
+        fontSize: 24,
+        fill: '#374151',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        fontWeight: 'bold',
+        originX: 'center',
+        originY: 'center',
+        selectable: false,
+        evented: false,
+      });
+
+      const dimensionText = new FabricText(
+        `${Math.round(activePage.pdf_page_width || 0)} × ${Math.round(activePage.pdf_page_height || 0)} pt`,
+        {
+          left: canvasWidth / 2,
+          top: 90,
+          fontSize: 14,
+          fill: '#6b7280',
+          fontFamily: 'Inter, system-ui, sans-serif',
+          originX: 'center',
+          originY: 'center',
+          selectable: false,
+          evented: false,
+        }
+      );
+
+      const instructionText = new FabricText('Preview image not available - Add zones using the buttons above', {
+        left: canvasWidth / 2,
+        top: canvasHeight - 50,
+        fontSize: 12,
+        fill: '#9ca3af',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        originX: 'center',
+        originY: 'center',
+        selectable: false,
+        evented: false,
+      });
+
+      canvas.add(bgRect);
+      canvas.add(titleText);
+      canvas.add(dimensionText);
+      canvas.add(instructionText);
+      canvas.renderAll();
+
+      setIsLoading(false);
+
+    } catch (error) {
+      console.error('Error creating placeholder:', error);
+      setIsLoading(false);
+      toast.error('Failed to load page');
+    }
+  };
 
   // Load page background when activePage changes
   useEffect(() => {
@@ -91,7 +161,7 @@ const CleanTemplateCanvas: React.FC<CleanTemplateCanvasProps> = ({
           });
 
           fabricCanvas.add(img);
-          fabricCanvas.sendToBack(img);
+          fabricCanvas.bringObjectToBack(img);  // Fixed: use bringObjectToBack instead of sendToBack
           fabricCanvas.renderAll();
           
           setIsLoading(false);
@@ -100,82 +170,12 @@ const CleanTemplateCanvas: React.FC<CleanTemplateCanvasProps> = ({
         .catch((error) => {
           console.error('Error loading preview image:', error);
           // Fallback to placeholder if image fails to load
-          createPlaceholderBackground();
+          createPlaceholderBackground(fabricCanvas, canvasWidth, canvasHeight, activePage);
         });
     } else {
       // No preview image available, show placeholder
-      createPlaceholderBackground();
+      createPlaceholderBackground(fabricCanvas, canvasWidth, canvasHeight, activePage);
     }
-
-    const createPlaceholderBackground = () => {
-      try {
-        // Create a clean background with page info
-        const bgRect = new Rect({
-          left: 0,
-          top: 0,
-          width: canvasWidth,
-          height: canvasHeight,
-          fill: '#ffffff',
-          stroke: '#e5e7eb',
-          strokeWidth: 2,
-          selectable: false,
-          evented: false,
-        });
-
-        const titleText = new FabricText(`Page ${activePage.page_number}`, {
-          left: canvasWidth / 2,
-          top: 50,
-          fontSize: 24,
-          fill: '#374151',
-          fontFamily: 'Inter, system-ui, sans-serif',
-          fontWeight: 'bold',
-          originX: 'center',
-          originY: 'center',
-          selectable: false,
-          evented: false,
-        });
-
-        const dimensionText = new FabricText(
-          `${Math.round(activePage.pdf_page_width || 0)} × ${Math.round(activePage.pdf_page_height || 0)} pt`,
-          {
-            left: canvasWidth / 2,
-            top: 90,
-            fontSize: 14,
-            fill: '#6b7280',
-            fontFamily: 'Inter, system-ui, sans-serif',
-            originX: 'center',
-            originY: 'center',
-            selectable: false,
-            evented: false,
-          }
-        );
-
-        const instructionText = new FabricText('Preview image not available - Add zones using the buttons above', {
-          left: canvasWidth / 2,
-          top: canvasHeight - 50,
-          fontSize: 12,
-          fill: '#9ca3af',
-          fontFamily: 'Inter, system-ui, sans-serif',
-          originX: 'center',
-          originY: 'center',
-          selectable: false,
-          evented: false,
-        });
-
-        fabricCanvas.add(bgRect);
-        fabricCanvas.add(titleText);
-        fabricCanvas.add(dimensionText);
-        fabricCanvas.add(instructionText);
-        fabricCanvas.renderAll();
-
-        setIsLoading(false);
-
-      } catch (error) {
-        console.error('Error creating placeholder:', error);
-        setIsLoading(false);
-        toast.error('Failed to load page');
-      }
-    };
   }, [fabricCanvas, activePage, canvasReady]);
 
   const addImageZone = () => {
