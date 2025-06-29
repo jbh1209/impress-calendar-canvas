@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -317,7 +318,7 @@ const ProfessionalTemplateEditor: React.FC = () => {
     }
 
     try {
-      const newZone: Omit<CustomizationZone, 'id'> = {
+      const newZone = {
         template_id: id,
         name: `${type} Zone ${zones.length + 1}`,
         type,
