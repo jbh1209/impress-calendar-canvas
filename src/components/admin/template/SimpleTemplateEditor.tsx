@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, Upload, Square, Type, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Canvas as FabricCanvas, Rect, Text as FabricText } from "fabric";
+import { Canvas as FabricCanvas, Rect, Text as FabricText, FabricImage } from "fabric";
 import * as pdfjsLib from "pdfjs-dist";
 
 // Set up PDF.js worker
@@ -65,8 +65,8 @@ const SimpleTemplateEditor: React.FC = () => {
     // Handle object selection
     canvas.on('selection:created', (e) => {
       const activeObject = e.selected?.[0];
-      if (activeObject && activeObject.data?.zoneId) {
-        setSelectedZone(activeObject.data.zoneId);
+      if (activeObject && (activeObject as any).zoneId) {
+        setSelectedZone((activeObject as any).zoneId);
       }
     });
 
@@ -132,21 +132,25 @@ const SimpleTemplateEditor: React.FC = () => {
 
       // Clear canvas and add PDF as background
       fabricCanvas.clear();
-      fabricCanvas.setBackgroundImage(
-        tempCanvas.toDataURL(),
-        fabricCanvas.renderAll.bind(fabricCanvas),
-        {
-          scaleX: 1,
-          scaleY: 1,
+      
+      // Create fabric image from canvas
+      FabricImage.fromURL(tempCanvas.toDataURL()).then((img) => {
+        img.set({
+          left: canvasWidth / 2,
+          top: canvasHeight / 2,
           originX: 'center',
           originY: 'center',
-          left: canvasWidth / 2,
-          top: canvasHeight / 2
-        }
-      );
-
-      // Re-add existing zones
-      redrawZones();
+          selectable: false,
+          evented: false
+        });
+        
+        fabricCanvas.add(img);
+        fabricCanvas.sendObjectToBack(img);
+        fabricCanvas.renderAll();
+        
+        // Re-add existing zones
+        redrawZones();
+      });
       
     } catch (error) {
       console.error('Error rendering PDF page:', error);
@@ -177,8 +181,11 @@ const SimpleTemplateEditor: React.FC = () => {
       stroke: color,
       strokeWidth: 2,
       strokeDashArray: [5, 5],
-      data: { zoneId, type }
     });
+
+    // Store custom data on the object
+    (rect as any).zoneId = zoneId;
+    (rect as any).zoneType = type;
 
     const label = new FabricText(`${type} Zone`, {
       left: 200,
@@ -190,8 +197,11 @@ const SimpleTemplateEditor: React.FC = () => {
       originY: 'center',
       selectable: false,
       evented: false,
-      data: { zoneId, isLabel: true }
     });
+
+    // Store custom data on label
+    (label as any).zoneId = zoneId;
+    (label as any).isLabel = true;
 
     fabricCanvas.add(rect);
     fabricCanvas.add(label);
@@ -223,7 +233,7 @@ const SimpleTemplateEditor: React.FC = () => {
 
     // Remove from canvas
     const objects = fabricCanvas.getObjects();
-    const toRemove = objects.filter(obj => obj.data?.zoneId === selectedZone);
+    const toRemove = objects.filter(obj => (obj as any).zoneId === selectedZone);
     toRemove.forEach(obj => fabricCanvas.remove(obj));
 
     // Remove from template
@@ -252,8 +262,11 @@ const SimpleTemplateEditor: React.FC = () => {
         stroke: color,
         strokeWidth: 2,
         strokeDashArray: [5, 5],
-        data: { zoneId: zone.id, type: zone.type }
       });
+
+      // Store custom data
+      (rect as any).zoneId = zone.id;
+      (rect as any).zoneType = zone.type;
 
       const label = new FabricText(zone.name, {
         left: zone.x + zone.width / 2,
@@ -265,8 +278,11 @@ const SimpleTemplateEditor: React.FC = () => {
         originY: 'center',
         selectable: false,
         evented: false,
-        data: { zoneId: zone.id, isLabel: true }
       });
+
+      // Store custom data on label
+      (label as any).zoneId = zone.id;
+      (label as any).isLabel = true;
 
       fabricCanvas.add(rect);
       fabricCanvas.add(label);
@@ -489,23 +505,23 @@ const SimpleTemplateEditor: React.FC = () => {
         <div className="flex-1 p-6">
           <Card>
             <CardContent className="p-4">
-              <div className="border-2 border-gray-200 rounded-lg bg-white overflow-hidden">
+              <div className="border-2 border-gray-200 rounded-lg bg-white overflow-hidden relative">
                 <canvas ref={canvasRef} className="max-w-full" />
-              </div>
-              
-              {!pdfDoc && (
-                <div className="absolute inset-4 flex items-center justify-center bg-gray-50 rounded-lg">
-                  <div className="text-center">
-                    <div className="text-4xl mb-4">📄</div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      Upload PDF Template
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Upload a PDF file to start creating customizable zones
-                    </p>
+                
+                {!pdfDoc && (
+                  <div className="absolute inset-4 flex items-center justify-center bg-gray-50 rounded-lg">
+                    <div className="text-center">
+                      <div className="text-4xl mb-4">📄</div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Upload PDF Template
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Upload a PDF file to start creating customizable zones
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
