@@ -159,29 +159,35 @@ const ProfessionalTemplateEditor: React.FC = () => {
     fabricCanvas.clear();
 
     if (currentPage.preview_image_url) {
-      // Load page preview as background
-      const img = new Image();
-      img.onload = () => {
-        const canvasWidth = fabricCanvas.width!;
-        const canvasHeight = fabricCanvas.height!;
-        
-        // Calculate scale to fit image in canvas
-        const scale = Math.min(canvasWidth / img.width, canvasHeight / img.height) * 0.9;
-        const scaledWidth = img.width * scale;
-        const scaledHeight = img.height * scale;
-        
-        fabricCanvas.setBackgroundImage(
-          currentPage.preview_image_url!,
-          fabricCanvas.renderAll.bind(fabricCanvas),
-          {
+      // Load page preview as background using Fabric.js v6 Image.fromURL
+      import('fabric').then(({ Image as FabricImage }) => {
+        FabricImage.fromURL(currentPage.preview_image_url!, {
+          crossOrigin: 'anonymous',
+        }).then((img) => {
+          const canvasWidth = fabricCanvas.width!;
+          const canvasHeight = fabricCanvas.height!;
+          
+          // Calculate scale to fit image in canvas
+          const scale = Math.min(canvasWidth / img.width!, canvasHeight / img.height!) * 0.9;
+          const scaledWidth = img.width! * scale;
+          const scaledHeight = img.height! * scale;
+          
+          img.set({
             scaleX: scale,
             scaleY: scale,
             left: (canvasWidth - scaledWidth) / 2,
             top: (canvasHeight - scaledHeight) / 2,
-          }
-        );
-      };
-      img.src = currentPage.preview_image_url;
+            selectable: false,
+            evented: false,
+          });
+
+          fabricCanvas.backgroundImage = img;
+          fabricCanvas.renderAll();
+        }).catch((error) => {
+          console.error('Error loading background image:', error);
+          toast.error('Failed to load page preview');
+        });
+      });
     }
   };
 
