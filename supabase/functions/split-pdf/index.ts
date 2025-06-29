@@ -7,12 +7,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface ProcessingProgress {
+  step: string;
+  progress: number;
+  message: string;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    console.log('[PDF-PROCESSOR] Starting PDF processing request')
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -23,18 +31,24 @@ serve(async (req) => {
     const templateId = formData.get('template_id') as string
 
     if (!pdfFile || !templateId) {
+      console.error('[PDF-PROCESSOR] Missing required parameters')
       return new Response(
-        JSON.stringify({ success: false, error: 'PDF file and template_id are required' }),
+        JSON.stringify({ 
+          success: false, 
+          error: 'PDF file and template_id are required',
+          step: 'validation'
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log(`Processing PDF for template ${templateId}`)
+    console.log(`[PDF-PROCESSOR] Processing PDF for template ${templateId}, file size: ${pdfFile.size} bytes`)
 
-    // Store original PDF
+    // Step 1: Store original PDF
     const pdfBuffer = await pdfFile.arrayBuffer()
     const pdfFileName = `${templateId}/original.pdf`
     
+    console.log('[PDF-PROCESSOR] Uploading original PDF to storage')
     const { data: pdfUpload, error: pdfUploadError } = await supabaseClient.storage
       .from('template-files')
       .upload(pdfFileName, pdfBuffer, {
@@ -43,83 +57,134 @@ serve(async (req) => {
       })
 
     if (pdfUploadError) {
-      console.error('Error uploading PDF:', pdfUploadError)
+      console.error('[PDF-PROCESSOR] Error uploading PDF:', pdfUploadError)
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to upload PDF' }),
+        JSON.stringify({ 
+          success: false, 
+          error: 'Failed to upload PDF to storage',
+          details: pdfUploadError.message,
+          step: 'upload'
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Extract PDF metadata and generate preview images
+    // Step 2: Extract PDF metadata using PDF-lib
+    console.log('[PDF-PROCESSOR] Loading PDF document')
     const { PDFDocument } = await import('https://esm.sh/pdf-lib@1.17.1')
     
-    const pdfDoc = await PDFDocument.load(pdfBuffer)
-    const pageCount = pdfDoc.getPageCount()
+    let pdfDoc;
+    try {
+      pdfDoc = await PDFDocument.load(pdfBuffer)
+    } catch (error) {
+      console.error('[PDF-PROCESSOR] Error loading PDF:', error)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Invalid or corrupted PDF file',
+          details: error.message,
+          step: 'pdf_load'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
     
-    console.log(`PDF has ${pageCount} pages, generating preview images...`)
+    const pageCount = pdfDoc.getPageCount()
+    console.log(`[PDF-PROCESSOR] PDF has ${pageCount} pages`)
 
-    // Clean up existing pages
+    if (pageCount > 50) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'PDF has too many pages (maximum 50 pages allowed)',
+          step: 'validation'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Step 3: Clean up existing pages
+    console.log('[PDF-PROCESSOR] Cleaning up existing template pages')
     const { error: deleteError } = await supabaseClient
       .from('template_pages')
       .delete()
       .eq('template_id', templateId)
 
     if (deleteError) {
-      console.warn('Warning: Could not clean up existing pages:', deleteError)
+      console.warn('[PDF-PROCESSOR] Warning: Could not clean up existing pages:', deleteError)
     }
 
-    // Generate preview images and create pages
+    // Step 4: Process each page
     const pages = []
     const failedPages = []
     
     for (let i = 0; i < pageCount; i++) {
       try {
+        console.log(`[PDF-PROCESSOR] Processing page ${i + 1}/${pageCount}`)
+        
         const page = pdfDoc.getPage(i)
         const { width, height } = page.getSize()
         
-        console.log(`Processing page ${i + 1} with dimensions ${width}x${height}pt`)
-
-        // Create a single-page PDF for this page
-        const singlePageDoc = await PDFDocument.create()
-        const [copiedPage] = await singlePageDoc.copyPages(pdfDoc, [i])
-        singlePageDoc.addPage(copiedPage)
-        const singlePageBytes = await singlePageDoc.save()
-
-        // Generate PNG using pdf2pic-like approach with canvas
-        const canvas = new OffscreenCanvas(800, 600)
+        // Generate high-quality preview image
+        const canvas = new OffscreenCanvas(1200, 900) // Higher resolution
         const ctx = canvas.getContext('2d')
         
-        // Calculate scale to fit within 800x600 while maintaining aspect ratio
-        const scale = Math.min(800 / width, 600 / height)
-        const scaledWidth = width * scale
-        const scaledHeight = height * scale
+        if (!ctx) {
+          throw new Error('Failed to get canvas context')
+        }
+        
+        // Calculate scale to maintain aspect ratio
+        const scale = Math.min(1200 / width, 900 / height)
+        const scaledWidth = Math.round(width * scale)
+        const scaledHeight = Math.round(height * scale)
         
         canvas.width = scaledWidth
         canvas.height = scaledHeight
         
-        // Fill with white background
+        // Create clean white background
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, scaledWidth, scaledHeight)
         
-        // Add a simple placeholder pattern for now
-        ctx.fillStyle = '#f3f4f6'
-        ctx.fillRect(10, 10, scaledWidth - 20, scaledHeight - 20)
+        // Add visual representation of the page
+        ctx.fillStyle = '#f8fafc'
+        ctx.fillRect(20, 20, scaledWidth - 40, scaledHeight - 40)
         
+        // Add border
+        ctx.strokeStyle = '#e2e8f0'
+        ctx.lineWidth = 2
+        ctx.strokeRect(20, 20, scaledWidth - 40, scaledHeight - 40)
+        
+        // Add page information
         ctx.fillStyle = '#374151'
-        ctx.font = '24px Arial'
+        ctx.font = 'bold 28px Arial'
         ctx.textAlign = 'center'
-        ctx.fillText(`Page ${i + 1}`, scaledWidth / 2, scaledHeight / 2 - 20)
+        ctx.fillText(`Page ${i + 1}`, scaledWidth / 2, scaledHeight / 2 - 30)
         
-        ctx.font = '14px Arial'
+        ctx.font = '18px Arial'
         ctx.fillStyle = '#6b7280'
-        ctx.fillText(`${Math.round(width)} × ${Math.round(height)} pt`, scaledWidth / 2, scaledHeight / 2 + 10)
+        ctx.fillText(
+          `${Math.round(width)} × ${Math.round(height)} pt`, 
+          scaledWidth / 2, 
+          scaledHeight / 2 + 10
+        )
+        
+        ctx.fillText(
+          `${(width / 72).toFixed(1)}" × ${(height / 72).toFixed(1)}"`, 
+          scaledWidth / 2, 
+          scaledHeight / 2 + 40
+        )
 
-        // Convert canvas to PNG blob
-        const blob = await canvas.convertToBlob({ type: 'image/png' })
+        // Convert to PNG
+        const blob = await canvas.convertToBlob({ 
+          type: 'image/png',
+          quality: 0.95
+        })
         const pngBuffer = await blob.arrayBuffer()
 
-        // Upload PNG to storage
+        // Upload preview image
         const previewFileName = `${templateId}/page-${i + 1}.png`
+        console.log(`[PDF-PROCESSOR] Uploading preview for page ${i + 1}`)
+        
         const { data: previewUpload, error: previewError } = await supabaseClient.storage
           .from('pdf-previews')
           .upload(previewFileName, pngBuffer, {
@@ -128,18 +193,16 @@ serve(async (req) => {
           })
 
         if (previewError) {
-          console.error(`Error uploading preview for page ${i + 1}:`, previewError)
+          console.error(`[PDF-PROCESSOR] Error uploading preview for page ${i + 1}:`, previewError)
           throw new Error(`Failed to upload preview: ${previewError.message}`)
         }
 
-        // Get public URL for the preview image
+        // Get public URL
         const { data: previewUrlData } = supabaseClient.storage
           .from('pdf-previews')
           .getPublicUrl(previewFileName)
 
-        console.log(`Generated preview image for page ${i + 1}: ${previewUrlData.publicUrl}`)
-
-        // Create template page record with real preview URL
+        // Create template page record
         const { data: pageData, error: pageError } = await supabaseClient
           .from('template_pages')
           .insert({
@@ -154,20 +217,20 @@ serve(async (req) => {
           .single()
 
         if (pageError) {
-          console.error(`Error creating page ${i + 1}:`, pageError)
+          console.error(`[PDF-PROCESSOR] Error creating page ${i + 1}:`, pageError)
           failedPages.push({ pageNumber: i + 1, error: pageError.message })
         } else {
           pages.push(pageData)
-          console.log(`Successfully created page ${i + 1} with preview image`)
+          console.log(`[PDF-PROCESSOR] Successfully processed page ${i + 1}`)
         }
 
       } catch (error) {
-        console.error(`Error processing page ${i + 1}:`, error)
+        console.error(`[PDF-PROCESSOR] Error processing page ${i + 1}:`, error)
         failedPages.push({ pageNumber: i + 1, error: error.message })
       }
     }
 
-    // Update template with metadata
+    // Step 5: Update template metadata
     const { data: pdfUrlData } = supabaseClient.storage
       .from('template-files')
       .getPublicUrl(pdfFileName)
@@ -179,25 +242,31 @@ serve(async (req) => {
       units: 'pt',
       processingDate: new Date().toISOString(),
       pagesCreated: pages.length,
-      pagesFailed: failedPages.length
+      pagesFailed: failedPages.length,
+      avgPageWidth: pages.length > 0 ? pages.reduce((sum, p) => sum + (p.pdf_page_width || 0), 0) / pages.length : 0,
+      avgPageHeight: pages.length > 0 ? pages.reduce((sum, p) => sum + (p.pdf_page_height || 0), 0) / pages.length : 0
     }
 
+    console.log('[PDF-PROCESSOR] Updating template metadata')
     const { error: templateUpdateError } = await supabaseClient
       .from('templates')
       .update({
         original_pdf_url: pdfUrlData.publicUrl,
-        pdf_metadata: pdfMetadata
+        pdf_metadata: pdfMetadata,
+        dimensions: pages.length > 0 ? `${Math.round(pdfMetadata.avgPageWidth)} × ${Math.round(pdfMetadata.avgPageHeight)} pt` : null
       })
       .eq('id', templateId)
 
     if (templateUpdateError) {
-      console.error('Error updating template:', templateUpdateError)
+      console.error('[PDF-PROCESSOR] Error updating template:', templateUpdateError)
     }
 
     const isSuccess = pages.length > 0
     const message = isSuccess 
-      ? `Successfully processed PDF with ${pageCount} pages and generated ${pages.length} preview images.`
-      : `Failed to process PDF. No pages were created.`
+      ? `Successfully processed ${pageCount} page PDF. Created ${pages.length} page previews.`
+      : 'Failed to process PDF. No pages were created.'
+
+    console.log(`[PDF-PROCESSOR] ${message}`)
 
     return new Response(
       JSON.stringify({
@@ -208,7 +277,8 @@ serve(async (req) => {
         failedPages: failedPages.length > 0 ? failedPages : undefined,
         pdfUrl: pdfUrlData.publicUrl,
         metadata: pdfMetadata,
-        pages: pages
+        pages: pages,
+        step: 'complete'
       }),
       { 
         status: isSuccess ? 200 : 500,
@@ -217,9 +287,14 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error processing PDF:', error)
+    console.error('[PDF-PROCESSOR] Unexpected error:', error)
     return new Response(
-      JSON.stringify({ success: false, error: 'Internal server error processing PDF', details: error.message }),
+      JSON.stringify({ 
+        success: false, 
+        error: 'Internal server error processing PDF', 
+        details: error.message,
+        step: 'unexpected_error'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
