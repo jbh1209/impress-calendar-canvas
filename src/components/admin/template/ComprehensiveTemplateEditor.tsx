@@ -2,22 +2,19 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, Upload, FileText, Info } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ArrowLeft, Save, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { saveTemplate, getTemplateById } from "@/services/templateService";
 import { getTemplatePages } from "@/services/templatePageService";
-import { uploadPdfAndCreatePages } from "@/utils/pdfUpload";
 import type { Template, TemplatePage } from "@/services/types/templateTypes";
 import PdfUploader from "./PdfUploader";
 import CleanTemplateCanvas from "./CleanTemplateCanvas";
+import TemplateBasicInfo from "./TemplateBasicInfo";
+import TemplateDimensions from "./TemplateDimensions";
+import TemplateBleedSettings from "./TemplateBleedSettings";
+import TemplatePages from "./TemplatePages";
 
 interface TemplateFormData {
   name: string;
@@ -34,21 +31,6 @@ interface TemplateFormData {
   bleedUnits: string;
   is_active: boolean;
 }
-
-const DIMENSION_PRESETS = [
-  { label: "Letter (8.5 x 11 in)", value: "letter", width: "8.5", height: "11", units: "in" },
-  { label: "A4 (210 x 297 mm)", value: "a4", width: "210", height: "297", units: "mm" },
-  { label: "Square (12 x 12 in)", value: "square", width: "12", height: "12", units: "in" },
-  { label: "Poster (18 x 24 in)", value: "poster", width: "18", height: "24", units: "in" },
-  { label: "Custom", value: "custom", width: "", height: "", units: "in" }
-];
-
-const CATEGORIES = [
-  { label: "Calendar", value: "calendar" },
-  { label: "Poster", value: "poster" },
-  { label: "Flyer", value: "flyer" },
-  { label: "Business Card", value: "business-card" }
-];
 
 // Helper function to parse dimensions string like "8.5x11in" or "210x297mm"
 const parseDimensions = (dimensionsStr: string) => {
@@ -116,8 +98,14 @@ const ComprehensiveTemplateEditor: React.FC = () => {
       
       // Parse existing dimensions
       const parsedDims = parseDimensions(templateData.dimensions || '');
-      const isCustomDimension = !DIMENSION_PRESETS.find(p => 
-        p.value !== 'custom' && 
+      const DIMENSION_PRESETS = [
+        { label: "Letter (8.5 x 11 in)", value: "letter", width: "8.5", height: "11", units: "in" },
+        { label: "A4 (210 x 297 mm)", value: "a4", width: "210", height: "297", units: "mm" },
+        { label: "Square (12 x 12 in)", value: "square", width: "12", height: "12", units: "in" },
+        { label: "Poster (18 x 24 in)", value: "poster", width: "18", height: "24", units: "in" }
+      ];
+      
+      const matchingPreset = DIMENSION_PRESETS.find(p => 
         `${p.width}x${p.height}${p.units}` === templateData.dimensions
       );
       
@@ -125,9 +113,7 @@ const ComprehensiveTemplateEditor: React.FC = () => {
         name: templateData.name,
         description: templateData.description || '',
         category: templateData.category,
-        dimensions: isCustomDimension ? 'custom' : (DIMENSION_PRESETS.find(p => 
-          `${p.width}x${p.height}${p.units}` === templateData.dimensions
-        )?.value || 'custom'),
+        dimensions: matchingPreset?.value || 'custom',
         customWidth: parsedDims?.width || '8.5',
         customHeight: parsedDims?.height || '11',
         units: parsedDims?.units || 'in',
@@ -151,18 +137,8 @@ const ComprehensiveTemplateEditor: React.FC = () => {
     }
   };
 
-  const handlePresetChange = (presetValue: string) => {
-    const preset = DIMENSION_PRESETS.find(p => p.value === presetValue);
-    if (preset) {
-      setFormData(prev => ({
-        ...prev,
-        dimensions: presetValue,
-        customWidth: preset.width,
-        customHeight: preset.height,
-        units: preset.units,
-        bleedUnits: preset.units
-      }));
-    }
+  const updateFormData = (updates: Partial<TemplateFormData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
   };
 
   const getDimensionsString = () => {
@@ -280,270 +256,31 @@ const ComprehensiveTemplateEditor: React.FC = () => {
         {/* Settings Panel */}
         <div className="w-96 bg-white border-r border-gray-200 h-screen overflow-y-auto">
           <div className="p-6 space-y-6">
-            {/* Template Details */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Template Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="name" className="text-sm font-medium">
-                    Name *
-                  </Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter template name"
-                    className="mt-1"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="description" className="text-sm font-medium">
-                    Description
-                  </Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Enter template description"
-                    rows={3}
-                    className="mt-1"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="category" className="text-sm font-medium">
-                    Category
-                  </Label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map(cat => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <TemplateBasicInfo
+              formData={formData}
+              onUpdate={updateFormData}
+            />
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="active" className="text-sm font-medium">
-                    Active Template
-                  </Label>
-                  <Switch
-                    id="active"
-                    checked={formData.is_active}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <TemplateDimensions
+              formData={formData}
+              onUpdate={updateFormData}
+            />
 
-            {/* Dimensions */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  Dimensions & Size
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="h-4 w-4 text-gray-400" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Choose a preset size or enter custom dimensions</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium">Size Preset</Label>
-                  <Select
-                    value={formData.dimensions}
-                    onValueChange={handlePresetChange}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DIMENSION_PRESETS.map(preset => (
-                        <SelectItem key={preset.value} value={preset.value}>
-                          {preset.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Always show dimension inputs for better UX */}
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Dimensions</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <Label className="text-xs text-gray-500">Width</Label>
-                      <Input
-                        type="number"
-                        min="0.1"
-                        step="0.1"
-                        value={formData.customWidth}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          customWidth: e.target.value,
-                          dimensions: 'custom' 
-                        }))}
-                        placeholder="8.5"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-500">Height</Label>
-                      <Input
-                        type="number"
-                        min="0.1"
-                        step="0.1"
-                        value={formData.customHeight}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          customHeight: e.target.value,
-                          dimensions: 'custom'
-                        }))}
-                        placeholder="11"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-500">Units</Label>
-                      <Select
-                        value={formData.units}
-                        onValueChange={(value) => setFormData(prev => ({ 
-                          ...prev, 
-                          units: value,
-                          bleedUnits: value,
-                          dimensions: 'custom'
-                        }))}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="in">in</SelectItem>
-                          <SelectItem value="mm">mm</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  {/* Dimension Preview */}
-                  <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                    Current: {getDimensionsString() || 'Not set'}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Bleed Settings */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  Bleed Settings
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="h-4 w-4 text-gray-400" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Extra area beyond page edges for printing. Standard is 0.125 inches.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <Label className="text-xs">Top</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      value={formData.bleedTop}
-                      onChange={(e) => setFormData(prev => ({ ...prev, bleedTop: e.target.value }))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Right</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      value={formData.bleedRight}
-                      onChange={(e) => setFormData(prev => ({ ...prev, bleedRight: e.target.value }))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Bottom</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      value={formData.bleedBottom}
-                      onChange={(e) => setFormData(prev => ({ ...prev, bleedBottom: e.target.value }))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Left</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      value={formData.bleedLeft}
-                      onChange={(e) => setFormData(prev => ({ ...prev, bleedLeft: e.target.value }))}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-xs">Bleed Units</Label>
-                  <Select
-                    value={formData.bleedUnits}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, bleedUnits: value }))}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="in">inches</SelectItem>
-                      <SelectItem value="mm">millimeters</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+            <TemplateBleedSettings
+              formData={formData}
+              onUpdate={updateFormData}
+            />
 
             <Separator />
 
             {/* PDF Upload - Only show after template is saved */}
             {template?.id && (
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
                     <Upload className="h-4 w-4" />
-                    Upload PDF Template
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+                    <h3 className="font-medium">Upload PDF Template</h3>
+                  </div>
                   <PdfUploader
                     templateId={template.id}
                     onUploadComplete={handlePdfUploadComplete}
@@ -552,34 +289,11 @@ const ComprehensiveTemplateEditor: React.FC = () => {
               </Card>
             )}
 
-            {/* Pages List */}
-            {pages.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Pages ({pages.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1">
-                    {pages.map((page, index) => (
-                      <button
-                        key={page.id}
-                        onClick={() => setActivePageIndex(index)}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                          index === activePageIndex
-                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        Page {page.page_number}
-                      </button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <TemplatePages
+              pages={pages}
+              activePageIndex={activePageIndex}
+              onPageSelect={setActivePageIndex}
+            />
           </div>
         </div>
 
