@@ -1,49 +1,63 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import type { TemplatePage } from "@/services/types/templateTypes";
 
 interface TemplateCanvasAreaProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
-  pages: TemplatePage[];
-  currentPage?: TemplatePage;
+  canvasDimensions: {
+    width: number;
+    height: number;
+  };
+  isLoading: boolean;
+  templateDimensions?: {
+    width: number;
+    height: number;
+    units: string;
+  };
 }
 
 const TemplateCanvasArea: React.FC<TemplateCanvasAreaProps> = ({
   canvasRef,
-  pages,
-  currentPage
+  canvasDimensions,
+  isLoading,
+  templateDimensions
 }) => {
   return (
-    <div className="flex-1 p-6">
-      <Card>
-        <CardContent className="p-4">
-          <div className="border-2 border-gray-200 rounded-lg bg-white overflow-hidden relative">
-            <canvas ref={canvasRef} className="max-w-full" />
-            
-            {pages.length === 0 && (
-              <div className="absolute inset-4 flex items-center justify-center bg-gray-50 rounded-lg">
-                <div className="text-center">
-                  <div className="text-4xl mb-4">📄</div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Upload PDF Template
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Upload a PDF file to start creating customizable zones
-                  </p>
-                </div>
-              </div>
-            )}
+    <Card>
+      <CardContent className="p-4">
+        <div className="relative">
+          <div className="border-2 border-gray-200 rounded-lg bg-white overflow-hidden flex justify-center">
+            <canvas 
+              ref={canvasRef} 
+              className="max-w-full"
+              style={{ 
+                width: canvasDimensions.width,
+                height: canvasDimensions.height
+              }}
+            />
           </div>
           
-          {currentPage && (
-            <div className="mt-4 text-sm text-gray-600 text-center">
-              Page {currentPage.page_number} • {currentPage.pdf_page_width} × {currentPage.pdf_page_height} pt
+          {isLoading && (
+            <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-lg">
+              <div className="text-center">
+                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <div className="text-sm text-gray-600">Loading page preview...</div>
+              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+        
+        {/* Canvas Info */}
+        <div className="mt-2 text-xs text-gray-500 text-center">
+          Canvas: {canvasDimensions.width} × {canvasDimensions.height} px
+          {templateDimensions && (
+            <span className="ml-2">
+              (Template: {templateDimensions.width} × {templateDimensions.height} {templateDimensions.units})
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
