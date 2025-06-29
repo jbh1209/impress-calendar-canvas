@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -160,9 +159,9 @@ const ProfessionalTemplateEditor: React.FC = () => {
 
     if (currentPage.preview_image_url) {
       // Load page preview as background using Fabric.js v6 Image.fromURL
-      import('fabric').then(({ Image as FabricImage }) => {
+      import('fabric').then(({ Image: FabricImage }) => {
         FabricImage.fromURL(currentPage.preview_image_url!, {
-          crossOrigin: 'anonymous',
+          crossOrigin: 'anonymous'
         }).then((img) => {
           const canvasWidth = fabricCanvas.width!;
           const canvasHeight = fabricCanvas.height!;
@@ -275,7 +274,11 @@ const ProfessionalTemplateEditor: React.FC = () => {
 
     try {
       // First save the template to get an ID
-      const savedTemplate = await saveTemplate({ ...template, id });
+      const savedTemplate = await saveTemplate({ 
+        ...template, 
+        id,
+        isActive: template.is_active 
+      });
       if (!savedTemplate) {
         throw new Error('Failed to save template');
       }
@@ -397,7 +400,11 @@ const ProfessionalTemplateEditor: React.FC = () => {
     }
 
     try {
-      const savedTemplate = await saveTemplate({ ...template, id });
+      const savedTemplate = await saveTemplate({ 
+        ...template, 
+        id,
+        isActive: template.is_active 
+      });
       if (savedTemplate) {
         toast.success("Template saved successfully");
         if (isCreateMode) {
