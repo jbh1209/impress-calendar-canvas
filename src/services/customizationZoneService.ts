@@ -27,12 +27,12 @@ export const getCustomizationZonesByTemplateId = async (
 };
 
 export const saveCustomizationZone = async (
-  zone: Omit<CustomizationZone, 'id'>
+  zone: Omit<CustomizationZone, 'id'> & { template_id: string }
 ): Promise<CustomizationZone | null> => {
   try {
     const { data, error } = await supabase
       .from("customization_zones")
-      .insert([zone])
+      .insert(zone)
       .select()
       .single();
 
