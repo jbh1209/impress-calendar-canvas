@@ -36,10 +36,10 @@ interface TemplateFormData {
 }
 
 const DIMENSION_PRESETS = [
-  { label: "Letter (8.5 x 11 in)", value: "8.5x11in", width: "8.5", height: "11", units: "in" },
-  { label: "A4 (210 x 297 mm)", value: "210x297mm", width: "210", height: "297", units: "mm" },
-  { label: "Square (12 x 12 in)", value: "12x12in", width: "12", height: "12", units: "in" },
-  { label: "Poster (18 x 24 in)", value: "18x24in", width: "18", height: "24", units: "in" },
+  { label: "Letter (8.5 x 11 in)", value: "letter", width: "8.5", height: "11", units: "in" },
+  { label: "A4 (210 x 297 mm)", value: "a4", width: "210", height: "297", units: "mm" },
+  { label: "Square (12 x 12 in)", value: "square", width: "12", height: "12", units: "in" },
+  { label: "Poster (18 x 24 in)", value: "poster", width: "18", height: "24", units: "in" },
   { label: "Custom", value: "custom", width: "", height: "", units: "in" }
 ];
 
@@ -49,6 +49,21 @@ const CATEGORIES = [
   { label: "Flyer", value: "flyer" },
   { label: "Business Card", value: "business-card" }
 ];
+
+// Helper function to parse dimensions string like "8.5x11in" or "210x297mm"
+const parseDimensions = (dimensionsStr: string) => {
+  if (!dimensionsStr) return null;
+  
+  const match = dimensionsStr.match(/^([0-9.]+)x([0-9.]+)(in|mm)$/);
+  if (match) {
+    return {
+      width: match[1],
+      height: match[2],
+      units: match[3]
+    };
+  }
+  return null;
+};
 
 const ComprehensiveTemplateEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,9 +80,9 @@ const ComprehensiveTemplateEditor: React.FC = () => {
     name: '',
     description: '',
     category: 'calendar',
-    dimensions: 'Letter (8.5 x 11 in)',
-    customWidth: '',
-    customHeight: '',
+    dimensions: 'letter',
+    customWidth: '8.5',
+    customHeight: '11',
     units: 'in',
     bleedTop: '0.125',
     bleedRight: '0.125',
@@ -98,19 +113,29 @@ const ComprehensiveTemplateEditor: React.FC = () => {
       }
       
       setTemplate(templateData);
+      
+      // Parse existing dimensions
+      const parsedDims = parseDimensions(templateData.dimensions || '');
+      const isCustomDimension = !DIMENSION_PRESETS.find(p => 
+        p.value !== 'custom' && 
+        `${p.width}x${p.height}${p.units}` === templateData.dimensions
+      );
+      
       setFormData({
         name: templateData.name,
         description: templateData.description || '',
         category: templateData.category,
-        dimensions: templateData.dimensions || 'custom',
-        customWidth: '',
-        customHeight: '',
-        units: 'in',
+        dimensions: isCustomDimension ? 'custom' : (DIMENSION_PRESETS.find(p => 
+          `${p.width}x${p.height}${p.units}` === templateData.dimensions
+        )?.value || 'custom'),
+        customWidth: parsedDims?.width || '8.5',
+        customHeight: parsedDims?.height || '11',
+        units: parsedDims?.units || 'in',
         bleedTop: '0.125',
         bleedRight: '0.125',
         bleedBottom: '0.125',
         bleedLeft: '0.125',
-        bleedUnits: 'in',
+        bleedUnits: parsedDims?.units || 'in',
         is_active: templateData.is_active
       });
 
@@ -127,7 +152,7 @@ const ComprehensiveTemplateEditor: React.FC = () => {
   };
 
   const handlePresetChange = (presetValue: string) => {
-    const preset = DIMENSION_PRESETS.find(p => p.label === presetValue);
+    const preset = DIMENSION_PRESETS.find(p => p.value === presetValue);
     if (preset) {
       setFormData(prev => ({
         ...prev,
@@ -141,11 +166,16 @@ const ComprehensiveTemplateEditor: React.FC = () => {
   };
 
   const getDimensionsString = () => {
-    if (formData.dimensions === 'custom') {
-      return `${formData.customWidth}x${formData.customHeight}${formData.units}`;
-    }
-    const preset = DIMENSION_PRESETS.find(p => p.label === formData.dimensions);
-    return preset?.value || '';
+    if (!formData.customWidth || !formData.customHeight) return '';
+    return `${formData.customWidth}x${formData.customHeight}${formData.units}`;
+  };
+
+  const getCurrentDimensions = () => {
+    return {
+      width: parseFloat(formData.customWidth) || 8.5,
+      height: parseFloat(formData.customHeight) || 11,
+      units: formData.units
+    };
   };
 
   const handleSaveTemplate = async () => {
@@ -154,9 +184,14 @@ const ComprehensiveTemplateEditor: React.FC = () => {
       return;
     }
 
+    if (!formData.customWidth || !formData.customHeight) {
+      toast.error('Please specify template dimensions');
+      return;
+    }
+
     const dimensionsString = getDimensionsString();
     if (!dimensionsString) {
-      toast.error('Please specify template dimensions');
+      toast.error('Please specify valid template dimensions');
       return;
     }
 
@@ -341,7 +376,7 @@ const ComprehensiveTemplateEditor: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {DIMENSION_PRESETS.map(preset => (
-                        <SelectItem key={preset.value} value={preset.label}>
+                        <SelectItem key={preset.value} value={preset.value}>
                           {preset.label}
                         </SelectItem>
                       ))}
@@ -349,31 +384,52 @@ const ComprehensiveTemplateEditor: React.FC = () => {
                   </Select>
                 </div>
 
-                {formData.dimensions === 'custom' && (
+                {/* Always show dimension inputs for better UX */}
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Dimensions</Label>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <Label className="text-xs">Width</Label>
+                      <Label className="text-xs text-gray-500">Width</Label>
                       <Input
+                        type="number"
+                        min="0.1"
+                        step="0.1"
                         value={formData.customWidth}
-                        onChange={(e) => setFormData(prev => ({ ...prev, customWidth: e.target.value }))}
+                        onChange={(e) => setFormData(prev => ({ 
+                          ...prev, 
+                          customWidth: e.target.value,
+                          dimensions: 'custom' 
+                        }))}
                         placeholder="8.5"
                         className="mt-1"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Height</Label>
+                      <Label className="text-xs text-gray-500">Height</Label>
                       <Input
+                        type="number"
+                        min="0.1"
+                        step="0.1"
                         value={formData.customHeight}
-                        onChange={(e) => setFormData(prev => ({ ...prev, customHeight: e.target.value }))}
+                        onChange={(e) => setFormData(prev => ({ 
+                          ...prev, 
+                          customHeight: e.target.value,
+                          dimensions: 'custom'
+                        }))}
                         placeholder="11"
                         className="mt-1"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Units</Label>
+                      <Label className="text-xs text-gray-500">Units</Label>
                       <Select
                         value={formData.units}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, units: value }))}
+                        onValueChange={(value) => setFormData(prev => ({ 
+                          ...prev, 
+                          units: value,
+                          bleedUnits: value,
+                          dimensions: 'custom'
+                        }))}
                       >
                         <SelectTrigger className="mt-1">
                           <SelectValue />
@@ -385,7 +441,12 @@ const ComprehensiveTemplateEditor: React.FC = () => {
                       </Select>
                     </div>
                   </div>
-                )}
+                  
+                  {/* Dimension Preview */}
+                  <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                    Current: {getDimensionsString() || 'Not set'}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -411,6 +472,9 @@ const ComprehensiveTemplateEditor: React.FC = () => {
                   <div>
                     <Label className="text-xs">Top</Label>
                     <Input
+                      type="number"
+                      min="0"
+                      step="0.001"
                       value={formData.bleedTop}
                       onChange={(e) => setFormData(prev => ({ ...prev, bleedTop: e.target.value }))}
                       className="mt-1"
@@ -419,6 +483,9 @@ const ComprehensiveTemplateEditor: React.FC = () => {
                   <div>
                     <Label className="text-xs">Right</Label>
                     <Input
+                      type="number"
+                      min="0"
+                      step="0.001"
                       value={formData.bleedRight}
                       onChange={(e) => setFormData(prev => ({ ...prev, bleedRight: e.target.value }))}
                       className="mt-1"
@@ -427,6 +494,9 @@ const ComprehensiveTemplateEditor: React.FC = () => {
                   <div>
                     <Label className="text-xs">Bottom</Label>
                     <Input
+                      type="number"
+                      min="0"
+                      step="0.001"
                       value={formData.bleedBottom}
                       onChange={(e) => setFormData(prev => ({ ...prev, bleedBottom: e.target.value }))}
                       className="mt-1"
@@ -435,6 +505,9 @@ const ComprehensiveTemplateEditor: React.FC = () => {
                   <div>
                     <Label className="text-xs">Left</Label>
                     <Input
+                      type="number"
+                      min="0"
+                      step="0.001"
                       value={formData.bleedLeft}
                       onChange={(e) => setFormData(prev => ({ ...prev, bleedLeft: e.target.value }))}
                       className="mt-1"
@@ -547,6 +620,7 @@ const ComprehensiveTemplateEditor: React.FC = () => {
             <CleanTemplateCanvas
               activePage={activePage}
               templateId={template?.id}
+              templateDimensions={getCurrentDimensions()}
             />
           )}
         </div>
