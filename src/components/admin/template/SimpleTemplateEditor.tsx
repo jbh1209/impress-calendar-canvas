@@ -3,7 +3,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Upload, Loader2, FileText } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Save, Upload, Loader2, FileText, ChevronDown, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { Canvas as FabricCanvas, Rect, Text as FabricText } from "fabric";
 import { uploadPdfAndCreatePages } from "@/utils/pdfUpload";
@@ -17,6 +23,17 @@ interface UITemplateState {
   category: string;
   dimensions: string;
   is_active: boolean;
+  customWidth: number;
+  customHeight: number;
+  units: string;
+}
+
+interface BleedSettings {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  units: string;
 }
 
 const SimpleTemplateEditor: React.FC = () => {
@@ -30,9 +47,23 @@ const SimpleTemplateEditor: React.FC = () => {
     name: '',
     description: '',
     category: 'calendar',
-    dimensions: '',
-    is_active: false
+    dimensions: 'custom',
+    is_active: false,
+    customWidth: 210,
+    customHeight: 297,
+    units: 'mm'
   });
+
+  // Bleed settings state
+  const [bleed, setBleed] = useState<BleedSettings>({
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    units: 'mm'
+  });
+
+  const [isBleedOpen, setIsBleedOpen] = useState(false);
   
   // PDF and pages state
   const [pages, setPages] = useState<TemplatePage[]>([]);
@@ -89,8 +120,11 @@ const SimpleTemplateEditor: React.FC = () => {
           name: templateData.name,
           description: templateData.description || '',
           category: templateData.category,
-          dimensions: templateData.dimensions || '',
-          is_active: templateData.is_active
+          dimensions: templateData.dimensions || 'custom',
+          is_active: templateData.is_active,
+          customWidth: 210,
+          customHeight: 297,
+          units: 'mm'
         });
       }
     } catch (error) {
@@ -327,6 +361,11 @@ const SimpleTemplateEditor: React.FC = () => {
     toast.success('Image zone added');
   };
 
+  const handleBleedChange = (field: keyof BleedSettings, value: string) => {
+    const numValue = Math.max(0, parseFloat(value) || 0);
+    setBleed(prev => ({ ...prev, [field]: numValue }));
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -370,47 +409,161 @@ const SimpleTemplateEditor: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <Label className="block text-sm font-medium text-gray-700 mb-1">
                   Name *
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
                   value={template.name}
                   onChange={(e) => setTemplate(prev => ({...prev, name: e.target.value}))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter template name"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <Label className="block text-sm font-medium text-gray-700 mb-1">
                   Category
-                </label>
-                <select
+                </Label>
+                <Select
                   value={template.category}
-                  onChange={(e) => setTemplate(prev => ({...prev, category: e.target.value}))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onValueChange={(value) => setTemplate(prev => ({...prev, category: value}))}
                 >
-                  <option value="calendar">Calendar</option>
-                  <option value="poster">Poster</option>
-                  <option value="flyer">Flyer</option>
-                  <option value="business-card">Business Card</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="calendar">Calendar</SelectItem>
+                    <SelectItem value="poster">Poster</SelectItem>
+                    <SelectItem value="flyer">Flyer</SelectItem>
+                    <SelectItem value="business-card">Business Card</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <Label className="block text-sm font-medium text-gray-700 mb-1">
                   Description
-                </label>
-                <textarea
+                </Label>
+                <Textarea
                   value={template.description}
                   onChange={(e) => setTemplate(prev => ({...prev, description: e.target.value}))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={3}
                   placeholder="Template description"
                 />
               </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_active"
+                  checked={template.is_active}
+                  onCheckedChange={(checked) => setTemplate(prev => ({...prev, is_active: !!checked}))}
+                />
+                <Label htmlFor="is_active" className="text-sm font-medium text-gray-700">
+                  Active Template
+                </Label>
+              </div>
             </CardContent>
+          </Card>
+
+          {/* Dimensions Section */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Dimensions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs text-gray-600 mb-1 block">Width</Label>
+                  <Input
+                    type="number"
+                    value={template.customWidth}
+                    onChange={(e) => setTemplate(prev => ({...prev, customWidth: parseFloat(e.target.value) || 0}))}
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-600 mb-1 block">Height</Label>
+                  <Input
+                    type="number"
+                    value={template.customHeight}
+                    onChange={(e) => setTemplate(prev => ({...prev, customHeight: parseFloat(e.target.value) || 0}))}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-xs text-gray-600 mb-1 block">Units</Label>
+                <Select
+                  value={template.units}
+                  onValueChange={(value) => setTemplate(prev => ({...prev, units: value}))}
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mm">mm</SelectItem>
+                    <SelectItem value="in">in</SelectItem>
+                    <SelectItem value="pt">pt</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Bleed Settings */}
+          <Card>
+            <Collapsible open={isBleedOpen} onOpenChange={setIsBleedOpen}>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-3 cursor-pointer hover:bg-gray-50">
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      Bleed Settings
+                    </span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${isBleedOpen ? 'transform rotate-180' : ''}`} />
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {['top', 'right', 'bottom', 'left'].map((side) => (
+                      <div key={side}>
+                        <Label className="text-xs text-gray-600 mb-1 block capitalize">
+                          {side}
+                        </Label>
+                        <Input
+                          type="number"
+                          value={bleed[side as keyof BleedSettings]}
+                          onChange={(e) => handleBleedChange(side as keyof BleedSettings, e.target.value)}
+                          min={0}
+                          step={0.1}
+                          className="text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Units</Label>
+                    <Select
+                      value={bleed.units}
+                      onValueChange={(value) => setBleed(prev => ({...prev, units: value}))}
+                    >
+                      <SelectTrigger className="text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mm">mm</SelectItem>
+                        <SelectItem value="in">in</SelectItem>
+                        <SelectItem value="pt">pt</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
 
           {/* PDF Upload */}
@@ -522,7 +675,7 @@ const SimpleTemplateEditor: React.FC = () => {
               
               {/* Canvas Info */}
               <div className="mt-2 text-xs text-gray-500 text-center">
-                Canvas: 800 × 600 px
+                Canvas: 800 × 600 px • Template: {template.customWidth} × {template.customHeight} {template.units}
                 {currentPage && (
                   <span className="ml-2">
                     • Page {currentPage.page_number} of {pages.length}
