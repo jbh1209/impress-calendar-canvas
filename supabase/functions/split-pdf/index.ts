@@ -63,7 +63,7 @@ serve(async (req) => {
     }
 
     // Step 2: Extract PDF metadata using PDF-lib
-    console.log('[PDF-PROCESSOR] Loading PDF document')
+    console.log('[PDF-PROCESSOR] Loading PDF document with PDF-lib')
     const { PDFDocument } = await import('https://esm.sh/pdf-lib@1.17.1')
     
     let pdfDoc;
@@ -106,67 +106,113 @@ serve(async (req) => {
       console.warn('[PDF-PROCESSOR] Warning: Could not clean up existing pages:', deleteError)
     }
 
-    // Step 4: Convert PDF to images using pdf2pic
-    console.log('[PDF-PROCESSOR] Converting PDF pages to images')
-    const pdf2pic = await import('https://esm.sh/pdf2pic@2.1.4')
+    // Step 4: Initialize PDF.js for page rendering
+    console.log('[PDF-PROCESSOR] Initializing PDF.js for page rendering')
+    const pdfjs = await import('https://esm.sh/pdfjs-dist@4.0.379')
     
+    // Configure PDF.js worker
+    const workerUrl = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.js'
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
+    
+    console.log('[PDF-PROCESSOR] Loading PDF document with PDF.js')
+    const pdfDocument = await pdfjs.getDocument({
+      data: new Uint8Array(pdfBuffer),
+      verbosity: 0
+    }).promise
+
     const pages = []
     const failedPages = []
     
-    try {
-      // Configure pdf2pic for high-quality conversion
-      const convert = pdf2pic.default.fromBuffer(new Uint8Array(pdfBuffer), {
-        density: 150,           // 150 DPI for good quality
-        saveFilename: "page",
-        format: "png",
-        width: 800,            // Standard preview width
-        height: 1200,          // Standard preview height (4:3 aspect ratio)
-        quality: 90
-      })
+    // Step 5: Process each page
+    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+      try {
+        console.log(`[PDF-PROCESSOR] Processing page ${pageNum}/${pageCount}`)
+        
+        // Get page from PDF.js
+        const page = await pdfDocument.getPage(pageNum)
+        const viewport = page.getViewport({ scale: 1.5 })
+        
+        // Create canvas using Canvas API polyfill for Deno
+        const canvas = new OffscreenCanvas(viewport.width, viewport.height)
+        const context = canvas.getContext('2d')
+        
+        if (!context) {
+          throw new Error('Could not get 2D context from canvas')
+        }
+        
+        // Render page to canvas
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        }
+        
+        await page.render(renderContext).promise
+        
+        // Convert canvas to blob
+        const blob = await canvas.convertToBlob({ type: 'image/png', quality: 0.9 })
+        const imageBuffer = await blob.arrayBuffer()
+        
+        // Get page dimensions from PDF-lib for database storage
+        const pdfLibPage = pdfDoc.getPage(pageNum - 1)  // PDF-lib uses 0-based indexing
+        const { width, height } = pdfLibPage.getSize()
+        
+        // Upload preview image to storage
+        const previewFileName = `${templateId}/page-${pageNum}.png`
+        console.log(`[PDF-PROCESSOR] Uploading preview for page ${pageNum}`)
+        
+        const { data: previewUpload, error: previewError } = await supabaseClient.storage
+          .from('pdf-previews')
+          .upload(previewFileName, imageBuffer, {
+            contentType: 'image/png',
+            upsert: true
+          })
 
-      for (let i = 1; i <= pageCount; i++) {
+        if (previewError) {
+          console.error(`[PDF-PROCESSOR] Error uploading preview for page ${pageNum}:`, previewError)
+          throw new Error(`Failed to upload preview: ${previewError.message}`)
+        }
+
+        // Get public URL for the preview
+        const { data: previewUrlData } = supabaseClient.storage
+          .from('pdf-previews')
+          .getPublicUrl(previewFileName)
+
+        // Create template page record
+        const { data: pageData, error: pageError } = await supabaseClient
+          .from('template_pages')
+          .insert({
+            template_id: templateId,
+            page_number: pageNum,
+            preview_image_url: previewUrlData.publicUrl,
+            pdf_page_width: width,
+            pdf_page_height: height,
+            pdf_units: 'pt'
+          })
+          .select()
+          .single()
+
+        if (pageError) {
+          console.error(`[PDF-PROCESSOR] Error creating page ${pageNum}:`, pageError)
+          failedPages.push({ pageNumber: pageNum, error: pageError.message })
+        } else {
+          pages.push(pageData)
+          console.log(`[PDF-PROCESSOR] Successfully processed page ${pageNum}`)
+        }
+
+      } catch (error) {
+        console.error(`[PDF-PROCESSOR] Error processing page ${pageNum}:`, error)
+        
+        // Create a placeholder page record even if image generation fails
         try {
-          console.log(`[PDF-PROCESSOR] Converting page ${i}/${pageCount}`)
+          const pdfLibPage = pdfDoc.getPage(pageNum - 1)
+          const { width, height } = pdfLibPage.getSize()
           
-          // Convert page to image
-          const imageResult = await convert(i, { responseType: "buffer" })
-          
-          if (!imageResult.buffer) {
-            throw new Error('No image buffer returned from pdf2pic')
-          }
-
-          // Get page dimensions from PDF
-          const page = pdfDoc.getPage(i - 1)
-          const { width, height } = page.getSize()
-          
-          // Upload preview image to storage
-          const previewFileName = `${templateId}/page-${i}.png`
-          console.log(`[PDF-PROCESSOR] Uploading preview for page ${i}`)
-          
-          const { data: previewUpload, error: previewError } = await supabaseClient.storage
-            .from('pdf-previews')
-            .upload(previewFileName, imageResult.buffer, {
-              contentType: 'image/png',
-              upsert: true
-            })
-
-          if (previewError) {
-            console.error(`[PDF-PROCESSOR] Error uploading preview for page ${i}:`, previewError)
-            throw new Error(`Failed to upload preview: ${previewError.message}`)
-          }
-
-          // Get public URL for the preview
-          const { data: previewUrlData } = supabaseClient.storage
-            .from('pdf-previews')
-            .getPublicUrl(previewFileName)
-
-          // Create template page record
           const { data: pageData, error: pageError } = await supabaseClient
             .from('template_pages')
             .insert({
               template_id: templateId,
-              page_number: i,
-              preview_image_url: previewUrlData.publicUrl,
+              page_number: pageNum,
+              preview_image_url: null, // No preview image available
               pdf_page_width: width,
               pdf_page_height: height,
               pdf_units: 'pt'
@@ -175,32 +221,18 @@ serve(async (req) => {
             .single()
 
           if (pageError) {
-            console.error(`[PDF-PROCESSOR] Error creating page ${i}:`, pageError)
-            failedPages.push({ pageNumber: i, error: pageError.message })
+            failedPages.push({ pageNumber: pageNum, error: `Image generation failed: ${error.message}, Page creation failed: ${pageError.message}` })
           } else {
             pages.push(pageData)
-            console.log(`[PDF-PROCESSOR] Successfully processed page ${i}`)
+            console.log(`[PDF-PROCESSOR] Created placeholder page ${pageNum} (no preview image)`)
           }
-
-        } catch (error) {
-          console.error(`[PDF-PROCESSOR] Error processing page ${i}:`, error)
-          failedPages.push({ pageNumber: i, error: error.message })
+        } catch (placeholderError) {
+          failedPages.push({ pageNumber: pageNum, error: `Complete failure: ${error.message}` })
         }
       }
-
-    } catch (error) {
-      console.error('[PDF-PROCESSOR] Error initializing pdf2pic:', error)
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Failed to initialize PDF conversion',
-          message: `Conversion setup failed: ${error.message}`
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
     }
 
-    // Step 5: Update template metadata
+    // Step 6: Update template metadata
     const { data: pdfUrlData } = supabaseClient.storage
       .from('template-files')
       .getPublicUrl(pdfFileName)
@@ -215,7 +247,7 @@ serve(async (req) => {
       pagesFailed: failedPages.length,
       avgPageWidth: pages.length > 0 ? pages.reduce((sum, p) => sum + (p.pdf_page_width || 0), 0) / pages.length : 0,
       avgPageHeight: pages.length > 0 ? pages.reduce((sum, p) => sum + (p.pdf_page_height || 0), 0) / pages.length : 0,
-      conversionMethod: 'pdf2pic'
+      conversionMethod: 'pdfjs-canvas'
     }
 
     console.log('[PDF-PROCESSOR] Updating template metadata')
@@ -234,7 +266,7 @@ serve(async (req) => {
 
     const isSuccess = pages.length > 0
     const message = isSuccess 
-      ? `Successfully processed ${pageCount} page PDF. Created ${pages.length} high-quality page previews using pdf2pic.`
+      ? `Successfully processed ${pageCount} page PDF. Created ${pages.length} pages with ${pages.filter(p => p.preview_image_url).length} preview images.`
       : 'Failed to process PDF. No pages were created.'
 
     console.log(`[PDF-PROCESSOR] ${message}`)
@@ -245,6 +277,8 @@ serve(async (req) => {
         message,
         pagesCreated: pages.length,
         pagesFailed: failedPages.length,
+        pagesWithPreviews: pages.filter(p => p.preview_image_url).length,
+        pagesWithoutPreviews: pages.filter(p => !p.preview_image_url).length,
         failedPages: failedPages.length > 0 ? failedPages : undefined,
         pdfUrl: pdfUrlData.publicUrl,
         metadata: pdfMetadata,
