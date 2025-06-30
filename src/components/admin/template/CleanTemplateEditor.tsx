@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,14 @@ import { toast } from "sonner";
 import { Canvas as FabricCanvas, Rect, Text as FabricText } from "fabric";
 import { supabase } from "@/integrations/supabase/client";
 
+interface BleedSettings {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  units: string;
+}
+
 interface Template {
   id?: string;
   name: string;
@@ -19,13 +26,7 @@ interface Template {
   category: string;
   dimensions: string;
   is_active: boolean;
-  bleed_settings: {
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-    units: string;
-  };
+  bleed_settings: BleedSettings;
   original_pdf_url?: string;
   pdf_metadata?: any;
 }
@@ -121,14 +122,27 @@ const CleanTemplateEditor: React.FC = () => {
         return;
       }
 
-      // Handle bleed_settings - should now exist in database
-      const bleedSettings = data.bleed_settings || {
+      // Properly type cast the bleed_settings JSON to BleedSettings interface
+      const defaultBleedSettings: BleedSettings = {
         top: 3,
         right: 3,
         bottom: 3,
         left: 3,
         units: "mm"
       };
+
+      let bleedSettings: BleedSettings = defaultBleedSettings;
+      
+      if (data.bleed_settings && typeof data.bleed_settings === 'object' && data.bleed_settings !== null) {
+        const settings = data.bleed_settings as any;
+        bleedSettings = {
+          top: typeof settings.top === 'number' ? settings.top : 3,
+          right: typeof settings.right === 'number' ? settings.right : 3,
+          bottom: typeof settings.bottom === 'number' ? settings.bottom : 3,
+          left: typeof settings.left === 'number' ? settings.left : 3,
+          units: typeof settings.units === 'string' ? settings.units : "mm"
+        };
+      }
 
       setTemplate({
         id: data.id,
