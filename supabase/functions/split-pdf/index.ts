@@ -106,71 +106,56 @@ serve(async (req) => {
       console.warn('[PDF-PROCESSOR] Warning: Could not clean up existing pages:', deleteError)
     }
 
-    // Step 4: Process each page - Create PNG placeholders
+    // Step 4: Convert PDF to images using pdf2pic
+    console.log('[PDF-PROCESSOR] Converting PDF pages to images')
+    const pdf2pic = await import('https://esm.sh/pdf2pic@2.1.4')
+    
     const pages = []
     const failedPages = []
     
-    for (let i = 0; i < pageCount; i++) {
-      try {
-        console.log(`[PDF-PROCESSOR] Processing page ${i + 1}/${pageCount}`)
-        
-        const page = pdfDoc.getPage(i)
-        const { width, height } = page.getSize()
-        
-        // Create a simple PNG placeholder using canvas
-        const canvas = new OffscreenCanvas(800, 600)
-        const ctx = canvas.getContext('2d')
-        
-        if (ctx) {
-          // Set background
-          ctx.fillStyle = '#f8fafc'
-          ctx.fillRect(0, 0, 800, 600)
+    try {
+      // Configure pdf2pic for high-quality conversion
+      const convert = pdf2pic.default.fromBuffer(new Uint8Array(pdfBuffer), {
+        density: 150,           // 150 DPI for good quality
+        saveFilename: "page",
+        format: "png",
+        width: 800,            // Standard preview width
+        height: 1200,          // Standard preview height (4:3 aspect ratio)
+        quality: 90
+      })
+
+      for (let i = 1; i <= pageCount; i++) {
+        try {
+          console.log(`[PDF-PROCESSOR] Converting page ${i}/${pageCount}`)
           
-          // Add border
-          ctx.strokeStyle = '#e2e8f0'
-          ctx.lineWidth = 2
-          ctx.strokeRect(0, 0, 800, 600)
+          // Convert page to image
+          const imageResult = await convert(i, { responseType: "buffer" })
           
-          // Add page text
-          ctx.fillStyle = '#374151'
-          ctx.font = 'bold 32px Arial'
-          ctx.textAlign = 'center'
-          ctx.fillText(`Page ${i + 1}`, 400, 250)
+          if (!imageResult.buffer) {
+            throw new Error('No image buffer returned from pdf2pic')
+          }
+
+          // Get page dimensions from PDF
+          const page = pdfDoc.getPage(i - 1)
+          const { width, height } = page.getSize()
           
-          // Add dimensions
-          ctx.fillStyle = '#6b7280'
-          ctx.font = '18px Arial'
-          ctx.fillText(`${Math.round(width)} × ${Math.round(height)} pt`, 400, 300)
-          
-          // Add size in inches
-          ctx.fillStyle = '#9ca3af'
-          ctx.font = '16px Arial'
-          ctx.fillText(`${(width / 72).toFixed(1)}" × ${(height / 72).toFixed(1)}"`, 400, 330)
-          
-          // Add preview note
-          ctx.font = '14px Arial'
-          ctx.fillText('PDF Preview Available', 400, 380)
-          
-          // Convert to PNG blob
-          const blob = await canvas.convertToBlob({ type: 'image/png', quality: 0.8 })
-          
-          // Upload preview image
-          const previewFileName = `${templateId}/page-${i + 1}.png`
-          console.log(`[PDF-PROCESSOR] Uploading preview for page ${i + 1}`)
+          // Upload preview image to storage
+          const previewFileName = `${templateId}/page-${i}.png`
+          console.log(`[PDF-PROCESSOR] Uploading preview for page ${i}`)
           
           const { data: previewUpload, error: previewError } = await supabaseClient.storage
             .from('pdf-previews')
-            .upload(previewFileName, blob, {
+            .upload(previewFileName, imageResult.buffer, {
               contentType: 'image/png',
               upsert: true
             })
 
           if (previewError) {
-            console.error(`[PDF-PROCESSOR] Error uploading preview for page ${i + 1}:`, previewError)
+            console.error(`[PDF-PROCESSOR] Error uploading preview for page ${i}:`, previewError)
             throw new Error(`Failed to upload preview: ${previewError.message}`)
           }
 
-          // Get public URL
+          // Get public URL for the preview
           const { data: previewUrlData } = supabaseClient.storage
             .from('pdf-previews')
             .getPublicUrl(previewFileName)
@@ -180,7 +165,7 @@ serve(async (req) => {
             .from('template_pages')
             .insert({
               template_id: templateId,
-              page_number: i + 1,
+              page_number: i,
               preview_image_url: previewUrlData.publicUrl,
               pdf_page_width: width,
               pdf_page_height: height,
@@ -190,20 +175,29 @@ serve(async (req) => {
             .single()
 
           if (pageError) {
-            console.error(`[PDF-PROCESSOR] Error creating page ${i + 1}:`, pageError)
-            failedPages.push({ pageNumber: i + 1, error: pageError.message })
+            console.error(`[PDF-PROCESSOR] Error creating page ${i}:`, pageError)
+            failedPages.push({ pageNumber: i, error: pageError.message })
           } else {
             pages.push(pageData)
-            console.log(`[PDF-PROCESSOR] Successfully processed page ${i + 1}`)
+            console.log(`[PDF-PROCESSOR] Successfully processed page ${i}`)
           }
-        } else {
-          throw new Error('Could not get canvas context')
-        }
 
-      } catch (error) {
-        console.error(`[PDF-PROCESSOR] Error processing page ${i + 1}:`, error)
-        failedPages.push({ pageNumber: i + 1, error: error.message })
+        } catch (error) {
+          console.error(`[PDF-PROCESSOR] Error processing page ${i}:`, error)
+          failedPages.push({ pageNumber: i, error: error.message })
+        }
       }
+
+    } catch (error) {
+      console.error('[PDF-PROCESSOR] Error initializing pdf2pic:', error)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Failed to initialize PDF conversion',
+          message: `Conversion setup failed: ${error.message}`
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     // Step 5: Update template metadata
@@ -220,7 +214,8 @@ serve(async (req) => {
       pagesCreated: pages.length,
       pagesFailed: failedPages.length,
       avgPageWidth: pages.length > 0 ? pages.reduce((sum, p) => sum + (p.pdf_page_width || 0), 0) / pages.length : 0,
-      avgPageHeight: pages.length > 0 ? pages.reduce((sum, p) => sum + (p.pdf_page_height || 0), 0) / pages.length : 0
+      avgPageHeight: pages.length > 0 ? pages.reduce((sum, p) => sum + (p.pdf_page_height || 0), 0) / pages.length : 0,
+      conversionMethod: 'pdf2pic'
     }
 
     console.log('[PDF-PROCESSOR] Updating template metadata')
@@ -239,7 +234,7 @@ serve(async (req) => {
 
     const isSuccess = pages.length > 0
     const message = isSuccess 
-      ? `Successfully processed ${pageCount} page PDF. Created ${pages.length} page previews.`
+      ? `Successfully processed ${pageCount} page PDF. Created ${pages.length} high-quality page previews using pdf2pic.`
       : 'Failed to process PDF. No pages were created.'
 
     console.log(`[PDF-PROCESSOR] ${message}`)
