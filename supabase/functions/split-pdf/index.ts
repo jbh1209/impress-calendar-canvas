@@ -106,84 +106,25 @@ serve(async (req) => {
       console.warn('[PDF-PROCESSOR] Warning: Could not clean up existing pages:', deleteError)
     }
 
-    // Step 4: Initialize PDF.js for page rendering
-    console.log('[PDF-PROCESSOR] Initializing PDF.js for page rendering')
-    const pdfjs = await import('https://esm.sh/pdfjs-dist@4.0.379')
-    
-    // Configure PDF.js worker
-    const workerUrl = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.js'
-    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
-    
-    console.log('[PDF-PROCESSOR] Loading PDF document with PDF.js')
-    const pdfDocument = await pdfjs.getDocument({
-      data: new Uint8Array(pdfBuffer),
-      verbosity: 0
-    }).promise
-
+    // Step 4: Create template pages (without preview images)
     const pages = []
     const failedPages = []
     
-    // Step 5: Process each page
     for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
       try {
-        console.log(`[PDF-PROCESSOR] Processing page ${pageNum}/${pageCount}`)
+        console.log(`[PDF-PROCESSOR] Creating page record ${pageNum}/${pageCount}`)
         
-        // Get page from PDF.js
-        const page = await pdfDocument.getPage(pageNum)
-        const viewport = page.getViewport({ scale: 1.5 })
-        
-        // Create canvas using Canvas API polyfill for Deno
-        const canvas = new OffscreenCanvas(viewport.width, viewport.height)
-        const context = canvas.getContext('2d')
-        
-        if (!context) {
-          throw new Error('Could not get 2D context from canvas')
-        }
-        
-        // Render page to canvas
-        const renderContext = {
-          canvasContext: context,
-          viewport: viewport
-        }
-        
-        await page.render(renderContext).promise
-        
-        // Convert canvas to blob
-        const blob = await canvas.convertToBlob({ type: 'image/png', quality: 0.9 })
-        const imageBuffer = await blob.arrayBuffer()
-        
-        // Get page dimensions from PDF-lib for database storage
+        // Get page dimensions from PDF-lib
         const pdfLibPage = pdfDoc.getPage(pageNum - 1)  // PDF-lib uses 0-based indexing
         const { width, height } = pdfLibPage.getSize()
         
-        // Upload preview image to storage
-        const previewFileName = `${templateId}/page-${pageNum}.png`
-        console.log(`[PDF-PROCESSOR] Uploading preview for page ${pageNum}`)
-        
-        const { data: previewUpload, error: previewError } = await supabaseClient.storage
-          .from('pdf-previews')
-          .upload(previewFileName, imageBuffer, {
-            contentType: 'image/png',
-            upsert: true
-          })
-
-        if (previewError) {
-          console.error(`[PDF-PROCESSOR] Error uploading preview for page ${pageNum}:`, previewError)
-          throw new Error(`Failed to upload preview: ${previewError.message}`)
-        }
-
-        // Get public URL for the preview
-        const { data: previewUrlData } = supabaseClient.storage
-          .from('pdf-previews')
-          .getPublicUrl(previewFileName)
-
-        // Create template page record
+        // Create template page record (without preview image)
         const { data: pageData, error: pageError } = await supabaseClient
           .from('template_pages')
           .insert({
             template_id: templateId,
             page_number: pageNum,
-            preview_image_url: previewUrlData.publicUrl,
+            preview_image_url: null, // No preview images - browser will render from PDF
             pdf_page_width: width,
             pdf_page_height: height,
             pdf_units: 'pt'
@@ -196,43 +137,16 @@ serve(async (req) => {
           failedPages.push({ pageNumber: pageNum, error: pageError.message })
         } else {
           pages.push(pageData)
-          console.log(`[PDF-PROCESSOR] Successfully processed page ${pageNum}`)
+          console.log(`[PDF-PROCESSOR] Successfully created page ${pageNum}`)
         }
 
       } catch (error) {
         console.error(`[PDF-PROCESSOR] Error processing page ${pageNum}:`, error)
-        
-        // Create a placeholder page record even if image generation fails
-        try {
-          const pdfLibPage = pdfDoc.getPage(pageNum - 1)
-          const { width, height } = pdfLibPage.getSize()
-          
-          const { data: pageData, error: pageError } = await supabaseClient
-            .from('template_pages')
-            .insert({
-              template_id: templateId,
-              page_number: pageNum,
-              preview_image_url: null, // No preview image available
-              pdf_page_width: width,
-              pdf_page_height: height,
-              pdf_units: 'pt'
-            })
-            .select()
-            .single()
-
-          if (pageError) {
-            failedPages.push({ pageNumber: pageNum, error: `Image generation failed: ${error.message}, Page creation failed: ${pageError.message}` })
-          } else {
-            pages.push(pageData)
-            console.log(`[PDF-PROCESSOR] Created placeholder page ${pageNum} (no preview image)`)
-          }
-        } catch (placeholderError) {
-          failedPages.push({ pageNumber: pageNum, error: `Complete failure: ${error.message}` })
-        }
+        failedPages.push({ pageNumber: pageNum, error: error.message })
       }
     }
 
-    // Step 6: Update template metadata
+    // Step 5: Update template metadata
     const { data: pdfUrlData } = supabaseClient.storage
       .from('template-files')
       .getPublicUrl(pdfFileName)
@@ -247,7 +161,7 @@ serve(async (req) => {
       pagesFailed: failedPages.length,
       avgPageWidth: pages.length > 0 ? pages.reduce((sum, p) => sum + (p.pdf_page_width || 0), 0) / pages.length : 0,
       avgPageHeight: pages.length > 0 ? pages.reduce((sum, p) => sum + (p.pdf_page_height || 0), 0) / pages.length : 0,
-      conversionMethod: 'pdfjs-canvas'
+      conversionMethod: 'browser-rendering'
     }
 
     console.log('[PDF-PROCESSOR] Updating template metadata')
@@ -266,7 +180,7 @@ serve(async (req) => {
 
     const isSuccess = pages.length > 0
     const message = isSuccess 
-      ? `Successfully processed ${pageCount} page PDF. Created ${pages.length} pages with ${pages.filter(p => p.preview_image_url).length} preview images.`
+      ? `Successfully processed ${pageCount} page PDF. Created ${pages.length} page records. PDF will be rendered in browser.`
       : 'Failed to process PDF. No pages were created.'
 
     console.log(`[PDF-PROCESSOR] ${message}`)
@@ -277,12 +191,11 @@ serve(async (req) => {
         message,
         pagesCreated: pages.length,
         pagesFailed: failedPages.length,
-        pagesWithPreviews: pages.filter(p => p.preview_image_url).length,
-        pagesWithoutPreviews: pages.filter(p => !p.preview_image_url).length,
         failedPages: failedPages.length > 0 ? failedPages : undefined,
         pdfUrl: pdfUrlData.publicUrl,
         metadata: pdfMetadata,
-        pages: pages
+        pages: pages,
+        renderingMethod: 'browser-based'
       }),
       { 
         status: isSuccess ? 200 : 500,
