@@ -454,6 +454,7 @@ export type Database = {
       templates: {
         Row: {
           base_image_url: string | null
+          bleed_settings: Json | null
           category: string
           created_at: string
           created_by: string | null
@@ -468,6 +469,7 @@ export type Database = {
         }
         Insert: {
           base_image_url?: string | null
+          bleed_settings?: Json | null
           category: string
           created_at?: string
           created_by?: string | null
@@ -482,6 +484,7 @@ export type Database = {
         }
         Update: {
           base_image_url?: string | null
+          bleed_settings?: Json | null
           category?: string
           created_at?: string
           created_by?: string | null

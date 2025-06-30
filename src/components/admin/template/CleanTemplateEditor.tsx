@@ -121,8 +121,8 @@ const CleanTemplateEditor: React.FC = () => {
         return;
       }
 
-      // Handle bleed_settings with fallback for older templates
-      const bleedSettings = (data as any).bleed_settings || {
+      // Handle bleed_settings - should now exist in database
+      const bleedSettings = data.bleed_settings || {
         top: 3,
         right: 3,
         bottom: 3,
