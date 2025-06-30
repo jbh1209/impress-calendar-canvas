@@ -71,7 +71,7 @@ export interface ZoneRow {
   updated_at: string;
 }
 
-// Add TemplatePage type with PDF dimensions
+// Add TemplatePage type with PDF dimensions and required timestamps
 export interface TemplatePage {
   id: string;
   template_id: string;

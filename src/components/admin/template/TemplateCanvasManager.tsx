@@ -44,7 +44,8 @@ const TemplateCanvasManager: React.FC<TemplateCanvasManagerProps> = ({
 
   const loadPageContent = (canvas: FabricCanvas, page: TemplatePage) => {
     canvas.clear();
-    canvas.setBackgroundColor('#f8f9fa', canvas.renderAll.bind(canvas));
+    canvas.backgroundColor = '#f8f9fa';
+    canvas.renderAll();
     
     // Add placeholder content indicating this is a PDF page
     const { FabricText } = require("fabric");

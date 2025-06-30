@@ -31,9 +31,7 @@ export const setupCanvas = (
 
 export const loadPageBackground = async (
   canvas: FabricCanvas,
-  templateId: string,
-  pageNumber: number,
-  pdfUrl?: string
+  pdfUrl: string
 ): Promise<void> => {
   try {
     if (!pdfUrl) {
@@ -41,12 +39,13 @@ export const loadPageBackground = async (
       return;
     }
 
-    // Create a simple placeholder background
-    canvas.setBackgroundColor('#f8f9fa', canvas.renderAll.bind(canvas));
+    // Set a simple background color using the correct property
+    canvas.backgroundColor = '#f8f9fa';
+    canvas.renderAll();
     
     // In a real implementation, you could use PDF.js here to render the PDF page
     // For now, we'll add a placeholder indicating the PDF page
-    const placeholderText = new FabricText(`PDF Page ${pageNumber}`, {
+    const placeholderText = new FabricText('PDF Background', {
       left: canvas.width! / 2,
       top: canvas.height! / 2,
       fontSize: 24,
@@ -64,7 +63,8 @@ export const loadPageBackground = async (
   } catch (error) {
     console.error('Error rendering PDF background:', error);
     // Set a simple gray background as fallback
-    canvas.setBackgroundColor('#f0f0f0', canvas.renderAll.bind(canvas));
+    canvas.backgroundColor = '#f0f0f0';
+    canvas.renderAll();
   }
 };
 

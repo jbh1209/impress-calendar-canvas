@@ -38,8 +38,8 @@ const CustomerCanvas: React.FC<CustomerCanvasProps> = ({
 
     // Load page background and customization zones
     const loadPageContent = async () => {
-      if (activePage.preview_image_url) {
-        await loadPageBackground(canvas, activePage.preview_image_url);
+      if (template.original_pdf_url) {
+        await loadPageBackground(canvas, template.original_pdf_url);
       }
       
       // Load customization zones for this page
