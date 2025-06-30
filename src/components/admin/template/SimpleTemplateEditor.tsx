@@ -2,20 +2,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, Upload, Loader2, FileText, ChevronDown, Settings } from "lucide-react";
+import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Canvas as FabricCanvas, Rect, Text as FabricText } from "fabric";
 import { uploadPdfAndCreatePages } from "@/utils/pdfUpload";
 import { getTemplateById, saveTemplate } from "@/services/templateService";
 import { getTemplatePages } from "@/services/templatePageService";
 import type { Template, TemplatePage } from "@/services/types/templateTypes";
+
+// Import panels
+import TemplateDetailsForm from "./panels/TemplateDetailsForm";
+import TemplateDimensionsPanel from "./panels/TemplateDimensionsPanel";
+import TemplateBleedPanel from "./panels/TemplateBleedPanel";
+import TemplatePdfUploadPanel from "./panels/TemplatePdfUploadPanel";
+import TemplateZoneToolsPanel from "./panels/TemplateZoneToolsPanel";
+import TemplateCanvasArea from "./panels/TemplateCanvasArea";
 
 interface UITemplateState {
   name: string;
@@ -40,7 +41,6 @@ const SimpleTemplateEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Template state
   const [template, setTemplate] = useState<UITemplateState>({
@@ -361,11 +361,6 @@ const SimpleTemplateEditor: React.FC = () => {
     toast.success('Image zone added');
   };
 
-  const handleBleedChange = (field: keyof BleedSettings, value: string) => {
-    const numValue = Math.max(0, parseFloat(value) || 0);
-    setBleed(prev => ({ ...prev, [field]: numValue }));
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -402,294 +397,41 @@ const SimpleTemplateEditor: React.FC = () => {
       <div className="flex">
         {/* Sidebar */}
         <div className="w-80 bg-white border-r border-gray-200 p-6 space-y-6">
-          {/* Template Details */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Template Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name *
-                </Label>
-                <Input
-                  type="text"
-                  value={template.name}
-                  onChange={(e) => setTemplate(prev => ({...prev, name: e.target.value}))}
-                  placeholder="Enter template name"
-                />
-              </div>
-              
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category
-                </Label>
-                <Select
-                  value={template.category}
-                  onValueChange={(value) => setTemplate(prev => ({...prev, category: value}))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="calendar">Calendar</SelectItem>
-                    <SelectItem value="poster">Poster</SelectItem>
-                    <SelectItem value="flyer">Flyer</SelectItem>
-                    <SelectItem value="business-card">Business Card</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </Label>
-                <Textarea
-                  value={template.description}
-                  onChange={(e) => setTemplate(prev => ({...prev, description: e.target.value}))}
-                  rows={3}
-                  placeholder="Template description"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="is_active"
-                  checked={template.is_active}
-                  onCheckedChange={(checked) => setTemplate(prev => ({...prev, is_active: !!checked}))}
-                />
-                <Label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-                  Active Template
-                </Label>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Dimensions Section */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Dimensions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs text-gray-600 mb-1 block">Width</Label>
-                  <Input
-                    type="number"
-                    value={template.customWidth}
-                    onChange={(e) => setTemplate(prev => ({...prev, customWidth: parseFloat(e.target.value) || 0}))}
-                    className="text-sm"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs text-gray-600 mb-1 block">Height</Label>
-                  <Input
-                    type="number"
-                    value={template.customHeight}
-                    onChange={(e) => setTemplate(prev => ({...prev, customHeight: parseFloat(e.target.value) || 0}))}
-                    className="text-sm"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Label className="text-xs text-gray-600 mb-1 block">Units</Label>
-                <Select
-                  value={template.units}
-                  onValueChange={(value) => setTemplate(prev => ({...prev, units: value}))}
-                >
-                  <SelectTrigger className="text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mm">mm</SelectItem>
-                    <SelectItem value="in">in</SelectItem>
-                    <SelectItem value="pt">pt</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Bleed Settings */}
-          <Card>
-            <Collapsible open={isBleedOpen} onOpenChange={setIsBleedOpen}>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="pb-3 cursor-pointer hover:bg-gray-50">
-                  <CardTitle className="text-sm flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" />
-                      Bleed Settings
-                    </span>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${isBleedOpen ? 'transform rotate-180' : ''}`} />
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    {['top', 'right', 'bottom', 'left'].map((side) => (
-                      <div key={side}>
-                        <Label className="text-xs text-gray-600 mb-1 block capitalize">
-                          {side}
-                        </Label>
-                        <Input
-                          type="number"
-                          value={bleed[side as keyof BleedSettings]}
-                          onChange={(e) => handleBleedChange(side as keyof BleedSettings, e.target.value)}
-                          min={0}
-                          step={0.1}
-                          className="text-sm"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs text-gray-600 mb-1 block">Units</Label>
-                    <Select
-                      value={bleed.units}
-                      onValueChange={(value) => setBleed(prev => ({...prev, units: value}))}
-                    >
-                      <SelectTrigger className="text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="mm">mm</SelectItem>
-                        <SelectItem value="in">in</SelectItem>
-                        <SelectItem value="pt">pt</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
-
-          {/* PDF Upload */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">PDF Upload</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handlePdfUpload}
-                className="hidden"
-              />
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full"
-                disabled={isProcessingPdf}
-              >
-                {isProcessingPdf ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4 mr-2" />
-                )}
-                {isProcessingPdf ? 'Processing...' : 'Upload PDF'}
-              </Button>
-              
-              {isProcessingPdf && processingStatus && (
-                <div className="mt-2 text-xs text-gray-600 text-center">
-                  {processingStatus}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Pages */}
-          {pages.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Pages ({pages.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-4 gap-2">
-                  {pages.map((page, index) => (
-                    <button
-                      key={page.id}
-                      onClick={() => setCurrentPageIndex(index)}
-                      className={`aspect-[3/4] border-2 rounded text-xs flex items-center justify-center transition-colors ${
-                        index === currentPageIndex
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      {page.page_number}
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Zone Tools */}
-          {pages.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Add Zones</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button onClick={addTextZone} variant="outline" className="w-full">
-                  Add Text Zone
-                </Button>
-                <Button onClick={addImageZone} variant="outline" className="w-full">
-                  Add Image Zone
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          <TemplateDetailsForm template={template} setTemplate={setTemplate} />
+          
+          <TemplateDimensionsPanel template={template} setTemplate={setTemplate} />
+          
+          <TemplateBleedPanel 
+            bleed={bleed} 
+            setBleed={setBleed}
+            isBleedOpen={isBleedOpen}
+            setIsBleedOpen={setIsBleedOpen}
+          />
+          
+          <TemplatePdfUploadPanel
+            isProcessingPdf={isProcessingPdf}
+            processingStatus={processingStatus}
+            pages={pages}
+            currentPageIndex={currentPageIndex}
+            setCurrentPageIndex={setCurrentPageIndex}
+            onPdfUpload={handlePdfUpload}
+          />
+          
+          <TemplateZoneToolsPanel
+            pages={pages}
+            onAddTextZone={addTextZone}
+            onAddImageZone={addImageZone}
+          />
         </div>
 
         {/* Main Canvas Area */}
-        <div className="flex-1 p-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="relative">
-                <div className="border-2 border-gray-200 rounded-lg bg-white overflow-hidden flex justify-center">
-                  <canvas 
-                    ref={canvasRef} 
-                    className="max-w-full"
-                    style={{ 
-                      width: 800,
-                      height: 600
-                    }}
-                  />
-                </div>
-                
-                {isProcessingPdf && (
-                  <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-lg">
-                    <div className="text-center">
-                      <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                      <div className="text-sm text-gray-600">Processing PDF...</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Canvas Info */}
-              <div className="mt-2 text-xs text-gray-500 text-center">
-                Canvas: 800 × 600 px • Template: {template.customWidth} × {template.customHeight} {template.units}
-                {currentPage && (
-                  <span className="ml-2">
-                    • Page {currentPage.page_number} of {pages.length}
-                    {currentPage.pdf_page_width && currentPage.pdf_page_height && (
-                      <span className="ml-2">
-                        ({Math.round(currentPage.pdf_page_width)} × {Math.round(currentPage.pdf_page_height)} pt)
-                      </span>
-                    )}
-                  </span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <TemplateCanvasArea
+          canvasRef={canvasRef}
+          template={template}
+          currentPage={currentPage}
+          pages={pages}
+          isProcessingPdf={isProcessingPdf}
+        />
       </div>
     </div>
   );
