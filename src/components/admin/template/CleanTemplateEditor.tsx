@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -81,7 +80,23 @@ const CleanTemplateEditor: React.FC = () => {
 
       toast.success(data.message);
       await loadPages(templateId);
+      
+      // Ensure we have valid pages data with required properties
       if (data.pages && data.pages.length > 0) {
+        // Transform the pages data to ensure it has all required properties
+        const transformedPages = data.pages.map((page: any) => ({
+          id: page.id,
+          template_id: page.template_id,
+          page_number: page.page_number,
+          preview_image_url: page.preview_image_url || null,
+          pdf_page_width: page.pdf_page_width || null,
+          pdf_page_height: page.pdf_page_height || null,
+          pdf_units: page.pdf_units || 'pt',
+          created_at: page.created_at || new Date().toISOString(),
+          updated_at: page.updated_at || new Date().toISOString()
+        }));
+        
+        setPages(transformedPages);
         setCurrentPageIndex(0);
       }
     } catch (error) {
