@@ -1,14 +1,17 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { TemplatePage } from "@/services/types/templateTypes";
 
 interface TemplateCanvasAreaProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
-  canvasDimensions: {
+  pages?: TemplatePage[];
+  currentPage?: TemplatePage;
+  canvasDimensions?: {
     width: number;
     height: number;
   };
-  isLoading: boolean;
+  isLoading?: boolean;
   templateDimensions?: {
     width: number;
     height: number;
@@ -18,8 +21,10 @@ interface TemplateCanvasAreaProps {
 
 const TemplateCanvasArea: React.FC<TemplateCanvasAreaProps> = ({
   canvasRef,
-  canvasDimensions,
-  isLoading,
+  pages,
+  currentPage,
+  canvasDimensions = { width: 800, height: 600 },
+  isLoading = false,
   templateDimensions
 }) => {
   return (
@@ -53,6 +58,11 @@ const TemplateCanvasArea: React.FC<TemplateCanvasAreaProps> = ({
           {templateDimensions && (
             <span className="ml-2">
               (Template: {templateDimensions.width} × {templateDimensions.height} {templateDimensions.units})
+            </span>
+          )}
+          {currentPage && (
+            <span className="ml-2">
+              • Page {currentPage.page_number} of {pages?.length || 1}
             </span>
           )}
         </div>

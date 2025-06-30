@@ -470,6 +470,8 @@ const ProfessionalTemplateEditor: React.FC = () => {
           canvasRef={canvasRef}
           pages={pages}
           currentPage={currentPage}
+          canvasDimensions={{ width: 800, height: 600 }}
+          isLoading={false}
         />
       </div>
     </div>
