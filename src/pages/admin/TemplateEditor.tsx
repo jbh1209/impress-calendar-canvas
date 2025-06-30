@@ -1,6 +1,6 @@
 
-import ComprehensiveTemplateEditor from "@/components/admin/template/ComprehensiveTemplateEditor";
+import SimpleTemplateEditor from "@/components/admin/template/SimpleTemplateEditor";
 
 export default function TemplateEditor() {
-  return <ComprehensiveTemplateEditor />;
+  return <SimpleTemplateEditor />;
 }

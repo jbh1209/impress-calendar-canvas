@@ -3,29 +3,20 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Upload, Square, Type, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Upload, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { Canvas as FabricCanvas, Rect, Text as FabricText, FabricImage } from "fabric";
-import * as pdfjsLib from "pdfjs-dist";
+import { Canvas as FabricCanvas, Rect, Text as FabricText } from "fabric";
+import { uploadPdfAndCreatePages } from "@/utils/pdfUpload";
+import { getTemplateById, saveTemplate } from "@/services/templateService";
+import { getTemplatePages } from "@/services/templatePageService";
+import type { Template, TemplatePage } from "@/services/types/templateTypes";
 
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
-interface Zone {
-  id: string;
-  type: 'text' | 'image';
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+interface UITemplateState {
   name: string;
-}
-
-interface Template {
-  id?: string;
-  name: string;
+  description: string;
   category: string;
-  zones: Zone[];
+  dimensions: string;
+  is_active: boolean;
 }
 
 const SimpleTemplateEditor: React.FC = () => {
@@ -34,164 +25,261 @@ const SimpleTemplateEditor: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [template, setTemplate] = useState<Template>({
+  // Template state
+  const [template, setTemplate] = useState<UITemplateState>({
     name: '',
+    description: '',
     category: 'calendar',
-    zones: []
+    dimensions: '',
+    is_active: false
   });
   
+  // PDF and pages state
+  const [pages, setPages] = useState<TemplatePage[]>([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+  const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<string>('');
+  
+  // Canvas state
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedZone, setSelectedZone] = useState<string | null>(null);
 
   const isCreateMode = !id;
+  const currentPage = pages[currentPageIndex];
 
-  // Initialize Fabric.js canvas
+  // Initialize canvas
   useEffect(() => {
     if (!canvasRef.current) return;
 
     const canvas = new FabricCanvas(canvasRef.current, {
       width: 800,
       height: 600,
-      backgroundColor: "#ffffff",
+      backgroundColor: "#f8fafc",
       selection: true,
     });
 
     setFabricCanvas(canvas);
-
-    // Handle object selection
-    canvas.on('selection:created', (e) => {
-      const activeObject = e.selected?.[0];
-      if (activeObject && (activeObject as any).zoneId) {
-        setSelectedZone((activeObject as any).zoneId);
-      }
-    });
-
-    canvas.on('selection:cleared', () => {
-      setSelectedZone(null);
-    });
 
     return () => {
       canvas.dispose();
     };
   }, []);
 
-  // Handle PDF upload
-  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // Load template and pages
+  useEffect(() => {
+    if (id && id !== 'create') {
+      loadTemplate(id);
+      loadTemplatePages(id);
+    }
+  }, [id]);
 
+  // Update canvas when page changes
+  useEffect(() => {
+    if (currentPage && fabricCanvas) {
+      updateCanvasBackground();
+    }
+  }, [currentPage, fabricCanvas]);
+
+  const loadTemplate = async (templateId: string) => {
     setIsLoading(true);
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const loadingTask = pdfjsLib.getDocument(arrayBuffer);
-      const pdf = await loadingTask.promise;
-      
-      setPdfDoc(pdf);
-      setTotalPages(pdf.numPages);
-      setCurrentPage(1);
-      
-      await renderPdfPage(pdf, 1);
-      toast.success("PDF loaded successfully");
+      const templateData = await getTemplateById(templateId);
+      if (templateData) {
+        setTemplate({
+          name: templateData.name,
+          description: templateData.description || '',
+          category: templateData.category,
+          dimensions: templateData.dimensions || '',
+          is_active: templateData.is_active
+        });
+      }
     } catch (error) {
-      console.error('Error loading PDF:', error);
-      toast.error("Failed to load PDF");
+      console.error('Error loading template:', error);
+      toast.error('Failed to load template');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Render PDF page on canvas
-  const renderPdfPage = async (pdf: any, pageNumber: number) => {
-    if (!fabricCanvas) return;
-
+  const loadTemplatePages = async (templateId: string) => {
     try {
-      const page = await pdf.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: 1 });
-      
-      // Calculate scale to fit canvas
-      const canvasWidth = fabricCanvas.width!;
-      const canvasHeight = fabricCanvas.height!;
-      const scale = Math.min(canvasWidth / viewport.width, canvasHeight / viewport.height) * 0.9;
-      
-      const scaledViewport = page.getViewport({ scale });
-      
-      // Create temporary canvas for PDF rendering
-      const tempCanvas = document.createElement('canvas');
-      const tempContext = tempCanvas.getContext('2d');
-      tempCanvas.width = scaledViewport.width;
-      tempCanvas.height = scaledViewport.height;
-
-      await page.render({
-        canvasContext: tempContext,
-        viewport: scaledViewport
-      }).promise;
-
-      // Clear canvas and add PDF as background
-      fabricCanvas.clear();
-      
-      // Create fabric image from canvas
-      FabricImage.fromURL(tempCanvas.toDataURL()).then((img) => {
-        img.set({
-          left: canvasWidth / 2,
-          top: canvasHeight / 2,
-          originX: 'center',
-          originY: 'center',
-          selectable: false,
-          evented: false
-        });
-        
-        fabricCanvas.add(img);
-        fabricCanvas.sendObjectToBack(img);
-        fabricCanvas.renderAll();
-        
-        // Re-add existing zones
-        redrawZones();
-      });
-      
+      const pagesData = await getTemplatePages(templateId);
+      setPages(pagesData);
+      if (pagesData.length > 0) {
+        setCurrentPageIndex(0);
+      }
     } catch (error) {
-      console.error('Error rendering PDF page:', error);
-      toast.error("Failed to render PDF page");
+      console.error('Error loading pages:', error);
+      toast.error('Failed to load template pages');
     }
   };
 
-  // Navigate between PDF pages
-  const goToPage = async (pageNumber: number) => {
-    if (!pdfDoc || pageNumber < 1 || pageNumber > totalPages) return;
-    setCurrentPage(pageNumber);
-    await renderPdfPage(pdfDoc, pageNumber);
+  const updateCanvasBackground = () => {
+    if (!fabricCanvas || !currentPage) return;
+
+    fabricCanvas.clear();
+    fabricCanvas.backgroundColor = "#f8fafc";
+
+    if (currentPage.preview_image_url) {
+      // Try to load preview image
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = fabricCanvas.getElement();
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Scale image to fit canvas
+          const scale = Math.min(canvas.width / img.width, canvas.height / img.height) * 0.9;
+          const scaledWidth = img.width * scale;
+          const scaledHeight = img.height * scale;
+          const x = (canvas.width - scaledWidth) / 2;
+          const y = (canvas.height - scaledHeight) / 2;
+          
+          ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+          fabricCanvas.renderAll();
+        }
+      };
+      img.onerror = () => {
+        console.error('Failed to load preview image');
+        createPlaceholder();
+      };
+      img.src = currentPage.preview_image_url;
+    } else {
+      createPlaceholder();
+    }
   };
 
-  // Add a new zone
-  const addZone = (type: 'text' | 'image') => {
+  const createPlaceholder = () => {
+    if (!fabricCanvas || !currentPage) return;
+
+    const titleText = new FabricText(`Page ${currentPage.page_number}`, {
+      left: 400,
+      top: 250,
+      fontSize: 32,
+      fill: '#374151',
+      fontFamily: 'Arial',
+      fontWeight: 'bold',
+      originX: 'center',
+      originY: 'center',
+      selectable: false,
+      evented: false,
+    });
+
+    const dimensionText = new FabricText(
+      `${Math.round(currentPage.pdf_page_width || 0)} × ${Math.round(currentPage.pdf_page_height || 0)} pt`,
+      {
+        left: 400,
+        top: 300,
+        fontSize: 18,
+        fill: '#6b7280',
+        fontFamily: 'Arial',
+        originX: 'center',
+        originY: 'center',
+        selectable: false,
+        evented: false,
+      }
+    );
+
+    fabricCanvas.add(titleText);
+    fabricCanvas.add(dimensionText);
+    fabricCanvas.renderAll();
+  };
+
+  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!template.name.trim()) {
+      toast.error("Please enter a template name first");
+      return;
+    }
+
+    setIsProcessingPdf(true);
+    setProcessingStatus('Uploading PDF...');
+
+    try {
+      const savedTemplate = await saveTemplate({ 
+        ...template, 
+        id,
+        isActive: template.is_active 
+      });
+      if (!savedTemplate) {
+        throw new Error('Failed to save template');
+      }
+
+      const templateId = savedTemplate.id;
+      
+      const result = await uploadPdfAndCreatePages(
+        file, 
+        templateId,
+        (status) => setProcessingStatus(status)
+      );
+
+      if (result.success) {
+        toast.success(result.message);
+        await loadTemplatePages(templateId);
+        if (!isCreateMode) {
+          await loadTemplate(templateId);
+        }
+      } else {
+        toast.error(result.message || 'PDF processing failed');
+      }
+    } catch (error) {
+      console.error('PDF upload error:', error);
+      toast.error('Failed to process PDF');
+    } finally {
+      setIsProcessingPdf(false);
+      setProcessingStatus('');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!template.name.trim()) {
+      toast.error("Please enter a template name");
+      return;
+    }
+
+    try {
+      const savedTemplate = await saveTemplate({ 
+        ...template, 
+        id,
+        isActive: template.is_active 
+      });
+      if (savedTemplate) {
+        toast.success("Template saved successfully");
+        if (isCreateMode) {
+          navigate(`/admin/templates/edit/${savedTemplate.id}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast.error('Failed to save template');
+    }
+  };
+
+  const addTextZone = () => {
     if (!fabricCanvas) return;
 
-    const zoneId = `zone-${Date.now()}`;
-    const color = type === 'text' ? '#10b981' : '#3b82f6';
-    
-    const rect = new Rect({
+    const zone = new Rect({
       left: 100,
       top: 100,
       width: 200,
-      height: type === 'text' ? 50 : 150,
-      fill: `${color}20`,
-      stroke: color,
+      height: 50,
+      fill: 'rgba(16, 185, 129, 0.1)',
+      stroke: '#10b981',
       strokeWidth: 2,
       strokeDashArray: [5, 5],
     });
 
-    // Store custom data on the object
-    (rect as any).zoneId = zoneId;
-    (rect as any).zoneType = type;
-
-    const label = new FabricText(`${type} Zone`, {
+    const label = new FabricText('Text Zone', {
       left: 200,
-      top: type === 'text' ? 125 : 175,
-      fontSize: 12,
-      fill: color,
+      top: 125,
+      fontSize: 14,
+      fill: '#10b981',
       fontFamily: 'Arial',
       originX: 'center',
       originY: 'center',
@@ -199,114 +287,53 @@ const SimpleTemplateEditor: React.FC = () => {
       evented: false,
     });
 
-    // Store custom data on label
-    (label as any).zoneId = zoneId;
-    (label as any).isLabel = true;
-
-    fabricCanvas.add(rect);
+    fabricCanvas.add(zone);
     fabricCanvas.add(label);
-    fabricCanvas.setActiveObject(rect);
-
-    // Add to template zones
-    const newZone: Zone = {
-      id: zoneId,
-      type,
-      x: 100,
-      y: 100,
-      width: 200,
-      height: type === 'text' ? 50 : 150,
-      name: `${type} Zone`
-    };
-
-    setTemplate(prev => ({
-      ...prev,
-      zones: [...prev.zones, newZone]
-    }));
-
-    setSelectedZone(zoneId);
-    toast.success(`${type} zone added`);
+    fabricCanvas.setActiveObject(zone);
+    fabricCanvas.renderAll();
+    toast.success('Text zone added');
   };
 
-  // Delete selected zone
-  const deleteZone = () => {
-    if (!fabricCanvas || !selectedZone) return;
-
-    // Remove from canvas
-    const objects = fabricCanvas.getObjects();
-    const toRemove = objects.filter(obj => (obj as any).zoneId === selectedZone);
-    toRemove.forEach(obj => fabricCanvas.remove(obj));
-
-    // Remove from template
-    setTemplate(prev => ({
-      ...prev,
-      zones: prev.zones.filter(zone => zone.id !== selectedZone)
-    }));
-
-    setSelectedZone(null);
-    toast.success("Zone deleted");
-  };
-
-  // Redraw zones on canvas
-  const redrawZones = () => {
+  const addImageZone = () => {
     if (!fabricCanvas) return;
 
-    template.zones.forEach(zone => {
-      const color = zone.type === 'text' ? '#10b981' : '#3b82f6';
-      
-      const rect = new Rect({
-        left: zone.x,
-        top: zone.y,
-        width: zone.width,
-        height: zone.height,
-        fill: `${color}20`,
-        stroke: color,
-        strokeWidth: 2,
-        strokeDashArray: [5, 5],
-      });
-
-      // Store custom data
-      (rect as any).zoneId = zone.id;
-      (rect as any).zoneType = zone.type;
-
-      const label = new FabricText(zone.name, {
-        left: zone.x + zone.width / 2,
-        top: zone.y + zone.height / 2,
-        fontSize: 12,
-        fill: color,
-        fontFamily: 'Arial',
-        originX: 'center',
-        originY: 'center',
-        selectable: false,
-        evented: false,
-      });
-
-      // Store custom data on label
-      (label as any).zoneId = zone.id;
-      (label as any).isLabel = true;
-
-      fabricCanvas.add(rect);
-      fabricCanvas.add(label);
+    const zone = new Rect({
+      left: 350,
+      top: 100,
+      width: 150,
+      height: 150,
+      fill: 'rgba(59, 130, 246, 0.1)',
+      stroke: '#3b82f6',
+      strokeWidth: 2,
+      strokeDashArray: [5, 5],
     });
+
+    const label = new FabricText('Image Zone', {
+      left: 425,
+      top: 175,
+      fontSize: 14,
+      fill: '#3b82f6',
+      fontFamily: 'Arial',
+      originX: 'center',
+      originY: 'center',
+      selectable: false,
+      evented: false,
+    });
+
+    fabricCanvas.add(zone);
+    fabricCanvas.add(label);
+    fabricCanvas.setActiveObject(zone);
+    fabricCanvas.renderAll();
+    toast.success('Image zone added');
   };
 
-  // Save template
-  const handleSave = async () => {
-    if (!template.name.trim()) {
-      toast.error("Please enter a template name");
-      return;
-    }
-
-    // In a real app, this would save to the database
-    console.log('Saving template:', template);
-    toast.success("Template saved successfully");
-    
-    if (isCreateMode) {
-      // In create mode, redirect to edit mode
-      navigate(`/admin/templates/edit/new-template-id`);
-    }
-  };
-
-  const selectedZoneData = template.zones.find(z => z.id === selectedZone);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -349,8 +376,8 @@ const SimpleTemplateEditor: React.FC = () => {
                 <input
                   type="text"
                   value={template.name}
-                  onChange={(e) => setTemplate(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={(e) => setTemplate(prev => ({...prev, name: e.target.value}))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter template name"
                 />
               </div>
@@ -361,7 +388,7 @@ const SimpleTemplateEditor: React.FC = () => {
                 </label>
                 <select
                   value={template.category}
-                  onChange={(e) => setTemplate(prev => ({ ...prev, category: e.target.value }))}
+                  onChange={(e) => setTemplate(prev => ({...prev, category: e.target.value}))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="calendar">Calendar</option>
@@ -370,13 +397,26 @@ const SimpleTemplateEditor: React.FC = () => {
                   <option value="business-card">Business Card</option>
                 </select>
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={template.description}
+                  onChange={(e) => setTemplate(prev => ({...prev, description: e.target.value}))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder="Template description"
+                />
+              </div>
             </CardContent>
           </Card>
 
           {/* PDF Upload */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">PDF Template</CardTitle>
+              <CardTitle className="text-sm">PDF Upload</CardTitle>
             </CardHeader>
             <CardContent>
               <input
@@ -389,113 +429,66 @@ const SimpleTemplateEditor: React.FC = () => {
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full"
-                disabled={isLoading}
+                disabled={isProcessingPdf}
               >
-                <Upload className="h-4 w-4 mr-2" />
-                {isLoading ? 'Loading...' : 'Upload PDF'}
+                {isProcessingPdf ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-2" />
+                )}
+                {isProcessingPdf ? 'Processing...' : 'Upload PDF'}
               </Button>
               
-              {totalPages > 0 && (
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                    <span>Page {currentPage} of {totalPages}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => goToPage(currentPage - 1)}
-                      disabled={currentPage <= 1}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => goToPage(currentPage + 1)}
-                      disabled={currentPage >= totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
+              {isProcessingPdf && processingStatus && (
+                <div className="mt-2 text-xs text-gray-600 text-center">
+                  {processingStatus}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Zone Tools */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Add Zones</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => addZone('image')}
-                  className="w-full justify-start"
-                >
-                  <Square className="h-3 w-3 mr-2" />
-                  Image Zone
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => addZone('text')}
-                  className="w-full justify-start"
-                >
-                  <Type className="h-3 w-3 mr-2" />
-                  Text Zone
-                </Button>
-              </div>
-              
-              {selectedZone && (
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Selected Zone</span>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={deleteZone}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  {selectedZoneData && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      <div>{selectedZoneData.name}</div>
-                      <div>Type: {selectedZoneData.type}</div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Zones List */}
-          {template.zones.length > 0 && (
+          {/* Pages */}
+          {pages.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Zones ({template.zones.length})</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Pages ({pages.length})
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-1">
-                  {template.zones.map((zone) => (
-                    <div
-                      key={zone.id}
-                      className={`p-2 rounded text-sm cursor-pointer transition-colors ${
-                        selectedZone === zone.id
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'hover:bg-gray-50'
+                <div className="grid grid-cols-4 gap-2">
+                  {pages.map((page, index) => (
+                    <button
+                      key={page.id}
+                      onClick={() => setCurrentPageIndex(index)}
+                      className={`aspect-[3/4] border-2 rounded text-xs flex items-center justify-center transition-colors ${
+                        index === currentPageIndex
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 hover:border-gray-300'
                       }`}
-                      onClick={() => setSelectedZone(zone.id)}
                     >
-                      <div className="font-medium">{zone.name}</div>
-                      <div className="text-gray-500 text-xs">{zone.type}</div>
-                    </div>
+                      {page.page_number}
+                    </button>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Zone Tools */}
+          {pages.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Add Zones</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button onClick={addTextZone} variant="outline" className="w-full">
+                  Add Text Zone
+                </Button>
+                <Button onClick={addImageZone} variant="outline" className="w-full">
+                  Add Image Zone
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -505,21 +498,40 @@ const SimpleTemplateEditor: React.FC = () => {
         <div className="flex-1 p-6">
           <Card>
             <CardContent className="p-4">
-              <div className="border-2 border-gray-200 rounded-lg bg-white overflow-hidden relative">
-                <canvas ref={canvasRef} className="max-w-full" />
+              <div className="relative">
+                <div className="border-2 border-gray-200 rounded-lg bg-white overflow-hidden flex justify-center">
+                  <canvas 
+                    ref={canvasRef} 
+                    className="max-w-full"
+                    style={{ 
+                      width: 800,
+                      height: 600
+                    }}
+                  />
+                </div>
                 
-                {!pdfDoc && (
-                  <div className="absolute inset-4 flex items-center justify-center bg-gray-50 rounded-lg">
+                {isProcessingPdf && (
+                  <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-lg">
                     <div className="text-center">
-                      <div className="text-4xl mb-4">📄</div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Upload PDF Template
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        Upload a PDF file to start creating customizable zones
-                      </p>
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                      <div className="text-sm text-gray-600">Processing PDF...</div>
                     </div>
                   </div>
+                )}
+              </div>
+              
+              {/* Canvas Info */}
+              <div className="mt-2 text-xs text-gray-500 text-center">
+                Canvas: 800 × 600 px
+                {currentPage && (
+                  <span className="ml-2">
+                    • Page {currentPage.page_number} of {pages.length}
+                    {currentPage.pdf_page_width && currentPage.pdf_page_height && (
+                      <span className="ml-2">
+                        ({Math.round(currentPage.pdf_page_width)} × {Math.round(currentPage.pdf_page_height)} pt)
+                      </span>
+                    )}
+                  </span>
                 )}
               </div>
             </CardContent>

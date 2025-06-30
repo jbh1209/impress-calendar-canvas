@@ -7,12 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface ProcessingProgress {
-  step: string;
-  progress: number;
-  message: string;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -36,7 +30,7 @@ serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error: 'PDF file and template_id are required',
-          step: 'validation'
+          message: 'Missing required parameters'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -62,8 +56,7 @@ serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error: 'Failed to upload PDF to storage',
-          details: pdfUploadError.message,
-          step: 'upload'
+          message: `Upload failed: ${pdfUploadError.message}`
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -82,8 +75,7 @@ serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error: 'Invalid or corrupted PDF file',
-          details: error.message,
-          step: 'pdf_load'
+          message: `PDF parsing failed: ${error.message}`
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -97,7 +89,7 @@ serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error: 'PDF has too many pages (maximum 50 pages allowed)',
-          step: 'validation'
+          message: 'PDF too large'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -114,7 +106,7 @@ serve(async (req) => {
       console.warn('[PDF-PROCESSOR] Warning: Could not clean up existing pages:', deleteError)
     }
 
-    // Step 4: Process each page
+    // Step 4: Process each page - Create simple placeholder previews
     const pages = []
     const failedPages = []
     
@@ -125,70 +117,28 @@ serve(async (req) => {
         const page = pdfDoc.getPage(i)
         const { width, height } = page.getSize()
         
-        // Generate high-quality preview image
-        const canvas = new OffscreenCanvas(1200, 900) // Higher resolution
-        const ctx = canvas.getContext('2d')
-        
-        if (!ctx) {
-          throw new Error('Failed to get canvas context')
-        }
-        
-        // Calculate scale to maintain aspect ratio
-        const scale = Math.min(1200 / width, 900 / height)
-        const scaledWidth = Math.round(width * scale)
-        const scaledHeight = Math.round(height * scale)
-        
-        canvas.width = scaledWidth
-        canvas.height = scaledHeight
-        
-        // Create clean white background
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(0, 0, scaledWidth, scaledHeight)
-        
-        // Add visual representation of the page
-        ctx.fillStyle = '#f8fafc'
-        ctx.fillRect(20, 20, scaledWidth - 40, scaledHeight - 40)
-        
-        // Add border
-        ctx.strokeStyle = '#e2e8f0'
-        ctx.lineWidth = 2
-        ctx.strokeRect(20, 20, scaledWidth - 40, scaledHeight - 40)
-        
-        // Add page information
-        ctx.fillStyle = '#374151'
-        ctx.font = 'bold 28px Arial'
-        ctx.textAlign = 'center'
-        ctx.fillText(`Page ${i + 1}`, scaledWidth / 2, scaledHeight / 2 - 30)
-        
-        ctx.font = '18px Arial'
-        ctx.fillStyle = '#6b7280'
-        ctx.fillText(
-          `${Math.round(width)} × ${Math.round(height)} pt`, 
-          scaledWidth / 2, 
-          scaledHeight / 2 + 10
-        )
-        
-        ctx.fillText(
-          `${(width / 72).toFixed(1)}" × ${(height / 72).toFixed(1)}"`, 
-          scaledWidth / 2, 
-          scaledHeight / 2 + 40
-        )
+        // Create a simple SVG placeholder instead of using OffscreenCanvas
+        const svgContent = `
+          <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+            <text x="400" y="250" text-anchor="middle" font-family="Arial" font-size="32" fill="#374151" font-weight="bold">Page ${i + 1}</text>
+            <text x="400" y="300" text-anchor="middle" font-family="Arial" font-size="18" fill="#6b7280">${Math.round(width)} × ${Math.round(height)} pt</text>
+            <text x="400" y="330" text-anchor="middle" font-family="Arial" font-size="16" fill="#9ca3af">${(width / 72).toFixed(1)}" × ${(height / 72).toFixed(1)}"</text>
+            <text x="400" y="380" text-anchor="middle" font-family="Arial" font-size="14" fill="#9ca3af">PDF Preview Available</text>
+          </svg>
+        `
 
-        // Convert to PNG
-        const blob = await canvas.convertToBlob({ 
-          type: 'image/png',
-          quality: 0.95
-        })
-        const pngBuffer = await blob.arrayBuffer()
+        // Convert SVG to blob
+        const svgBlob = new Blob([svgContent], { type: 'image/svg+xml' })
 
         // Upload preview image
-        const previewFileName = `${templateId}/page-${i + 1}.png`
+        const previewFileName = `${templateId}/page-${i + 1}.svg`
         console.log(`[PDF-PROCESSOR] Uploading preview for page ${i + 1}`)
         
         const { data: previewUpload, error: previewError } = await supabaseClient.storage
           .from('pdf-previews')
-          .upload(previewFileName, pngBuffer, {
-            contentType: 'image/png',
+          .upload(previewFileName, svgBlob, {
+            contentType: 'image/svg+xml',
             upsert: true
           })
 
@@ -277,8 +227,7 @@ serve(async (req) => {
         failedPages: failedPages.length > 0 ? failedPages : undefined,
         pdfUrl: pdfUrlData.publicUrl,
         metadata: pdfMetadata,
-        pages: pages,
-        step: 'complete'
+        pages: pages
       }),
       { 
         status: isSuccess ? 200 : 500,
@@ -292,8 +241,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: false, 
         error: 'Internal server error processing PDF', 
-        details: error.message,
-        step: 'unexpected_error'
+        message: `Processing failed: ${error.message}`
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
