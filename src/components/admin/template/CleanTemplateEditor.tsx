@@ -121,6 +121,15 @@ const CleanTemplateEditor: React.FC = () => {
         return;
       }
 
+      // Handle bleed_settings with fallback for older templates
+      const bleedSettings = (data as any).bleed_settings || {
+        top: 3,
+        right: 3,
+        bottom: 3,
+        left: 3,
+        units: "mm"
+      };
+
       setTemplate({
         id: data.id,
         name: data.name,
@@ -128,13 +137,7 @@ const CleanTemplateEditor: React.FC = () => {
         category: data.category,
         dimensions: data.dimensions || "210x297mm",
         is_active: data.is_active,
-        bleed_settings: data.bleed_settings || {
-          top: 3,
-          right: 3,
-          bottom: 3,
-          left: 3,
-          units: "mm"
-        },
+        bleed_settings: bleedSettings,
         original_pdf_url: data.original_pdf_url,
         pdf_metadata: data.pdf_metadata
       });
