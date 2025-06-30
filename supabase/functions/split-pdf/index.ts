@@ -106,7 +106,7 @@ serve(async (req) => {
       console.warn('[PDF-PROCESSOR] Warning: Could not clean up existing pages:', deleteError)
     }
 
-    // Step 4: Process each page - Create simple placeholder previews
+    // Step 4: Process each page - Create PNG placeholders
     const pages = []
     const failedPages = []
     
@@ -117,61 +117,87 @@ serve(async (req) => {
         const page = pdfDoc.getPage(i)
         const { width, height } = page.getSize()
         
-        // Create a simple SVG placeholder instead of using OffscreenCanvas
-        const svgContent = `
-          <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100%" height="100%" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
-            <text x="400" y="250" text-anchor="middle" font-family="Arial" font-size="32" fill="#374151" font-weight="bold">Page ${i + 1}</text>
-            <text x="400" y="300" text-anchor="middle" font-family="Arial" font-size="18" fill="#6b7280">${Math.round(width)} × ${Math.round(height)} pt</text>
-            <text x="400" y="330" text-anchor="middle" font-family="Arial" font-size="16" fill="#9ca3af">${(width / 72).toFixed(1)}" × ${(height / 72).toFixed(1)}"</text>
-            <text x="400" y="380" text-anchor="middle" font-family="Arial" font-size="14" fill="#9ca3af">PDF Preview Available</text>
-          </svg>
-        `
-
-        // Convert SVG to blob
-        const svgBlob = new Blob([svgContent], { type: 'image/svg+xml' })
-
-        // Upload preview image
-        const previewFileName = `${templateId}/page-${i + 1}.svg`
-        console.log(`[PDF-PROCESSOR] Uploading preview for page ${i + 1}`)
+        // Create a simple PNG placeholder using canvas
+        const canvas = new OffscreenCanvas(800, 600)
+        const ctx = canvas.getContext('2d')
         
-        const { data: previewUpload, error: previewError } = await supabaseClient.storage
-          .from('pdf-previews')
-          .upload(previewFileName, svgBlob, {
-            contentType: 'image/svg+xml',
-            upsert: true
-          })
+        if (ctx) {
+          // Set background
+          ctx.fillStyle = '#f8fafc'
+          ctx.fillRect(0, 0, 800, 600)
+          
+          // Add border
+          ctx.strokeStyle = '#e2e8f0'
+          ctx.lineWidth = 2
+          ctx.strokeRect(0, 0, 800, 600)
+          
+          // Add page text
+          ctx.fillStyle = '#374151'
+          ctx.font = 'bold 32px Arial'
+          ctx.textAlign = 'center'
+          ctx.fillText(`Page ${i + 1}`, 400, 250)
+          
+          // Add dimensions
+          ctx.fillStyle = '#6b7280'
+          ctx.font = '18px Arial'
+          ctx.fillText(`${Math.round(width)} × ${Math.round(height)} pt`, 400, 300)
+          
+          // Add size in inches
+          ctx.fillStyle = '#9ca3af'
+          ctx.font = '16px Arial'
+          ctx.fillText(`${(width / 72).toFixed(1)}" × ${(height / 72).toFixed(1)}"`, 400, 330)
+          
+          // Add preview note
+          ctx.font = '14px Arial'
+          ctx.fillText('PDF Preview Available', 400, 380)
+          
+          // Convert to PNG blob
+          const blob = await canvas.convertToBlob({ type: 'image/png', quality: 0.8 })
+          
+          // Upload preview image
+          const previewFileName = `${templateId}/page-${i + 1}.png`
+          console.log(`[PDF-PROCESSOR] Uploading preview for page ${i + 1}`)
+          
+          const { data: previewUpload, error: previewError } = await supabaseClient.storage
+            .from('pdf-previews')
+            .upload(previewFileName, blob, {
+              contentType: 'image/png',
+              upsert: true
+            })
 
-        if (previewError) {
-          console.error(`[PDF-PROCESSOR] Error uploading preview for page ${i + 1}:`, previewError)
-          throw new Error(`Failed to upload preview: ${previewError.message}`)
-        }
+          if (previewError) {
+            console.error(`[PDF-PROCESSOR] Error uploading preview for page ${i + 1}:`, previewError)
+            throw new Error(`Failed to upload preview: ${previewError.message}`)
+          }
 
-        // Get public URL
-        const { data: previewUrlData } = supabaseClient.storage
-          .from('pdf-previews')
-          .getPublicUrl(previewFileName)
+          // Get public URL
+          const { data: previewUrlData } = supabaseClient.storage
+            .from('pdf-previews')
+            .getPublicUrl(previewFileName)
 
-        // Create template page record
-        const { data: pageData, error: pageError } = await supabaseClient
-          .from('template_pages')
-          .insert({
-            template_id: templateId,
-            page_number: i + 1,
-            preview_image_url: previewUrlData.publicUrl,
-            pdf_page_width: width,
-            pdf_page_height: height,
-            pdf_units: 'pt'
-          })
-          .select()
-          .single()
+          // Create template page record
+          const { data: pageData, error: pageError } = await supabaseClient
+            .from('template_pages')
+            .insert({
+              template_id: templateId,
+              page_number: i + 1,
+              preview_image_url: previewUrlData.publicUrl,
+              pdf_page_width: width,
+              pdf_page_height: height,
+              pdf_units: 'pt'
+            })
+            .select()
+            .single()
 
-        if (pageError) {
-          console.error(`[PDF-PROCESSOR] Error creating page ${i + 1}:`, pageError)
-          failedPages.push({ pageNumber: i + 1, error: pageError.message })
+          if (pageError) {
+            console.error(`[PDF-PROCESSOR] Error creating page ${i + 1}:`, pageError)
+            failedPages.push({ pageNumber: i + 1, error: pageError.message })
+          } else {
+            pages.push(pageData)
+            console.log(`[PDF-PROCESSOR] Successfully processed page ${i + 1}`)
+          }
         } else {
-          pages.push(pageData)
-          console.log(`[PDF-PROCESSOR] Successfully processed page ${i + 1}`)
+          throw new Error('Could not get canvas context')
         }
 
       } catch (error) {
