@@ -273,7 +273,7 @@ const CleanTemplateEditor: React.FC = () => {
         category: template.category,
         dimensions: template.dimensions,
         is_active: template.is_active,
-        bleed_settings: template.bleed_settings,
+        bleed_settings: template.bleed_settings as any, // Cast to Json-compatible type
         created_by: user.id
       };
 
