@@ -5,16 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-
-interface TemplatePage {
-  id: string;
-  template_id: string;
-  page_number: number;
-  preview_image_url: string | null;
-  pdf_page_width: number | null;
-  pdf_page_height: number | null;
-  pdf_units: string | null;
-}
+import { TemplatePage } from "@/services/types/templateTypes";
 
 interface PdfUploadManagerProps {
   onPdfUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
