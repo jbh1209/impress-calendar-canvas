@@ -9,6 +9,7 @@ import { saveTemplate } from "@/services/templateService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Dimensions } from "@/utils/coordinateSystem";
 
 const DEFAULT_BLEED = { top: 0.125, right: 0.125, bottom: 0.125, left: 0.125, units: "in" };
 
@@ -36,6 +37,26 @@ export default function TemplateSettings({
     if (!tmpl.dimensions?.trim()) return "Dimensions are required.";
     return null;
   }
+
+  // Helper function to convert template dimensions to Dimensions interface
+  const getTemplateDimensions = (): Dimensions | undefined => {
+    if (!template.dimensions || !units) return undefined;
+    
+    // Parse dimensions string (e.g., "8.5x11" or "210x297")
+    const dimensionParts = template.dimensions.split('x');
+    if (dimensionParts.length !== 2) return undefined;
+    
+    const width = parseFloat(dimensionParts[0]);
+    const height = parseFloat(dimensionParts[1]);
+    
+    if (isNaN(width) || isNaN(height)) return undefined;
+    
+    return {
+      width,
+      height,
+      unit: units as any // Convert to PrintUnit type
+    };
+  };
 
   async function handleSaveTemplate(e) {
     e?.preventDefault?.();
