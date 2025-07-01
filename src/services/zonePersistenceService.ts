@@ -8,7 +8,7 @@ export interface ZoneWithAssignment extends CustomizationZone {
 }
 
 export const saveZoneToDatabase = async (
-  zone: Omit<CustomizationZone, 'id'>,
+  zone: Omit<CustomizationZone, 'id'> & { template_id: string },
   pageId: string
 ): Promise<string | null> => {
   try {
@@ -17,7 +17,16 @@ export const saveZoneToDatabase = async (
     // First, save the customization zone
     const { data: zoneData, error: zoneError } = await supabase
       .from('customization_zones')
-      .insert(zone)
+      .insert({
+        template_id: zone.template_id,
+        name: zone.name,
+        type: zone.type,
+        x: zone.x,
+        y: zone.y,
+        width: zone.width,
+        height: zone.height,
+        z_index: zone.z_index || 0
+      })
       .select()
       .single();
 
