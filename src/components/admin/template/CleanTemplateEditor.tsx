@@ -1,5 +1,4 @@
 
-
 import React, { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -9,7 +8,6 @@ import TemplateDetailsForm from "./TemplateDetailsForm";
 import PdfUploadManager from "./PdfUploadManager";
 import TemplateCanvasManager from "./TemplateCanvasManager";
 import { useTemplateData } from "@/hooks/admin/template/useTemplateData";
-import { TemplatePage } from "@/services/types/templateTypes";
 
 const CleanTemplateEditor: React.FC = () => {
   const {
@@ -146,4 +144,3 @@ const CleanTemplateEditor: React.FC = () => {
 };
 
 export default CleanTemplateEditor;
-
