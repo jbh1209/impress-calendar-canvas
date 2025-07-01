@@ -5,14 +5,14 @@ import { TemplatePage } from "@/services/types/templateTypes";
 export const getCanvasDimensions = (templateDimensions?: {
   width: number;
   height: number;
-  units: string;
+  unit: string;
 }) => {
   if (!templateDimensions) {
     return { width: 800, height: 600 };
   }
 
   // Convert to pixels (72 DPI for inches, 2.83 pixels per mm)
-  const pixelsPerUnit = templateDimensions.units === 'in' ? 72 : 2.83;
+  const pixelsPerUnit = templateDimensions.unit === 'in' ? 72 : 2.83;
   const templateWidthPx = templateDimensions.width * pixelsPerUnit;
   const templateHeightPx = templateDimensions.height * pixelsPerUnit;
   
@@ -40,7 +40,7 @@ export const createPlaceholderBackground = (
   templateDimensions?: {
     width: number;
     height: number;
-    units: string;
+    unit: string;
   }
 ) => {
   try {
@@ -72,7 +72,7 @@ export const createPlaceholderBackground = (
 
     const dimensionText = new FabricText(
       templateDimensions ? 
-      `${templateDimensions.width} × ${templateDimensions.height} ${templateDimensions.units}` :
+      `${templateDimensions.width} × ${templateDimensions.height} ${templateDimensions.unit}` :
       `${Math.round(activePage.pdf_page_width || 0)} × ${Math.round(activePage.pdf_page_height || 0)} pt`,
       {
         left: canvasWidth / 2,

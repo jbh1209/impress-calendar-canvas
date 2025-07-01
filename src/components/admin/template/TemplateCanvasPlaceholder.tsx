@@ -7,7 +7,7 @@ interface TemplateCanvasPlaceholderProps {
   templateDimensions?: {
     width: number;
     height: number;
-    units: string;
+    unit: string;
   };
 }
 
@@ -23,7 +23,7 @@ const TemplateCanvasPlaceholder: React.FC<TemplateCanvasPlaceholderProps> = ({
           <p className="text-sm">Upload a PDF to get started</p>
           {templateDimensions && (
             <p className="text-xs mt-2 text-gray-400">
-              Template: {templateDimensions.width} × {templateDimensions.height} {templateDimensions.units}
+              Template: {templateDimensions.width} × {templateDimensions.height} {templateDimensions.unit}
             </p>
           )}
         </div>

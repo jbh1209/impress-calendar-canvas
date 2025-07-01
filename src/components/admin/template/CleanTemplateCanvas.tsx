@@ -23,7 +23,7 @@ interface CleanTemplateCanvasProps {
   templateDimensions?: {
     width: number;
     height: number;
-    units: string;
+    unit: string;
   };
 }
 
@@ -413,13 +413,13 @@ const CleanTemplateCanvas: React.FC<CleanTemplateCanvasProps> = ({
 const getCanvasDimensions = (templateDimensions?: {
   width: number;
   height: number;
-  units: string;
+  unit: string;
 }) => {
   if (!templateDimensions) {
     return { width: 800, height: 600 };
   }
 
-  const pixelsPerUnit = templateDimensions.units === 'in' ? 72 : 2.83;
+  const pixelsPerUnit = templateDimensions.unit === 'in' ? 72 : 2.83;
   const templateWidthPx = templateDimensions.width * pixelsPerUnit;
   const templateHeightPx = templateDimensions.height * pixelsPerUnit;
   

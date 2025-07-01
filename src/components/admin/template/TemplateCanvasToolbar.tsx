@@ -10,7 +10,7 @@ interface TemplateCanvasToolbarProps {
   templateDimensions?: {
     width: number;
     height: number;
-    units: string;
+    unit: string;
   };
 }
 
@@ -37,7 +37,7 @@ const TemplateCanvasToolbar: React.FC<TemplateCanvasToolbarProps> = ({
           <div className="flex items-center gap-4">
             {templateDimensions && (
               <div className="text-sm text-gray-600">
-                Template: {templateDimensions.width} × {templateDimensions.height} {templateDimensions.units}
+                Template: {templateDimensions.width} × {templateDimensions.height} {templateDimensions.unit}
               </div>
             )}
             

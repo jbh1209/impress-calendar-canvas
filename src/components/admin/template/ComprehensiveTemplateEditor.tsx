@@ -150,7 +150,7 @@ const ComprehensiveTemplateEditor: React.FC = () => {
     return {
       width: parseFloat(formData.customWidth) || 8.5,
       height: parseFloat(formData.customHeight) || 11,
-      units: formData.units
+      unit: formData.units
     };
   };
 

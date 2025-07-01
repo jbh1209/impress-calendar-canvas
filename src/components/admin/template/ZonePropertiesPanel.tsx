@@ -24,7 +24,7 @@ interface ZonePropertiesPanelProps {
   templateDimensions?: {
     width: number;
     height: number;
-    units: string;
+    unit: string;
   };
   onZoneUpdate: (properties: ZoneProperties) => void;
   onZoneDelete: () => void;
@@ -88,7 +88,7 @@ const ZonePropertiesPanel: React.FC<ZonePropertiesPanelProps> = ({
     if (!templateDimensions) return null;
     
     // Convert pixel coordinates to physical dimensions
-    const pixelsPerUnit = templateDimensions.units === 'in' ? 72 : 2.83;
+    const pixelsPerUnit = templateDimensions.unit === 'in' ? 72 : 2.83;
     const physicalX = (properties.x / pixelsPerUnit).toFixed(2);
     const physicalY = (properties.y / pixelsPerUnit).toFixed(2);
     const physicalWidth = (properties.width / pixelsPerUnit).toFixed(2);
@@ -99,7 +99,7 @@ const ZonePropertiesPanel: React.FC<ZonePropertiesPanelProps> = ({
       y: physicalY,
       width: physicalWidth,
       height: physicalHeight,
-      units: templateDimensions.units
+      units: templateDimensions.unit
     };
   };
 

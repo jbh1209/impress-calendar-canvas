@@ -15,7 +15,7 @@ interface TemplateCanvasAreaProps {
   templateDimensions?: {
     width: number;
     height: number;
-    units: string;
+    unit: string;
   };
 }
 
@@ -57,7 +57,7 @@ const TemplateCanvasArea: React.FC<TemplateCanvasAreaProps> = ({
           Canvas: {canvasDimensions.width} × {canvasDimensions.height} px
           {templateDimensions && (
             <span className="ml-2">
-              (Template: {templateDimensions.width} × {templateDimensions.height} {templateDimensions.units})
+              (Template: {templateDimensions.width} × {templateDimensions.height} {templateDimensions.unit})
             </span>
           )}
           {currentPage && (
