@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas, Rect, Text as FabricText, Line } from "fabric";
 import { toast } from "sonner";
