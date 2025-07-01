@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { TemplatePage } from "@/services/types/templateTypes";
 
 interface BleedSettings {
   top: number;
@@ -22,16 +23,6 @@ interface Template {
   bleed_settings: BleedSettings;
   original_pdf_url?: string;
   pdf_metadata?: any;
-}
-
-interface TemplatePage {
-  id: string;
-  template_id: string;
-  page_number: number;
-  preview_image_url: string | null;
-  pdf_page_width: number | null;
-  pdf_page_height: number | null;
-  pdf_units: string | null;
 }
 
 export const useTemplateData = () => {
@@ -128,7 +119,21 @@ export const useTemplateData = () => {
         .order('page_number');
 
       if (error) throw error;
-      setPages(data || []);
+      
+      // Properly cast the data to TemplatePage[] to ensure all required properties are present
+      const typedPages: TemplatePage[] = (data || []).map(page => ({
+        id: page.id,
+        template_id: page.template_id,
+        page_number: page.page_number,
+        preview_image_url: page.preview_image_url,
+        pdf_page_width: page.pdf_page_width,
+        pdf_page_height: page.pdf_page_height,
+        pdf_units: page.pdf_units,
+        created_at: page.created_at,
+        updated_at: page.updated_at
+      }));
+      
+      setPages(typedPages);
     } catch (error) {
       console.error('Error loading pages:', error);
       toast.error('Failed to load template pages');
