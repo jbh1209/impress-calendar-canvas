@@ -1,4 +1,5 @@
 
+
 import React, { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -81,12 +82,11 @@ const CleanTemplateEditor: React.FC = () => {
       }
 
       toast.success(data.message);
-      await loadPages(templateId);
       
-      // Set current page index to the first page if pages were loaded
-      if (pages.length > 0) {
-        setCurrentPageIndex(0);
-      }
+      // Load pages and then set the current page index
+      await loadPages(templateId);
+      setCurrentPageIndex(0);
+      
     } catch (error) {
       console.error("PDF upload error:", error);
       toast.error('Failed to process PDF');
@@ -146,3 +146,4 @@ const CleanTemplateEditor: React.FC = () => {
 };
 
 export default CleanTemplateEditor;
+
