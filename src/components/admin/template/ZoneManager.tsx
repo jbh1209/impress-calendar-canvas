@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Canvas as FabricCanvas } from "fabric";
 import { Image, Type, Copy, Trash2, Settings } from "lucide-react";
 import { toast } from "sonner";
+import { createZoneGroup } from "./utils/zoneUtils";
 
 interface ZoneManagerProps {
   fabricCanvasRef: React.MutableRefObject<FabricCanvas | null>;
@@ -39,8 +40,6 @@ const ZoneManager: React.FC<ZoneManagerProps> = ({ fabricCanvasRef, activePage }
     const gridY = 50 + Math.floor(zoneCount / 4) * (defaultHeight + 30);
     
     try {
-      // Use the zone creation utility
-      const { createZoneGroup } = require('./utils/zoneUtils');
       const zoneGroup = createZoneGroup({
         name,
         type,

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef } from "react";
-import { Canvas as FabricCanvas } from "fabric";
+import { Canvas as FabricCanvas, FabricText } from "fabric";
 import { Card, CardContent } from "@/components/ui/card";
 import { TemplatePage } from "@/services/types/templateTypes";
 
@@ -48,7 +48,6 @@ const TemplateCanvasManager: React.FC<TemplateCanvasManagerProps> = ({
     canvas.renderAll();
     
     // Add placeholder content indicating this is a PDF page
-    const { FabricText } = require("fabric");
     const pageText = new FabricText(`Page ${page.page_number}`, {
       left: canvas.width! / 2,
       top: canvas.height! / 2,
