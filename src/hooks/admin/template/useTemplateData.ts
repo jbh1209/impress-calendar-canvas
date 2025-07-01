@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -120,20 +119,8 @@ export const useTemplateData = () => {
 
       if (error) throw error;
       
-      // Properly cast the data to TemplatePage[] to ensure all required properties are present
-      const typedPages: TemplatePage[] = (data || []).map(page => ({
-        id: page.id,
-        template_id: page.template_id,
-        page_number: page.page_number,
-        preview_image_url: page.preview_image_url,
-        pdf_page_width: page.pdf_page_width,
-        pdf_page_height: page.pdf_page_height,
-        pdf_units: page.pdf_units,
-        created_at: page.created_at,
-        updated_at: page.updated_at
-      }));
-      
-      setPages(typedPages);
+      // Use the data directly as it already matches the TemplatePage type from templateTypes.ts
+      setPages((data as TemplatePage[]) || []);
     } catch (error) {
       console.error('Error loading pages:', error);
       toast.error('Failed to load template pages');
