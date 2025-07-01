@@ -42,7 +42,6 @@ const PrintProductionCanvas: React.FC<PrintProductionCanvasProps> = ({
 
   const canvasDims = getCanvasDimensions(templateDimensions);
 
-  // Initialize canvas
   useEffect(() => {
     if (!canvasRef.current) return;
 
