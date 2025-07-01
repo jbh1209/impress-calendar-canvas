@@ -1,8 +1,8 @@
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Square, Type } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Image, Type, Save, Download } from "lucide-react";
 
 interface TemplateCanvasToolbarProps {
   onAddImageZone: () => void;
@@ -21,37 +21,37 @@ const TemplateCanvasToolbar: React.FC<TemplateCanvasToolbarProps> = ({
 }) => {
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add Zones
-          {templateDimensions && (
-            <span className="text-xs text-gray-500 ml-2">
-              ({templateDimensions.width} × {templateDimensions.height} {templateDimensions.units})
-            </span>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onAddImageZone}
-            className="flex items-center gap-2"
-          >
-            <Square className="h-3 w-3" />
-            Image Zone
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onAddTextZone}
-            className="flex items-center gap-2"
-          >
-            <Type className="h-3 w-3" />
-            Text Zone
-          </Button>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-2">
+            <Button onClick={onAddImageZone} size="sm" className="flex items-center gap-2">
+              <Image className="h-4 w-4" />
+              Add Image Zone
+            </Button>
+            <Button onClick={onAddTextZone} size="sm" className="flex items-center gap-2">
+              <Type className="h-4 w-4" />
+              Add Text Zone
+            </Button>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {templateDimensions && (
+              <div className="text-sm text-gray-600">
+                Template: {templateDimensions.width} × {templateDimensions.height} {templateDimensions.units}
+              </div>
+            )}
+            
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                <Save className="h-4 w-4 mr-2" />
+                Save Zones
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

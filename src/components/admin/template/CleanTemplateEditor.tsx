@@ -6,8 +6,23 @@ import { supabase } from "@/integrations/supabase/client";
 import TemplateEditorHeader from "./TemplateEditorHeader";
 import TemplateDetailsForm from "./TemplateDetailsForm";
 import PdfUploadManager from "./PdfUploadManager";
-import TemplateCanvasManager from "./TemplateCanvasManager";
+import CleanTemplateCanvas from "./CleanTemplateCanvas";
 import { useTemplateData } from "@/hooks/admin/template/useTemplateData";
+
+// Helper function to parse dimensions string like "8.5x11in" or "210x297mm"
+const parseDimensions = (dimensionsStr: string) => {
+  if (!dimensionsStr) return null;
+  
+  const match = dimensionsStr.match(/^([0-9.]+)x([0-9.]+)(in|mm|pt)$/);
+  if (match) {
+    return {
+      width: parseFloat(match[1]),
+      height: parseFloat(match[2]),
+      units: match[3]
+    };
+  }
+  return null;
+};
 
 const CleanTemplateEditor: React.FC = () => {
   const {
@@ -94,6 +109,9 @@ const CleanTemplateEditor: React.FC = () => {
     }
   };
 
+  // Parse template dimensions for the canvas
+  const templateDimensions = parseDimensions(template.dimensions);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -131,11 +149,10 @@ const CleanTemplateEditor: React.FC = () => {
 
         {/* Main Canvas Area */}
         <div className="flex-1 p-6">
-          <TemplateCanvasManager
-            currentPage={currentPage}
-            templateDimensions={template.dimensions}
-            isProcessing={isProcessing}
-            processingStatus={processingStatus}
+          <CleanTemplateCanvas
+            activePage={currentPage}
+            templateId={template.id}
+            templateDimensions={templateDimensions}
           />
         </div>
       </div>
