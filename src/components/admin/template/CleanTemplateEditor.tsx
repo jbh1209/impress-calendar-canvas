@@ -6,11 +6,12 @@ import { supabase } from "@/integrations/supabase/client";
 import TemplateEditorHeader from "./TemplateEditorHeader";
 import TemplateDetailsForm from "./TemplateDetailsForm";
 import PdfUploadManager from "./PdfUploadManager";
-import CleanTemplateCanvas from "./CleanTemplateCanvas";
+import PrintProductionCanvas from "./PrintProductionCanvas";
 import { useTemplateData } from "@/hooks/admin/template/useTemplateData";
+import type { Dimensions } from "@/utils/coordinateSystem";
 
 // Helper function to parse dimensions string like "8.5x11in" or "210x297mm"
-const parseDimensions = (dimensionsStr: string) => {
+const parseDimensions = (dimensionsStr: string): Dimensions | null => {
   if (!dimensionsStr) return null;
   
   const match = dimensionsStr.match(/^([0-9.]+)x([0-9.]+)(in|mm|pt)$/);
@@ -18,7 +19,7 @@ const parseDimensions = (dimensionsStr: string) => {
     return {
       width: parseFloat(match[1]),
       height: parseFloat(match[2]),
-      units: match[3]
+      unit: match[3] as 'in' | 'mm' | 'pt'
     };
   }
   return null;
@@ -149,10 +150,11 @@ const CleanTemplateEditor: React.FC = () => {
 
         {/* Main Canvas Area */}
         <div className="flex-1 p-6">
-          <CleanTemplateCanvas
+          <PrintProductionCanvas
             activePage={currentPage}
             templateId={template.id}
             templateDimensions={templateDimensions}
+            originalPdfUrl={template.original_pdf_url}
           />
         </div>
       </div>
