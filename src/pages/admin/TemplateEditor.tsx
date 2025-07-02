@@ -1,6 +1,6 @@
 
-import CleanTemplateEditor from "@/components/admin/template/CleanTemplateEditor";
+import TemplateAdmin from "./TemplateAdmin";
 
 export default function TemplateEditor() {
-  return <CleanTemplateEditor />;
+  return <TemplateAdmin />;
 }
