@@ -1,79 +1,74 @@
-
-import React, { useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Loader2 } from "lucide-react";
-import type { TemplatePage } from "@/services/types/templateTypes";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { TemplatePage } from './types/templateTypes';
 
 interface PdfUploadSectionProps {
-  isProcessingPdf: boolean;
-  processingStatus: string;
+  templateId: string;
+  isUploading: boolean;
   pages: TemplatePage[];
-  currentPageIndex: number;
-  setCurrentPageIndex: (index: number) => void;
-  onPdfUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  currentPage: TemplatePage | null;
+  onPdfUpload: (file: File) => void;
+  onPageSelect: (page: TemplatePage) => void;
 }
 
 const PdfUploadSection: React.FC<PdfUploadSectionProps> = ({
-  isProcessingPdf,
-  processingStatus,
+  templateId,
+  isUploading,
   pages,
-  currentPageIndex,
-  setCurrentPageIndex,
-  onPdfUpload
+  currentPage,
+  onPdfUpload,
+  onPageSelect
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onPdfUpload(file);
+    }
+  };
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm">PDF Template</CardTitle>
+      <CardHeader>
+        <CardTitle className="text-sm">PDF Upload & Pages</CardTitle>
       </CardHeader>
-      <CardContent>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf"
-          onChange={onPdfUpload}
-          className="hidden"
-        />
-        <Button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full"
-          disabled={isProcessingPdf}
-        >
-          {isProcessingPdf ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Upload className="h-4 w-4 mr-2" />
-          )}
-          {isProcessingPdf ? 'Processing...' : 'Upload PDF'}
-        </Button>
-        
-        {isProcessingPdf && processingStatus && (
-          <div className="mt-2 text-xs text-gray-600 text-center">
-            {processingStatus}
+      <CardContent className="space-y-4">
+        {/* PDF Upload */}
+        <div>
+          <Label>PDF Upload</Label>
+          <div className="mt-2">
+            <Input
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              disabled={isUploading || !templateId}
+            />
+            {isUploading && (
+              <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
+            )}
+            {!templateId && (
+              <p className="text-sm text-muted-foreground mt-1">Save template first</p>
+            )}
           </div>
-        )}
-        
+        </div>
+
+        {/* Page Navigation */}
         {pages.length > 0 && (
-          <div className="mt-4">
-            <div className="text-sm font-medium text-gray-700 mb-2">
-              Pages ({pages.length})
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {pages.map((page, index) => (
-                <button
+          <div className="pt-4 border-t">
+            <Label>Pages</Label>
+            <div className="mt-2 space-y-1">
+              {pages.map(page => (
+                <Button
                   key={page.id}
-                  onClick={() => setCurrentPageIndex(index)}
-                  className={`aspect-[3/4] border-2 rounded text-xs flex items-center justify-center transition-colors ${
-                    index === currentPageIndex
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                  variant={currentPage?.id === page.id ? "default" : "ghost"}
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => onPageSelect(page)}
                 >
-                  {page.page_number}
-                </button>
+                  Page {page.page_number}
+                </Button>
               ))}
             </div>
           </div>

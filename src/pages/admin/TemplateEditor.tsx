@@ -1,6 +1,6 @@
 
-import ProfessionalTemplateAdmin from "./ProfessionalTemplateAdmin";
+import RefactoredTemplateAdmin from "./RefactoredTemplateAdmin";
 
 export default function TemplateEditor() {
-  return <ProfessionalTemplateAdmin />;
+  return <RefactoredTemplateAdmin />;
 }
