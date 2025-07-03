@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { PDFRenderer } from "@/utils/pdfRenderer";
+import { PdfCanvas } from "./PdfCanvas";
+import { ZoneOverlay } from "./ZoneOverlay";
 
 interface TemplatePageEditorProps {
   page: {
@@ -33,15 +34,14 @@ interface Zone {
 }
 
 const TemplatePageEditor = ({ page, pdfUrl, templateId }: TemplatePageEditorProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [pdfRenderer] = useState(() => new PDFRenderer());
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentZone, setCurrentZone] = useState<Zone | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
   const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
   const [scale, setScale] = useState(1);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isCanvasReady, setIsCanvasReady] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(0);
 
   // New zone form data
   const [newZone, setNewZone] = useState<Omit<Zone, 'x' | 'y' | 'width' | 'height'>>({
@@ -51,39 +51,27 @@ const TemplatePageEditor = ({ page, pdfUrl, templateId }: TemplatePageEditorProp
   });
 
   useEffect(() => {
-    loadPDF();
     fetchZones();
     
-    return () => {
-      pdfRenderer.destroy();
-    };
-  }, [page, pdfUrl]);
-
-  const loadPDF = async () => {
-    if (!canvasRef.current) return;
-
-    try {
-      await pdfRenderer.loadPDF(pdfUrl);
-      
-      // Calculate scale to fit container
-      const container = containerRef.current;
-      if (container) {
-        const containerWidth = container.clientWidth - 40; // padding
-        const scaleToFit = containerWidth / page.pdf_page_width;
-        setScale(Math.min(scaleToFit, 1.5));
+    // Calculate container width for responsive scaling
+    const updateContainerWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.clientWidth - 40);
       }
+    };
+    
+    updateContainerWidth();
+    window.addEventListener('resize', updateContainerWidth);
+    
+    return () => {
+      window.removeEventListener('resize', updateContainerWidth);
+    };
+  }, [page]);
 
-      await pdfRenderer.renderPageToCanvas(
-        page.page_number,
-        canvasRef.current,
-        { scale }
-      );
-      
-      setIsLoaded(true);
-    } catch (error) {
-      console.error('Error loading PDF:', error);
-      toast.error("Failed to load PDF page");
-    }
+  const handleCanvasReady = (canvas: HTMLCanvasElement, canvasScale: number) => {
+    setScale(canvasScale);
+    setIsCanvasReady(true);
+    console.log(`[TemplatePageEditor] Canvas ready with scale: ${canvasScale}`);
   };
 
   const fetchZones = async () => {
@@ -121,10 +109,13 @@ const TemplatePageEditor = ({ page, pdfUrl, templateId }: TemplatePageEditorProp
       return;
     }
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!isCanvasReady) {
+      toast.error("Please wait for PDF to load");
+      return;
+    }
 
-    const rect = canvas.getBoundingClientRect();
+    const target = e.currentTarget as HTMLCanvasElement;
+    const rect = target.getBoundingClientRect();
     const x = (e.clientX - rect.left) / scale;
     const y = (e.clientY - rect.top) / scale;
 
@@ -141,10 +132,8 @@ const TemplatePageEditor = ({ page, pdfUrl, templateId }: TemplatePageEditorProp
   const handleCanvasMouseMove = (e: React.MouseEvent) => {
     if (!isDrawing || !currentZone) return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
+    const target = e.currentTarget as HTMLCanvasElement;
+    const rect = target.getBoundingClientRect();
     const currentX = (e.clientX - rect.left) / scale;
     const currentY = (e.clientY - rect.top) / scale;
 
@@ -242,60 +231,6 @@ const TemplatePageEditor = ({ page, pdfUrl, templateId }: TemplatePageEditorProp
     }
   };
 
-  const drawZones = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear previous overlays
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Re-render PDF
-    pdfRenderer.renderPageToCanvas(page.page_number, canvas, { scale });
-
-    // Draw existing zones
-    zones.forEach(zone => {
-      ctx.strokeStyle = selectedZone?.id === zone.id ? '#3b82f6' : '#ef4444';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(
-        zone.x * scale,
-        zone.y * scale,
-        zone.width * scale,
-        zone.height * scale
-      );
-
-      // Zone label
-      ctx.fillStyle = selectedZone?.id === zone.id ? '#3b82f6' : '#ef4444';
-      ctx.font = '12px Arial';
-      ctx.fillText(
-        zone.name,
-        zone.x * scale + 4,
-        zone.y * scale - 4
-      );
-    });
-
-    // Draw current zone being created
-    if (currentZone) {
-      ctx.strokeStyle = '#10b981';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
-      ctx.strokeRect(
-        currentZone.x * scale,
-        currentZone.y * scale,
-        currentZone.width * scale,
-        currentZone.height * scale
-      );
-      ctx.setLineDash([]);
-    }
-  };
-
-  useEffect(() => {
-    if (isLoaded) {
-      drawZones();
-    }
-  }, [zones, currentZone, selectedZone, scale, isLoaded]);
 
   return (
     <div className="space-y-4">
@@ -345,19 +280,32 @@ const TemplatePageEditor = ({ page, pdfUrl, templateId }: TemplatePageEditorProp
             </div>
           </div>
 
-          {/* PDF Canvas */}
+          {/* PDF Canvas with Zone Overlay */}
           <div ref={containerRef} className="border rounded-lg overflow-auto">
-            <canvas
-              ref={canvasRef}
-              onMouseDown={handleCanvasMouseDown}
-              onMouseMove={handleCanvasMouseMove}
-              onMouseUp={handleCanvasMouseUp}
-              className="cursor-crosshair max-w-full"
-              style={{ 
-                width: page.pdf_page_width * scale,
-                height: page.pdf_page_height * scale
-              }}
-            />
+            <div className="relative">
+              <PdfCanvas
+                pdfUrl={pdfUrl}
+                pageNumber={page.page_number}
+                onCanvasReady={handleCanvasReady}
+                containerWidth={containerWidth}
+                pageWidth={page.pdf_page_width}
+                pageHeight={page.pdf_page_height}
+              />
+              {isCanvasReady && (
+                <ZoneOverlay
+                  zones={zones}
+                  currentZone={currentZone}
+                  selectedZone={selectedZone}
+                  scale={scale}
+                  pageWidth={page.pdf_page_width}
+                  pageHeight={page.pdf_page_height}
+                  onMouseDown={handleCanvasMouseDown}
+                  onMouseMove={handleCanvasMouseMove}
+                  onMouseUp={handleCanvasMouseUp}
+                  isDrawing={isDrawing}
+                />
+              )}
+            </div>
           </div>
 
           {/* Zone List */}
