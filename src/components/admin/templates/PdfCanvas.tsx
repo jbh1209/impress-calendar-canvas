@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { PDFRenderer } from '@/utils/pdfRenderer';
+import { PDFService } from '@/utils/pdfService';
 import { toast } from 'sonner';
 
 interface PdfCanvasProps {
@@ -20,7 +20,7 @@ export const PdfCanvas: React.FC<PdfCanvasProps> = ({
   pageHeight
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [pdfRenderer] = useState(() => new PDFRenderer());
+  const [pdfService] = useState(() => PDFService.getInstance());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
@@ -35,19 +35,31 @@ export const PdfCanvas: React.FC<PdfCanvasProps> = ({
       try {
         console.log(`[PdfCanvas] Loading PDF: ${pdfUrl}, Page: ${pageNumber}`);
         
-        await pdfRenderer.loadPDF(pdfUrl);
+        const result = await pdfService.loadPDF(pdfUrl);
+        
+        if (!result.success || !result.document) {
+          throw new Error(result.error || 'Failed to load PDF');
+        }
+
+        // Get actual page dimensions
+        const dimensions = await pdfService.getPageDimensions(result.document, pageNumber);
         
         // Calculate optimal scale
         const calculatedScale = containerWidth ? 
-          Math.min(containerWidth / pageWidth, 1.5) : 1;
+          Math.min(containerWidth / dimensions.width, 1.5) : 1;
         setScale(calculatedScale);
 
         // Render PDF page
-        await pdfRenderer.renderPageToCanvas(
+        const success = await pdfService.renderPageToCanvas(
+          result.document,
           pageNumber,
           canvasRef.current,
-          { scale: calculatedScale }
+          calculatedScale
         );
+
+        if (!success) {
+          throw new Error('Failed to render PDF page');
+        }
 
         console.log(`[PdfCanvas] PDF rendered successfully at scale ${calculatedScale}`);
         onCanvasReady(canvasRef.current, calculatedScale);
@@ -65,9 +77,9 @@ export const PdfCanvas: React.FC<PdfCanvasProps> = ({
     loadAndRenderPdf();
 
     return () => {
-      pdfRenderer.destroy();
+      // Cleanup handled by service singleton
     };
-  }, [pdfUrl, pageNumber, containerWidth, pageWidth, onCanvasReady, pdfRenderer]);
+  }, [pdfUrl, pageNumber, containerWidth, pageWidth, onCanvasReady, pdfService]);
 
   if (error) {
     return (
