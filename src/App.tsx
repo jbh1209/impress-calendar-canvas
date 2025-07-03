@@ -1,5 +1,4 @@
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Index from "@/pages/Index";
@@ -21,12 +20,9 @@ import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import AdminLayout from "@/layouts/AdminLayout";
 import AuthLayout from "@/layouts/AuthLayout";
 
-const queryClient = new QueryClient();
-
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+    <AuthProvider>
         <Router>
           <Routes>
             {/* Public Routes */}
@@ -96,7 +92,6 @@ function App() {
           <Toaster />
         </Router>
       </AuthProvider>
-    </QueryClientProvider>
   );
 }
 
