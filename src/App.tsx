@@ -8,14 +8,12 @@ import SignUp from "@/pages/auth/SignUp";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
 import NotFound from "@/pages/NotFound";
 import ShutterstockPage from "@/pages/ShutterstockPage";
-import CalendarCustomizer from "@/pages/CalendarCustomizer";
+
 import CustomerOrders from "@/pages/CustomerOrders";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
-import TemplateManagement from "@/pages/admin/TemplateManagement";
 import ProductManagement from "@/pages/admin/ProductManagement";
 import ProductCatalog from "@/pages/admin/ProductCatalog";
 import UserManagement from "@/pages/admin/UserManagement";
-import TemplateEditor from "@/pages/admin/TemplateEditor";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
@@ -32,7 +30,7 @@ function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
-            <Route path="/customize/:templateId" element={<CalendarCustomizer />} />
+            
             
             {/* Auth Routes */}
             <Route path="/auth" element={<AuthLayout />}>
@@ -54,30 +52,6 @@ function App() {
                 element={
                   <AdminProtectedRoute>
                     <AdminDashboard />
-                  </AdminProtectedRoute>
-                }
-              />
-              <Route
-                path="templates"
-                element={
-                  <AdminProtectedRoute>
-                    <TemplateManagement />
-                  </AdminProtectedRoute>
-                }
-              />
-              <Route
-                path="templates/create"
-                element={
-                  <AdminProtectedRoute>
-                    <TemplateEditor />
-                  </AdminProtectedRoute>
-                }
-              />
-              <Route
-                path="templates/edit/:id"
-                element={
-                  <AdminProtectedRoute>
-                    <TemplateEditor />
                   </AdminProtectedRoute>
                 }
               />

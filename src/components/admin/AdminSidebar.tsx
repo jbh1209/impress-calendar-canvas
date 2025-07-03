@@ -64,12 +64,6 @@ const AdminSidebar = () => {
             isActive={path.includes("/admin/products")}
           />
           <SidebarLink
-            to="/admin/templates"
-            icon={<FileImage className="h-4 w-4" />}
-            label="Templates"
-            isActive={path.includes("/admin/templates")}
-          />
-          <SidebarLink
             to="/admin/orders"
             icon={<Package className="h-4 w-4" />}
             label="Orders"

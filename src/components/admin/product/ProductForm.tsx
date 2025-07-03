@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Product, ProductVariant } from "@/services/productService";
-import ProductTemplateManager from "./ProductTemplateManager";
+
 import ProductVariantsTable from "./ProductVariantsTable";
 import ProductImagesManager from "./ProductImagesManager";
 
@@ -148,11 +148,6 @@ const ProductForm = ({
         onChange={handleImagesChange}
       />
       
-      <ProductTemplateManager
-        productId={product.id}
-        templates={product.templates || []}
-        onChange={handleTemplatesChange}
-      />
       
       <CardFooter className="flex justify-end space-x-2 px-0">
         <Button variant="outline" onClick={onCancel}>Cancel</Button>

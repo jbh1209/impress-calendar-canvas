@@ -11,8 +11,6 @@ import {
   ProductTemplateAssociation,
   ProductTemplateRow
 } from "./types/productTypes";
-import { Template } from "./types/templateTypes";
-import { getTemplateById } from "./templateService";
 
 /**
  * Get product by ID with its associated data
@@ -67,17 +65,8 @@ export const getProductById = async (id: string): Promise<Product | null> => {
       console.error('Error fetching product templates:', templatesError);
     }
     
-    // Fetch template details for each associated template
-    const templatesWithDetails = [];
-    if (templateAssociations && templateAssociations.length > 0) {
-      for (const assoc of templateAssociations) {
-        const template = await getTemplateById(assoc.template_id);
-        templatesWithDetails.push({
-          ...assoc,
-          template
-        });
-      }
-    }
+    // Template details are no longer available
+    const templatesWithDetails = templateAssociations || [];
     
     // Convert the database rows to our type
     const productData: Product = {
@@ -394,42 +383,6 @@ export const associateTemplateWithProduct = async (
   }
 };
 
-/**
- * Get all templates associated with a product
- */
-export const getTemplatesByProductId = async (productId: string): Promise<Template[]> => {
-  try {
-    const { data: associations, error } = await supabase
-      .from('product_templates')
-      .select('template_id')
-      .eq('product_id', productId);
-      
-    if (error) {
-      console.error('Error fetching template associations:', error);
-      toast.error('Failed to load template associations');
-      return [];
-    }
-    
-    if (!associations || associations.length === 0) {
-      return [];
-    }
-    
-    // Fetch template details for each template ID
-    const templates: Template[] = [];
-    for (const assoc of associations) {
-      const template = await getTemplateById(assoc.template_id);
-      if (template) {
-        templates.push(template);
-      }
-    }
-    
-    return templates;
-  } catch (error) {
-    console.error('Unexpected error fetching templates for product:', error);
-    toast.error('An unexpected error occurred');
-    return [];
-  }
-};
 
 // Export product types
 export type { 
