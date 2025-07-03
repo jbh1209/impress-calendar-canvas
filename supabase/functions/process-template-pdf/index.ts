@@ -105,6 +105,53 @@ serve(async (req) => {
       })
       .eq('id', templateId)
 
+    // Generate preview images for each page
+    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+      try {
+        // Create a canvas element (server-side canvas simulation)
+        const canvas = new OffscreenCanvas(400, 600) // Default size
+        const ctx = canvas.getContext('2d')
+        
+        if (ctx) {
+          // Simple preview generation - in a real implementation you'd render the PDF page
+          // For now, create a simple placeholder
+          ctx.fillStyle = '#f3f4f6'
+          ctx.fillRect(0, 0, 400, 600)
+          ctx.fillStyle = '#374151'
+          ctx.font = '16px Arial'
+          ctx.textAlign = 'center'
+          ctx.fillText(`Page ${pageNum}`, 200, 300)
+          
+          // Convert to blob
+          const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.8 })
+          
+          // Upload preview
+          const previewFileName = `${templateId}/page-${pageNum}-preview.jpg`
+          const { data: previewUpload, error: previewError } = await supabaseClient.storage
+            .from('pdf-previews')
+            .upload(previewFileName, blob, {
+              contentType: 'image/jpeg',
+              upsert: true
+            })
+
+          if (!previewError) {
+            const { data: previewUrlData } = supabaseClient.storage
+              .from('pdf-previews')
+              .getPublicUrl(previewFileName)
+
+            // Update page with preview URL
+            await supabaseClient
+              .from('template_pages')
+              .update({ preview_image_url: previewUrlData.publicUrl })
+              .eq('template_id', templateId)
+              .eq('page_number', pageNum)
+          }
+        }
+      } catch (previewError) {
+        console.error(`Error generating preview for page ${pageNum}:`, previewError)
+      }
+    }
+
     if (templateUpdateError) {
       console.error('Template update error:', templateUpdateError)
     }
