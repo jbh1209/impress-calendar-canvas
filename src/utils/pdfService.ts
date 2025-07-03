@@ -1,8 +1,7 @@
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.js?url';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+// Configure PDF.js worker with CDN URL matching our version
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.js`;
 
 export interface PDFLoadResult {
   success: boolean;
