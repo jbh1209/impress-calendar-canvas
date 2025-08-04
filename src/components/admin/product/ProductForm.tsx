@@ -11,6 +11,8 @@ import { Product, ProductVariant } from "@/services/productService";
 
 import ProductVariantsTable from "./ProductVariantsTable";
 import ProductImagesManager from "./ProductImagesManager";
+import { PitchPrintDesignBrowser } from "./PitchPrintDesignBrowser";
+import { PitchPrintDesign } from "@/services/pitchprintService";
 
 interface ProductFormProps {
   product: Partial<Product>;
@@ -94,15 +96,15 @@ const ProductForm = ({
           </div>
 
           <div>
-            <Label htmlFor="pitchprint_design_id">PitchPrint Design ID</Label>
-            <Input
-              id="pitchprint_design_id"
-              value={product.pitchprint_design_id || ''}
-              onChange={(e) => handleChange('pitchprint_design_id', e.target.value)}
-              placeholder="Enter PitchPrint design ID"
+            <Label>PitchPrint Design</Label>
+            <PitchPrintDesignBrowser
+              selectedDesignId={product.pitchprint_design_id || ''}
+              onDesignSelect={(design: PitchPrintDesign) => 
+                handleChange('pitchprint_design_id', design.id)
+              }
             />
             <p className="text-sm text-muted-foreground mt-1">
-              The design ID from your PitchPrint account that customers will customize
+              Select a design from your PitchPrint account that customers will customize
             </p>
           </div>
           

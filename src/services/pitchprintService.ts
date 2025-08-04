@@ -14,6 +14,18 @@ export interface PitchPrintProject {
   pdf_url?: string;
 }
 
+export interface PitchPrintCategory {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface PitchPrintDesignList {
+  designs: PitchPrintDesign[];
+  total: number;
+  page: number;
+}
+
 class PitchPrintService {
   async validateDesignId(designId: string): Promise<boolean> {
     try {
@@ -75,6 +87,47 @@ class PitchPrintService {
     } catch (error) {
       console.error('Error generating PitchPrint PDF:', error);
       return null;
+    }
+  }
+
+  async fetchDesignCategories(): Promise<PitchPrintCategory[]> {
+    try {
+      const { data, error } = await supabase.functions.invoke('pitchprint-api', {
+        body: {
+          action: 'fetch_design_categories'
+        }
+      });
+
+      if (error) {
+        console.error('Error fetching design categories:', error);
+        return [];
+      }
+
+      return data?.categories || [];
+    } catch (error) {
+      console.error('Error fetching PitchPrint design categories:', error);
+      return [];
+    }
+  }
+
+  async fetchDesigns(categoryId?: string): Promise<PitchPrintDesignList> {
+    try {
+      const { data, error } = await supabase.functions.invoke('pitchprint-api', {
+        body: {
+          action: 'fetch_designs',
+          ...(categoryId && { category_id: categoryId })
+        }
+      });
+
+      if (error) {
+        console.error('Error fetching designs:', error);
+        return { designs: [], total: 0, page: 1 };
+      }
+
+      return data?.designs || { designs: [], total: 0, page: 1 };
+    } catch (error) {
+      console.error('Error fetching PitchPrint designs:', error);
+      return { designs: [], total: 0, page: 1 };
     }
   }
 

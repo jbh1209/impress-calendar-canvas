@@ -6,9 +6,10 @@ const corsHeaders = {
 };
 
 interface PitchPrintRequest {
-  action: 'validate_design' | 'get_design_preview' | 'generate_pdf';
+  action: 'validate_design' | 'get_design_preview' | 'generate_pdf' | 'fetch_design_categories' | 'fetch_designs';
   design_id?: string;
   project_id?: string;
+  category_id?: string;
 }
 
 Deno.serve(async (req) => {
@@ -18,7 +19,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { action, design_id, project_id }: PitchPrintRequest = await req.json();
+    const { action, design_id, project_id, category_id }: PitchPrintRequest = await req.json();
 
     const apiKey = Deno.env.get('PITCHPRINT_API_KEY');
     const secretKey = Deno.env.get('PITCHPRINT_SECRET_KEY');
@@ -116,6 +117,46 @@ Deno.serve(async (req) => {
         } else {
           console.error(`Failed to generate PDF for project ${project_id}: ${pdfResponse.status}`);
           response = { error: 'Failed to generate PDF' };
+        }
+        break;
+
+      case 'fetch_design_categories':
+        // Fetch design categories from PitchPrint
+        const categoriesResponse = await fetch('https://api.pitchprint.io/v2/design-categories', {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (categoriesResponse.ok) {
+          const categoriesData = await categoriesResponse.json();
+          response = { categories: categoriesData };
+        } else {
+          console.error(`Failed to fetch design categories: ${categoriesResponse.status}`);
+          response = { error: 'Failed to fetch design categories' };
+        }
+        break;
+
+      case 'fetch_designs':
+        // Fetch designs from a specific category
+        const designsUrl = category_id 
+          ? `https://api.pitchprint.io/v2/designs?category=${category_id}`
+          : 'https://api.pitchprint.io/v2/designs';
+        
+        const designsResponse = await fetch(designsUrl, {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (designsResponse.ok) {
+          const designsData = await designsResponse.json();
+          response = { designs: designsData };
+        } else {
+          console.error(`Failed to fetch designs: ${designsResponse.status}`);
+          response = { error: 'Failed to fetch designs' };
         }
         break;
 
