@@ -10,6 +10,7 @@ export interface Product {
   category: string | null;
   tags: string[] | null;
   thumbnail_url: string | null;
+  pitchprint_design_id?: string | null;
   is_active: boolean;
   created_at: string;
   created_by: string | null;
@@ -62,6 +63,7 @@ export interface ProductRow {
   category: string | null;
   tags: string[] | null;
   thumbnail_url: string | null;
+  pitchprint_design_id: string | null;
   is_active: boolean;
   created_at: string;
   created_by: string | null;

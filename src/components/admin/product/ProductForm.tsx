@@ -92,6 +92,19 @@ const ProductForm = ({
               rows={4}
             />
           </div>
+
+          <div>
+            <Label htmlFor="pitchprint_design_id">PitchPrint Design ID</Label>
+            <Input
+              id="pitchprint_design_id"
+              value={product.pitchprint_design_id || ''}
+              onChange={(e) => handleChange('pitchprint_design_id', e.target.value)}
+              placeholder="Enter PitchPrint design ID"
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              The design ID from your PitchPrint account that customers will customize
+            </p>
+          </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div>

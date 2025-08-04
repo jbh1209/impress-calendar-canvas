@@ -1,0 +1,99 @@
+import { supabase } from "@/integrations/supabase/client";
+
+export interface PitchPrintDesign {
+  id: string;
+  name: string;
+  thumbnail?: string;
+  preview_url?: string;
+}
+
+export interface PitchPrintProject {
+  id: string;
+  design_id: string;
+  customer_data: any;
+  pdf_url?: string;
+}
+
+class PitchPrintService {
+  async validateDesignId(designId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase.functions.invoke('pitchprint-api', {
+        body: {
+          action: 'validate_design',
+          design_id: designId
+        }
+      });
+
+      if (error) {
+        console.error('Error validating design:', error);
+        return false;
+      }
+
+      return data?.valid || false;
+    } catch (error) {
+      console.error('Error validating PitchPrint design:', error);
+      return false;
+    }
+  }
+
+  async getDesignPreview(designId: string): Promise<string | null> {
+    try {
+      const { data, error } = await supabase.functions.invoke('pitchprint-api', {
+        body: {
+          action: 'get_design_preview',
+          design_id: designId
+        }
+      });
+
+      if (error) {
+        console.error('Error getting design preview:', error);
+        return null;
+      }
+
+      return data?.preview_url || null;
+    } catch (error) {
+      console.error('Error getting PitchPrint design preview:', error);
+      return null;
+    }
+  }
+
+  async generateProjectPdf(projectId: string): Promise<string | null> {
+    try {
+      const { data, error } = await supabase.functions.invoke('pitchprint-api', {
+        body: {
+          action: 'generate_pdf',
+          project_id: projectId
+        }
+      });
+
+      if (error) {
+        console.error('Error generating PDF:', error);
+        return null;
+      }
+
+      return data?.pdf_url || null;
+    } catch (error) {
+      console.error('Error generating PitchPrint PDF:', error);
+      return null;
+    }
+  }
+
+  generateCustomizationUrl(designId: string, options: {
+    userId?: string;
+    orderId?: string;
+    returnUrl?: string;
+  } = {}): string {
+    const baseUrl = 'https://api.pitchprint.io/runtime/client-demo.html';
+    const params = new URLSearchParams({
+      design_id: designId,
+      mode: 'edit',
+      ...(options.userId && { user_id: options.userId }),
+      ...(options.orderId && { order_id: options.orderId }),
+      ...(options.returnUrl && { return_url: options.returnUrl })
+    });
+
+    return `${baseUrl}?${params.toString()}`;
+  }
+}
+
+export const pitchprintService = new PitchPrintService();
