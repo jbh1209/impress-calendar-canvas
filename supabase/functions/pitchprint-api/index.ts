@@ -214,12 +214,14 @@ Deno.serve(async (req) => {
             console.log('Designs data:', designsData);
             
             // Transform PitchPrint design structure to our expected format
-            const transformedDesigns = designsData.data?.map((design: any) => ({
+            const transformedDesigns = designsData.data?.items?.map((design: any) => ({
               id: design.id,
-              name: design.title || design.name,
-              thumbnail: design.thumbnail || design.preview_url,
-              preview_url: design.preview_url
+              name: design.title,
+              thumbnail: design.previews?.[0],
+              preview_url: design.previews?.[0]
             })) || [];
+            
+            console.log('Transformed designs:', transformedDesigns);
             
             response = { 
               designs: transformedDesigns,
