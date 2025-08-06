@@ -103,7 +103,8 @@ class PitchPrintService {
         return [];
       }
 
-      return data?.categories || [];
+      console.log('Fetched categories data:', data);
+      return Array.isArray(data?.categories) ? data.categories : [];
     } catch (error) {
       console.error('Error fetching PitchPrint design categories:', error);
       return [];
@@ -124,7 +125,20 @@ class PitchPrintService {
         return { designs: [], total: 0, page: 1 };
       }
 
-      return data?.designs || { designs: [], total: 0, page: 1 };
+      console.log('Fetched designs data:', data);
+      
+      // Handle both array response and object response formats
+      if (Array.isArray(data?.designs)) {
+        return {
+          designs: data.designs,
+          total: data.total || data.designs.length,
+          page: data.page || 1
+        };
+      } else if (data?.designs && typeof data.designs === 'object') {
+        return data.designs;
+      }
+      
+      return { designs: [], total: 0, page: 1 };
     } catch (error) {
       console.error('Error fetching PitchPrint designs:', error);
       return { designs: [], total: 0, page: 1 };

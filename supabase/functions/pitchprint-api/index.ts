@@ -161,7 +161,15 @@ Deno.serve(async (req) => {
           if (categoriesResponse.ok) {
             const categoriesData = await categoriesResponse.json();
             console.log('Categories data:', categoriesData);
-            response = { categories: categoriesData };
+            
+            // Transform PitchPrint category structure to our expected format
+            const transformedCategories = categoriesData.categories?.data?.map((cat: any) => ({
+              id: cat.id,
+              name: cat.title, // PitchPrint uses 'title' instead of 'name'
+              description: cat.description
+            })) || [];
+            
+            response = { categories: transformedCategories };
           } else {
             const errorText = await categoriesResponse.text();
             console.error(`Failed to fetch design categories: ${categoriesResponse.status} - ${errorText}`);
@@ -204,7 +212,20 @@ Deno.serve(async (req) => {
           if (designsResponse.ok) {
             const designsData = await designsResponse.json();
             console.log('Designs data:', designsData);
-            response = { designs: designsData };
+            
+            // Transform PitchPrint design structure to our expected format
+            const transformedDesigns = designsData.designs?.data?.map((design: any) => ({
+              id: design.id,
+              name: design.title || design.name,
+              thumbnail: design.thumbnail || design.preview_url,
+              preview_url: design.preview_url
+            })) || [];
+            
+            response = { 
+              designs: transformedDesigns,
+              total: designsData.designs?.total || transformedDesigns.length,
+              page: designsData.designs?.page || 1
+            };
           } else {
             const errorText = await designsResponse.text();
             console.error(`Failed to fetch designs: ${designsResponse.status} - ${errorText}`);
