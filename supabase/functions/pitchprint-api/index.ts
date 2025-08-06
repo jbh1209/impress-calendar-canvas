@@ -12,6 +12,23 @@ interface PitchPrintRequest {
   category_id?: string;
 }
 
+// Helper function to generate MD5 hash
+async function generateMD5(text: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest('MD5', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Helper function to create PitchPrint authentication signature
+async function createPitchPrintSignature(apiKey: string, secretKey: string): Promise<{ timestamp: number; signature: string }> {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signatureString = apiKey + secretKey + timestamp;
+  const signature = await generateMD5(signatureString);
+  return { timestamp, signature };
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -121,41 +138,79 @@ Deno.serve(async (req) => {
         break;
 
       case 'fetch_design_categories':
-        // Fetch design categories from PitchPrint
-        const categoriesResponse = await fetch('https://api.pitchprint.io/v2/design-categories', {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        try {
+          // Generate authentication signature
+          const { timestamp, signature } = await createPitchPrintSignature(apiKey, secretKey);
+          
+          // Fetch design categories from PitchPrint
+          const categoriesResponse = await fetch('https://api.pitchprint.io/runtime/fetch-design-categories', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              apiKey,
+              timestamp,
+              signature
+            })
+          });
 
-        if (categoriesResponse.ok) {
-          const categoriesData = await categoriesResponse.json();
-          response = { categories: categoriesData };
-        } else {
-          console.error(`Failed to fetch design categories: ${categoriesResponse.status}`);
+          console.log(`Categories API response status: ${categoriesResponse.status}`);
+          
+          if (categoriesResponse.ok) {
+            const categoriesData = await categoriesResponse.json();
+            console.log('Categories data:', categoriesData);
+            response = { categories: categoriesData };
+          } else {
+            const errorText = await categoriesResponse.text();
+            console.error(`Failed to fetch design categories: ${categoriesResponse.status} - ${errorText}`);
+            response = { error: 'Failed to fetch design categories' };
+          }
+        } catch (error) {
+          console.error('Error in fetch_design_categories:', error);
           response = { error: 'Failed to fetch design categories' };
         }
         break;
 
       case 'fetch_designs':
-        // Fetch designs from a specific category
-        const designsUrl = category_id 
-          ? `https://api.pitchprint.io/v2/designs?category=${category_id}`
-          : 'https://api.pitchprint.io/v2/designs';
-        
-        const designsResponse = await fetch(designsUrl, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
+        try {
+          // Generate authentication signature
+          const { timestamp, signature } = await createPitchPrintSignature(apiKey, secretKey);
+          
+          // Prepare request body
+          const requestBody: any = {
+            apiKey,
+            timestamp,
+            signature
+          };
+          
+          // Add category filter if provided
+          if (category_id) {
+            requestBody.categoryId = category_id;
           }
-        });
+          
+          // Fetch designs from PitchPrint
+          const designsResponse = await fetch('https://api.pitchprint.io/runtime/fetch-designs', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+          });
 
-        if (designsResponse.ok) {
-          const designsData = await designsResponse.json();
-          response = { designs: designsData };
-        } else {
-          console.error(`Failed to fetch designs: ${designsResponse.status}`);
+          console.log(`Designs API response status: ${designsResponse.status}`);
+          
+          if (designsResponse.ok) {
+            const designsData = await designsResponse.json();
+            console.log('Designs data:', designsData);
+            response = { designs: designsData };
+          } else {
+            const errorText = await designsResponse.text();
+            console.error(`Failed to fetch designs: ${designsResponse.status} - ${errorText}`);
+            response = { error: 'Failed to fetch designs' };
+          }
+        } catch (error) {
+          console.error('Error in fetch_designs:', error);
           response = { error: 'Failed to fetch designs' };
         }
         break;
