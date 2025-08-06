@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
             console.log('Categories data:', categoriesData);
             
             // Transform PitchPrint category structure to our expected format
-            const transformedCategories = categoriesData.categories?.data?.map((cat: any) => ({
+            const transformedCategories = categoriesData.data?.map((cat: any) => ({
               id: cat.id,
               name: cat.title, // PitchPrint uses 'title' instead of 'name'
               description: cat.description
@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
             console.log('Designs data:', designsData);
             
             // Transform PitchPrint design structure to our expected format
-            const transformedDesigns = designsData.designs?.data?.map((design: any) => ({
+            const transformedDesigns = designsData.data?.map((design: any) => ({
               id: design.id,
               name: design.title || design.name,
               thumbnail: design.thumbnail || design.preview_url,
@@ -223,8 +223,8 @@ Deno.serve(async (req) => {
             
             response = { 
               designs: transformedDesigns,
-              total: designsData.designs?.total || transformedDesigns.length,
-              page: designsData.designs?.page || 1
+              total: designsData.total || transformedDesigns.length,
+              page: designsData.page || 1
             };
           } else {
             const errorText = await designsResponse.text();
