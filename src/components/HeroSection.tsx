@@ -8,7 +8,7 @@ const HeroSection = () => {
       <div className="container mx-auto px-6 grid md:grid-cols-2 gap-8 items-center">
         <div className="z-10">
           <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight leading-none text-white">
-            Premium A2 Landscape<br />
+            Premium A2<br />
             Wire Bound Calendars
           </h1>
           <p className="text-gray-300 text-lg mb-8 max-w-md leading-relaxed">
