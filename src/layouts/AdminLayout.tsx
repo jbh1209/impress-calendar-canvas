@@ -1,18 +1,24 @@
 
 import { Outlet } from "react-router-dom";
-import AdminSidebar from "@/components/admin/AdminSidebar";
+import AppSidebar from "@/components/admin/AppSidebar";
+import AdminHeader from "@/components/admin/AdminHeader";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 const AdminLayout = () => {
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <AdminSidebar />
-      <div className="flex-1 overflow-auto">
-        <div className="container p-6 mx-auto">
-          <Outlet />
-        </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+        <SidebarInset>
+          <AdminHeader />
+          <div className="container p-6 mx-auto">
+            <Outlet />
+          </div>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
 export default AdminLayout;
+
