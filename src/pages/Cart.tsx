@@ -1,0 +1,121 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { getOrCreateActiveCart } from "@/services/cartService";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
+interface CartItemView {
+  id: string;
+  product_id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string | null;
+}
+
+const Cart = () => {
+  const [items, setItems] = useState<CartItemView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    document.title = "Your Cart | Impress";
+    (async () => {
+      const cart = await getOrCreateActiveCart();
+      if (!cart) {
+        setLoading(false);
+        return;
+      }
+      const { data: cartItemsRaw } = await supabase
+        .from('cart_items' as any)
+        .select('*')
+        .eq('cart_id', cart.id);
+
+      const cartItems = (cartItemsRaw as unknown as any[]) || [];
+
+      const result: CartItemView[] = [];
+      for (const ci of cartItems) {
+        const { data: productRaw } = await supabase
+          .from('products' as any)
+          .select('*')
+          .eq('id', ci.product_id)
+          .maybeSingle();
+        const product = productRaw as unknown as any;
+        let image: string | null = null;
+        if (product) {
+          const { data: imagesRaw } = await supabase
+            .from('product_images' as any)
+            .select('*')
+            .eq('product_id', product.id)
+            .order('display_order', { ascending: true });
+          const images = (imagesRaw as unknown as any[]) || [];
+          image = images?.[0]?.image_url ?? null;
+        }
+        result.push({
+          id: ci.id,
+          product_id: ci.product_id,
+          name: product?.name ?? 'Product',
+          price: Number(ci.unit_price),
+          quantity: ci.quantity,
+          image,
+        });
+      }
+      setItems(result);
+      setLoading(false);
+    })();
+  }, []);
+
+  const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.price * i.quantity, 0), [items]);
+
+  if (loading) return <div className="container mx-auto p-6">Loading cart...</div>;
+
+  return (
+    <main className="container mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">Your Cart</h1>
+      {items.length === 0 ? (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <p className="text-gray-600 mb-4">Your cart is empty.</p>
+            <Link to="/products">
+              <Button>Browse Products</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="md:col-span-2 space-y-4">
+            {items.map((i) => (
+              <Card key={i.id}>
+                <CardContent className="p-4 flex gap-4 items-center">
+                  <div className="w-24 h-24 bg-gray-100 rounded overflow-hidden">
+                    {i.image ? (
+                      <img src={i.image} alt={i.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">No image</div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium">{i.name}</div>
+                    <div className="text-sm text-gray-600">Qty: {i.quantity}</div>
+                  </div>
+                  <div className="font-semibold">R {(i.price * i.quantity).toFixed(2)}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Card>
+            <CardContent className="p-6 space-y-3">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span className="font-semibold">R {subtotal.toFixed(2)}</span>
+              </div>
+              <Button className="w-full" disabled>Checkout (Coming soon)</Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </main>
+  );
+};
+
+export default Cart;

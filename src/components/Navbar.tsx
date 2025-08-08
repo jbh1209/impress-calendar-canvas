@@ -25,6 +25,13 @@ const Navbar = () => {
           </div>
           
           <div className="flex items-center space-x-4">
+            <Link to="/products" className="text-gray-700 hover:text-blue-600">
+              Products
+            </Link>
+            <Link to="/cart" className="text-gray-700 hover:text-blue-600 flex items-center gap-1">
+              <ShoppingCart className="h-4 w-4" />
+              Cart
+            </Link>
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

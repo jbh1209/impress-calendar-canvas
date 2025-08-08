@@ -16,9 +16,9 @@ const HeroSection = () => {
             lasting impression all year round.
           </p>
           <div className="flex flex-wrap gap-4">
-            <Link to="/design" className="inline-flex">
+            <Link to="/products" className="inline-flex">
               <button className="bg-white text-darkBg hover:bg-gray-200 transition-colors font-medium px-6 py-3 rounded flex items-center">
-                Customize Your Calendar <ArrowRight className="ml-2 h-4 w-4" />
+                Browse Products <ArrowRight className="ml-2 h-4 w-4" />
               </button>
             </Link>
             <Link to="/" className="inline-flex">

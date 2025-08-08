@@ -19,6 +19,9 @@ import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import AdminLayout from "@/layouts/AdminLayout";
 import AuthLayout from "@/layouts/AuthLayout";
 import PitchPrintCallback from "@/pages/customize/Callback";
+import Products from "@/pages/Products";
+import ProductDetail from "@/pages/ProductDetail";
+import Cart from "@/pages/Cart";
 
 function App() {
   return (
@@ -27,6 +30,9 @@ function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/products/:id" element={<ProductDetail />} />
+            <Route path="/cart" element={<Cart />} />
             
             
             {/* Auth Routes */}
