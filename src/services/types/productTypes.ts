@@ -11,6 +11,8 @@ export interface Product {
   tags: string[] | null;
   thumbnail_url: string | null;
   pitchprint_design_id?: string | null;
+  requires_customization?: boolean;
+  customization_help_text?: string | null;
   is_active: boolean;
   created_at: string;
   created_by: string | null;
@@ -64,6 +66,8 @@ export interface ProductRow {
   tags: string[] | null;
   thumbnail_url: string | null;
   pitchprint_design_id: string | null;
+  requires_customization: boolean;
+  customization_help_text: string | null;
   is_active: boolean;
   created_at: string;
   created_by: string | null;

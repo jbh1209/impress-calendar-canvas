@@ -21,9 +21,9 @@ const HeroSection = () => {
                 Customize Your Calendar <ArrowRight className="ml-2 h-4 w-4" />
               </button>
             </Link>
-            <Link to="/templates" className="inline-flex">
+            <Link to="/" className="inline-flex">
               <button className="border border-white text-white hover:bg-white/10 transition-colors font-medium px-6 py-3 rounded">
-                View Templates
+                Browse Products
               </button>
             </Link>
           </div>

@@ -17,14 +17,14 @@ const AdminDashboard = () => {
         <Card className="hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-xl flex items-center gap-3 text-gray-900 dark:text-white">
-              <FilePlus size={24} className="text-blue-600" />
-              Templates Management
+              <ShoppingCart size={24} className="text-blue-600" />
+              Products Management
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">Create and manage calendar templates for customers.</p>
-            <Button onClick={() => navigate("/admin/templates")} className="w-full">
-              Manage Templates
+            <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">Create and manage products, images, and pricing.</p>
+            <Button onClick={() => navigate("/admin/products")} className="w-full">
+              Manage Products
             </Button>
           </CardContent>
         </Card>

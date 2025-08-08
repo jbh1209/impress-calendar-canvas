@@ -12,13 +12,13 @@ import CustomerOrders from "@/pages/CustomerOrders";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import ProductManagement from "@/pages/admin/ProductManagement";
 import ProductCatalog from "@/pages/admin/ProductCatalog";
-import TemplateManagement from "@/pages/admin/TemplateManagement";
 import UserManagement from "@/pages/admin/UserManagement";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import AdminLayout from "@/layouts/AdminLayout";
 import AuthLayout from "@/layouts/AuthLayout";
+import PitchPrintCallback from "@/pages/customize/Callback";
 
 function App() {
   return (
@@ -40,6 +40,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/shutterstock" element={<ShutterstockPage />} />
               <Route path="/orders" element={<CustomerOrders />} />
+              <Route path="/customize/callback" element={<PitchPrintCallback />} />
             </Route>
             
             {/* Admin Routes */}
@@ -65,14 +66,6 @@ function App() {
                 element={
                   <AdminProtectedRoute>
                     <ProductCatalog />
-                  </AdminProtectedRoute>
-                }
-              />
-              <Route
-                path="templates"
-                element={
-                  <AdminProtectedRoute>
-                    <TemplateManagement />
                   </AdminProtectedRoute>
                 }
               />

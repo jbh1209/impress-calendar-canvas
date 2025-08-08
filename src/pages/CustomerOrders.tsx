@@ -144,10 +144,10 @@ const CustomerOrders: React.FC = () => {
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
               <p className="text-gray-600 mb-4">
-                You haven't placed any calendar orders yet. Browse our templates to get started!
+                You haven't placed any calendar orders yet. Browse our products to get started!
               </p>
               <Button onClick={() => window.location.href = '/'}>
-                Browse Templates
+                Browse Products
               </Button>
             </CardContent>
           </Card>

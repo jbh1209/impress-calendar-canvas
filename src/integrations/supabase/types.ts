@@ -14,6 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
+      addresses: {
+        Row: {
+          city: string
+          country: string
+          created_at: string
+          full_name: string | null
+          id: string
+          line1: string
+          line2: string | null
+          phone: string | null
+          postal_code: string
+          state: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city: string
+          country: string
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          line1: string
+          line2?: string | null
+          phone?: string | null
+          postal_code: string
+          state?: string | null
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string
+          country?: string
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          line1?: string
+          line2?: string | null
+          phone?: string | null
+          postal_code?: string
+          state?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cart_items: {
+        Row: {
+          cart_id: string
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          total_price: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          cart_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity?: number
+          total_price: number
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          cart_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      carts: {
+        Row: {
+          created_at: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       customization_zones: {
         Row: {
           created_at: string
@@ -153,6 +258,84 @@ export type Database = {
           },
         ]
       }
+      payment_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          order_id: string
+          provider: string
+          raw_payload: Json | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          order_id: string
+          provider?: string
+          raw_payload?: Json | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          order_id?: string
+          provider?: string
+          raw_payload?: Json | null
+          status?: string
+        }
+        Relationships: []
+      }
+      pitchprint_projects: {
+        Row: {
+          cart_item_id: string | null
+          created_at: string
+          id: string
+          order_item_id: string | null
+          payload: Json | null
+          pdf_url: string | null
+          preview_url: string | null
+          product_id: string
+          project_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cart_item_id?: string | null
+          created_at?: string
+          id?: string
+          order_item_id?: string | null
+          payload?: Json | null
+          pdf_url?: string | null
+          preview_url?: string | null
+          product_id: string
+          project_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cart_item_id?: string | null
+          created_at?: string
+          id?: string
+          order_item_id?: string | null
+          payload?: Json | null
+          pdf_url?: string | null
+          preview_url?: string | null
+          product_id?: string
+          project_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_images: {
         Row: {
           alt_text: string | null
@@ -277,12 +460,14 @@ export type Database = {
           category: string | null
           created_at: string
           created_by: string | null
+          customization_help_text: string | null
           description: string | null
           dimensions: string | null
           id: string
           is_active: boolean
           name: string
           pitchprint_design_id: string | null
+          requires_customization: boolean
           tags: string[] | null
           thumbnail_url: string | null
           updated_at: string
@@ -292,12 +477,14 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string | null
+          customization_help_text?: string | null
           description?: string | null
           dimensions?: string | null
           id?: string
           is_active?: boolean
           name: string
           pitchprint_design_id?: string | null
+          requires_customization?: boolean
           tags?: string[] | null
           thumbnail_url?: string | null
           updated_at?: string
@@ -307,12 +494,14 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string | null
+          customization_help_text?: string | null
           description?: string | null
           dimensions?: string | null
           id?: string
           is_active?: boolean
           name?: string
           pitchprint_design_id?: string | null
+          requires_customization?: boolean
           tags?: string[] | null
           thumbnail_url?: string | null
           updated_at?: string
