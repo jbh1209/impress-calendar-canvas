@@ -51,6 +51,17 @@ const Cart = () => {
           const images = (imagesRaw as unknown as any[]) || [];
           image = images?.[0]?.image_url ?? null;
         }
+
+        // Try to use PitchPrint preview if associated
+        const { data: pp } = await supabase
+          .from('pitchprint_projects' as any)
+          .select('project_id, preview_url')
+          .eq('cart_item_id', ci.id)
+          .maybeSingle();
+        if ((pp as any)?.preview_url) {
+          image = (pp as any).preview_url as string;
+        }
+
         result.push({
           id: ci.id,
           product_id: ci.product_id,
