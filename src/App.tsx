@@ -13,6 +13,8 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import ProductManagement from "@/pages/admin/ProductManagement";
 import ProductCatalog from "@/pages/admin/ProductCatalog";
 import UserManagement from "@/pages/admin/UserManagement";
+import OrdersPage from "@/pages/admin/Orders";
+import AdminSettingsPage from "@/pages/admin/Settings";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
@@ -86,6 +88,24 @@ function App() {
                 element={
                   <AdminProtectedRoute>
                     <UserManagement />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="orders"
+                element={
+                  <AdminProtectedRoute>
+                    {/** Admin Orders page */}
+                    <OrdersPage />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <AdminProtectedRoute>
+                    {/** Admin Settings page */}
+                    <AdminSettingsPage />
                   </AdminProtectedRoute>
                 }
               />
