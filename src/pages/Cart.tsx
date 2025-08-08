@@ -137,7 +137,9 @@ const Cart = () => {
                 <span>Subtotal</span>
                 <span className="font-semibold">R {subtotal.toFixed(2)}</span>
               </div>
-              <Button className="w-full" disabled>Checkout (Coming soon)</Button>
+              <Link to="/checkout">
+                <Button className="w-full">Checkout</Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

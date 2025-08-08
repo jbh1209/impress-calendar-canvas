@@ -216,39 +216,59 @@ export type Database = {
       }
       orders: {
         Row: {
+          billing_address_id: string | null
           created_at: string
           customization_data: Json | null
           id: string
           pdf_url: string | null
+          shipping_address_id: string | null
           status: string
-          template_id: string
+          template_id: string | null
           total_amount: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          billing_address_id?: string | null
           created_at?: string
           customization_data?: Json | null
           id?: string
           pdf_url?: string | null
+          shipping_address_id?: string | null
           status?: string
-          template_id: string
+          template_id?: string | null
           total_amount: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          billing_address_id?: string | null
           created_at?: string
           customization_data?: Json | null
           id?: string
           pdf_url?: string | null
+          shipping_address_id?: string | null
           status?: string
-          template_id?: string
+          template_id?: string | null
           total_amount?: number
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_billing_address_id_fkey"
+            columns: ["billing_address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_shipping_address_id_fkey"
+            columns: ["shipping_address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_template_id_fkey"
             columns: ["template_id"]

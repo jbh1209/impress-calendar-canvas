@@ -22,6 +22,9 @@ import PitchPrintCallback from "@/pages/customize/Callback";
 import Products from "@/pages/Products";
 import ProductDetail from "@/pages/ProductDetail";
 import Cart from "@/pages/Cart";
+import Checkout from "@/pages/Checkout";
+import PaymentSuccess from "@/pages/PaymentSuccess";
+import PaymentCanceled from "@/pages/PaymentCanceled";
 
 function App() {
   return (
@@ -33,6 +36,8 @@ function App() {
             <Route path="/products" element={<Products />} />
             <Route path="/products/:id" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/payment-canceled" element={<PaymentCanceled />} />
             
             
             {/* Auth Routes */}
@@ -47,6 +52,7 @@ function App() {
               <Route path="/shutterstock" element={<ShutterstockPage />} />
               <Route path="/orders" element={<CustomerOrders />} />
               <Route path="/customize/callback" element={<PitchPrintCallback />} />
+              <Route path="/checkout" element={<Checkout />} />
             </Route>
             
             {/* Admin Routes */}
