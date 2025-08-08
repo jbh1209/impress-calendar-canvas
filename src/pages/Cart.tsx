@@ -4,6 +4,7 @@ import { getOrCreateActiveCart } from "@/services/cartService";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { pitchprintService } from "@/services/pitchprintService";
 
 interface CartItemView {
   id: string;
@@ -12,11 +13,19 @@ interface CartItemView {
   price: number;
   quantity: number;
   image?: string | null;
+  project_id?: string;
 }
 
 const Cart = () => {
   const [items, setItems] = useState<CartItemView[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleEditDesign = (item: CartItemView) => {
+    if (!item.project_id) return;
+    const returnUrl = `${window.location.origin}/customize/callback?product_id=${item.product_id}`;
+    const url = pitchprintService.generateProjectEditUrl(item.project_id, { returnUrl });
+    window.open(url, "_blank");
+  };
 
   useEffect(() => {
     document.title = "Your Cart | Impress";
@@ -69,6 +78,7 @@ const Cart = () => {
           price: Number(ci.unit_price),
           quantity: ci.quantity,
           image,
+          project_id: (pp as any)?.project_id ?? undefined,
         });
       }
       setItems(result);
@@ -109,7 +119,14 @@ const Cart = () => {
                     <div className="font-medium">{i.name}</div>
                     <div className="text-sm text-gray-600">Qty: {i.quantity}</div>
                   </div>
-                  <div className="font-semibold">R {(i.price * i.quantity).toFixed(2)}</div>
+                  <div className="flex items-center gap-3">
+                    <div className="font-semibold">R {(i.price * i.quantity).toFixed(2)}</div>
+                    {i.project_id && (
+                      <Button size="sm" variant="outline" onClick={() => handleEditDesign(i)}>
+                        Edit Design
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}

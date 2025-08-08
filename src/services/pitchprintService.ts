@@ -161,6 +161,17 @@ class PitchPrintService {
 
     return `${baseUrl}?${params.toString()}`;
   }
+
+  generateProjectEditUrl(projectId: string, options: { returnUrl?: string } = {}): string {
+    const baseUrl = 'https://api.pitchprint.io/runtime/client-demo.html';
+    const params = new URLSearchParams({
+      mode: 'edit',
+      project_id: projectId,
+      ...(options.returnUrl && { return_url: options.returnUrl })
+    });
+
+    return `${baseUrl}?${params.toString()}`;
+  }
 }
 
 export const pitchprintService = new PitchPrintService();
