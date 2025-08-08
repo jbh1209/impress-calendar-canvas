@@ -53,23 +53,19 @@ const ProductManagement = () => {
   }, []);
   
   useEffect(() => {
-    // Load specific product if ID is provided
+    // Load specific product if ID is provided and not creating new
     const loadProduct = async () => {
-      if (!productId) return;
-      
+      if (!productId || productId === "new") return;
       setIsLoading(true);
       const loadedProduct = await getProductById(productId);
-      
       if (loadedProduct) {
         setProduct(loadedProduct);
       } else {
         toast.error("Product not found");
         navigate("/admin/products");
       }
-      
       setIsLoading(false);
     };
-    
     loadProduct();
   }, [productId, navigate]);
   

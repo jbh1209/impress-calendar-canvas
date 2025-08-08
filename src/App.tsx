@@ -17,6 +17,7 @@ import OrdersPage from "@/pages/admin/Orders";
 import AdminSettingsPage from "@/pages/admin/Settings";
 import CustomersPage from "@/pages/admin/Customers";
 import AnalyticsPage from "@/pages/admin/Analytics";
+import ProductsIndex from "@/pages/admin/ProductsIndex";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
@@ -71,6 +72,23 @@ function App() {
               />
               <Route
                 path="products"
+                element={
+                  <AdminProtectedRoute>
+                    {/* Products index with table + slide-over */}
+                    <ProductsIndex />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="products/new"
+                element={
+                  <AdminProtectedRoute>
+                    <ProductManagement />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="products/:productId"
                 element={
                   <AdminProtectedRoute>
                     <ProductManagement />
