@@ -55,9 +55,9 @@ const Navbar = () => {
           <nav className="hidden md:flex items-center space-x-8">
             <button onClick={onNavigateHome} className="hover:text-primary transition-colors">Home</button>
             <button onClick={onNavigateProducts} className="hover:text-primary transition-colors">Shop</button>
-            <Link to="/" className="hover:text-primary transition-colors">Collections</Link>
-            <Link to="/" className="hover:text-primary transition-colors">About</Link>
-            <Link to="/" className="hover:text-primary transition-colors">Contact</Link>
+            <Link to="/collections" className="hover:text-primary transition-colors">Collections</Link>
+            <Link to="/about" className="hover:text-primary transition-colors">About</Link>
+            <Link to="/contact" className="hover:text-primary transition-colors">Contact</Link>
           </nav>
 
           {/* Search */}
