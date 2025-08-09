@@ -8,13 +8,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ImageWithFallback from "@/components/ImageWithFallback";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatZAR } from "@/utils/currency";
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'featured' | 'price-low' | 'price-high'>('featured');
 
   useEffect(() => {
-    document.title = "Calendars Shop | Impress";
+    document.title = "Shop Calendars | Impress";
+    // SEO: meta description and canonical tag
+    const metaDesc = (document.querySelector('meta[name="description"]') as HTMLMetaElement) || (() => {
+      const m = document.createElement('meta');
+      m.setAttribute('name', 'description');
+      document.head.appendChild(m);
+      return m as HTMLMetaElement;
+    })();
+    metaDesc.setAttribute('content', 'Shop customizable photo calendars. Premium print quality with fast turnaround from Impress.');
+
+    const linkCanonical = (document.querySelector('link[rel="canonical"]') as HTMLLinkElement) || (() => {
+      const l = document.createElement('link');
+      l.setAttribute('rel', 'canonical');
+      document.head.appendChild(l);
+      return l as HTMLLinkElement;
+    })();
+    linkCanonical.setAttribute('href', window.location.origin + '/products');
+
     (async () => {
       const list = await getAllProducts(false, true, false);
       setProducts(list);
@@ -28,7 +47,29 @@ const Products = () => {
     return 0;
   });
 
-  if (loading) return <div className="container mx-auto p-6">Loading products...</div>;
+  if (loading) return (
+    <div className="min-h-screen">
+      <Navbar />
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-9 w-44" />
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="overflow-hidden">
+              <Skeleton className="aspect-square w-full" />
+              <div className="p-4 space-y-3">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-8 w-24" />
+              </div>
+            </Card>
+          ))}
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
 
   return (
     <div className="min-h-screen">
@@ -36,7 +77,7 @@ const Products = () => {
       <main className="container mx-auto px-4 py-8">
         <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl lg:text-4xl">All Products</h1>
+            <h1 className="text-3xl lg:text-4xl">Shop Calendars</h1>
             <p className="text-muted-foreground">Showing {productsSorted.length} of {products.length} products</p>
           </div>
           <div className="flex items-center gap-4">
@@ -71,7 +112,7 @@ const Products = () => {
                 <div className="p-4 space-y-3">
                   <h3 className="line-clamp-2">{p.name}</h3>
                   <div className="flex items-center justify-between">
-                    <div className="text-lg font-semibold">R {Number(p.base_price).toFixed(2)}</div>
+                    <div className="text-lg font-semibold">{formatZAR(p.base_price)}</div>
                     <Link to={`/products/${p.id}`}>
                       <Button size="sm">View</Button>
                     </Link>
