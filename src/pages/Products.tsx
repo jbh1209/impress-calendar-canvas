@@ -4,12 +4,14 @@ import { getAllProducts } from "@/services/productService";
 import { Product } from "@/services/types/productTypes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<'featured' | 'price-low' | 'price-high'>('featured');
 
   useEffect(() => {
     document.title = "Calendars Shop | Impress";
@@ -20,6 +22,12 @@ const Products = () => {
     })();
   }, []);
 
+  const productsSorted = [...products].sort((a, b) => {
+    if (sortBy === 'price-low') return Number(a.base_price) - Number(b.base_price);
+    if (sortBy === 'price-high') return Number(b.base_price) - Number(a.base_price);
+    return 0;
+  });
+
   if (loading) return <div className="container mx-auto p-6">Loading products...</div>;
 
   return (
@@ -29,11 +37,23 @@ const Products = () => {
         <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl lg:text-4xl">All Products</h1>
-            <p className="text-muted-foreground">Showing {products.length} products</p>
+            <p className="text-muted-foreground">Showing {productsSorted.length} of {products.length} products</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="featured">Featured</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </header>
         <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((p) => (
+          {productsSorted.map((p) => (
             <Card key={p.id} className="group overflow-hidden hover:shadow-lg transition-all">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden bg-muted relative">

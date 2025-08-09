@@ -140,6 +140,9 @@ const Cart = () => {
               <Link to="/checkout">
                 <Button className="w-full">Checkout</Button>
               </Link>
+              <Link to="/products">
+                <Button variant="outline" className="w-full mt-2">Continue Shopping</Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
