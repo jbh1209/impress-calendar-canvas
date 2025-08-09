@@ -1,79 +1,106 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Search, ShoppingBag, User, Menu, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { User, LogOut, ShoppingCart, Image } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 const Navbar = () => {
-  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [cartItemCount, setCartItemCount] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: cart } = await supabase
+        .from('carts' as any)
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (!cart) return;
+      const { count } = await supabase
+        .from('cart_items' as any)
+        .select('*', { count: 'exact', head: true })
+        .eq('cart_id', (cart as any).id);
+      setCartItemCount(count || 0);
+    })();
+  }, []);
+
+  const onNavigateHome = () => navigate("/");
+  const onNavigateProducts = () => navigate("/products");
+  const onOpenCart = () => navigate("/cart");
 
   return (
-    <nav className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="text-xl font-bold text-primary">
-              Impress Calendars
-            </Link>
-          </div>
-          
+    <header className="bg-background border-b border-border sticky top-0 z-40">
+      <div className="bg-primary text-primary-foreground py-2 px-4 text-center text-sm">
+        Free shipping on orders over R500 • 30-day returns
+      </div>
+
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          {/* Logo */}
           <div className="flex items-center space-x-4">
-            <Link to="/products" className="text-gray-700 hover:text-blue-600">
-              Products
+            <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+              <Menu className="h-5 w-5" />
+            </Button>
+            <button onClick={onNavigateHome} className="text-2xl tracking-tight hover:opacity-80 transition-opacity">
+              Impress Calendars
+            </button>
+          </div>
+
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center space-x-8">
+            <button onClick={onNavigateHome} className="hover:text-primary transition-colors">Home</button>
+            <button onClick={onNavigateProducts} className="hover:text-primary transition-colors">Shop</button>
+            <Link to="/" className="hover:text-primary transition-colors">Collections</Link>
+            <Link to="/" className="hover:text-primary transition-colors">About</Link>
+            <Link to="/" className="hover:text-primary transition-colors">Contact</Link>
+          </nav>
+
+          {/* Search */}
+          <div className="hidden lg:flex items-center flex-1 max-w-md mx-8">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input type="search" placeholder="Search products..." className="pl-10" />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Search">
+              <Search className="h-5 w-5" />
+            </Button>
+            <Link to="/auth/signin">
+              <Button variant="ghost" size="icon" aria-label="Account">
+                <User className="h-5 w-5" />
+              </Button>
             </Link>
-            <Link to="/cart" className="text-gray-700 hover:text-blue-600 flex items-center gap-1">
-              <ShoppingCart className="h-4 w-4" />
-              Cart
-            </Link>
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Account
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="z-50 bg-white" align="end">
-                  <DropdownMenuItem asChild>
-                    <Link to="/orders" className="flex items-center gap-2">
-                      <ShoppingCart className="h-4 w-4" />
-                      My Orders
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/shutterstock" className="flex items-center gap-2">
-                      <Image className="h-4 w-4" />
-                      Stock Images
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <>
-                <Link to="/auth/signin" className="text-blue-500 hover:text-blue-700">
-                  Sign in
-                </Link>
-                <Link to="/auth/signup" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                  Sign up
-                </Link>
-              </>
-            )}
+            <Button variant="ghost" size="icon" aria-label="Wishlist">
+              <Heart className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="relative" onClick={onOpenCart} aria-label="Cart">
+              <ShoppingBag className="h-5 w-5" />
+              {cartItemCount > 0 && (
+                <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                  {cartItemCount}
+                </Badge>
+              )}
+            </Button>
           </div>
         </div>
       </div>
-    </nav>
+
+      {/* Mobile Search */}
+      <div className="lg:hidden px-4 pb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input type="search" placeholder="Search products..." className="pl-10" />
+        </div>
+      </div>
+    </header>
   );
 };
 
