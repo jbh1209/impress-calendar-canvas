@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +11,9 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { formatZAR } from "@/utils/currency";
+import { useToast } from "@/hooks/use-toast";
 import { Check, Edit3, Package, CreditCard, FileText } from "lucide-react";
 
 interface CartItemView {
@@ -19,25 +24,46 @@ interface CartItemView {
   image_url?: string;
 }
 
+const shippingSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  firstName: z.string().min(2, "First name must be at least 2 characters"),
+  lastName: z.string().min(2, "Last name must be at least 2 characters"),
+  line1: z.string().min(5, "Address line 1 must be at least 5 characters"),
+  line2: z.string().optional(),
+  city: z.string().min(2, "City must be at least 2 characters"),
+  state: z.string().optional(),
+  postal: z.string().min(4, "Postal code must be at least 4 characters"),
+  country: z.string().min(2, "Country is required"),
+  phone: z.string().optional(),
+  shippingMethod: z.enum(["standard", "express"]),
+});
+
+type ShippingFormData = z.infer<typeof shippingSchema>;
+
 const Checkout = () => {
   const [items, setItems] = useState<CartItemView[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const navigate = useNavigate();
-
-  // Form state
-  const [email, setEmail] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [line1, setLine1] = useState("");
-  const [line2, setLine2] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [postal, setPostal] = useState("");
-  const [country, setCountry] = useState("South Africa");
-  const [phone, setPhone] = useState("");
-  const [shippingMethod, setShippingMethod] = useState("standard");
   const [step, setStep] = useState<'shipping' | 'payment' | 'review'>("shipping");
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const form = useForm<ShippingFormData>({
+    resolver: zodResolver(shippingSchema),
+    defaultValues: {
+      email: "",
+      firstName: "",
+      lastName: "",
+      line1: "",
+      line2: "",
+      city: "",
+      state: "",
+      postal: "",
+      country: "South Africa",
+      phone: "",
+      shippingMethod: "standard",
+    },
+  });
 
   const steps = [
     { id: 'shipping', title: 'Shipping', icon: Package },
@@ -50,13 +76,16 @@ const Checkout = () => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Please sign in to checkout");
+        toast({
+          title: "Please sign in to checkout",
+          variant: "destructive",
+        });
         navigate("/auth/signin");
         return;
       }
 
       // Pre-fill email
-      setEmail(user.email || "");
+      form.setValue("email", user.email || "");
 
       // Load cart summary
       const { data: carts } = await supabase
@@ -68,7 +97,11 @@ const Checkout = () => {
 
       const cart = carts?.[0];
       if (!cart) {
-        toast.error("No active cart");
+        toast({
+          title: "No active cart found",
+          description: "Please add items to your cart before checkout",
+          variant: "destructive",
+        });
         navigate("/cart");
         return;
       }
@@ -100,13 +133,13 @@ const Checkout = () => {
     })();
   }, [navigate]);
 
+  const shippingMethod = form.watch("shippingMethod");
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.price * i.quantity, 0), [items]);
   const shipping = shippingMethod === "express" ? 150 : 65;
   const vat = (subtotal + shipping) * 0.15;
   const total = subtotal + shipping + vat;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (data: ShippingFormData) => {
     setSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -117,14 +150,14 @@ const Checkout = () => {
         .from('addresses' as any)
         .insert([{ 
           user_id: user.id,
-          full_name: `${firstName} ${lastName}`,
-          line1,
-          line2: line2 || null,
-          city,
-          state: state || null,
-          postal_code: postal,
-          country,
-          phone: phone || null,
+          full_name: `${data.firstName} ${data.lastName}`,
+          line1: data.line1,
+          line2: data.line2 || null,
+          city: data.city,
+          state: data.state || null,
+          postal_code: data.postal,
+          country: data.country,
+          phone: data.phone || null,
           type: 'shipping'
         }])
         .select()
@@ -166,7 +199,11 @@ const Checkout = () => {
       form.submit();
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || 'Checkout failed');
+      toast({
+        title: "Checkout Failed",
+        description: err.message || 'Something went wrong during checkout',
+        variant: "destructive",
+      });
       setSubmitting(false);
     }
   };
@@ -227,94 +264,198 @@ const Checkout = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <form onSubmit={(e) => { e.preventDefault(); setStep('payment'); }} className="space-y-4">
-                  <div>
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(() => setStep('payment'))} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address</FormLabel>
+                          <FormControl>
+                            <Input type="email" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>First Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Last Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
-                    <div>
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
-                    </div>
-                  </div>
 
-                  <div>
-                    <Label htmlFor="line1">Address Line 1</Label>
-                    <Input id="line1" value={line1} onChange={(e) => setLine1(e.target.value)} required />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="line2">Address Line 2 (optional)</Label>
-                    <Input id="line2" value={line2} onChange={(e) => setLine2(e.target.value)} />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="city">City</Label>
-                      <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} required />
+                    <FormField
+                      control={form.control}
+                      name="line1"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address Line 1</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="line2"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address Line 2 (optional)</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>City</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>State/Province</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="postal"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Postal Code</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
-                    <div>
-                      <Label htmlFor="state">State/Province</Label>
-                      <Input id="state" value={state} onChange={(e) => setState(e.target.value)} />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="country"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Country</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone (optional)</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
-                    <div>
-                      <Label htmlFor="postal">Postal Code</Label>
-                      <Input id="postal" value={postal} onChange={(e) => setPostal(e.target.value)} required />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="country">Country</Label>
-                      <Input id="country" value={country} onChange={(e) => setCountry(e.target.value)} required />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Phone (optional)</Label>
-                      <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                    </div>
-                  </div>
 
-                  {/* Shipping Method */}
-                  <div className="space-y-3">
-                    <Label>Shipping Method</Label>
-                    <RadioGroup value={shippingMethod} onValueChange={setShippingMethod}>
-                      <div className="flex items-center space-x-2 p-3 border rounded-lg">
-                        <RadioGroupItem value="standard" id="standard" />
-                        <Label htmlFor="standard" className="flex-1 cursor-pointer">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <div className="font-medium">Standard Shipping</div>
-                              <div className="text-sm text-muted-foreground">5-7 business days</div>
-                            </div>
-                            <span className="font-medium">R 65.00</span>
-                          </div>
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2 p-3 border rounded-lg">
-                        <RadioGroupItem value="express" id="express" />
-                        <Label htmlFor="express" className="flex-1 cursor-pointer">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <div className="font-medium">Express Shipping</div>
-                              <div className="text-sm text-muted-foreground">2-3 business days</div>
-                            </div>
-                            <span className="font-medium">R 150.00</span>
-                          </div>
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
+                    <FormField
+                      control={form.control}
+                      name="shippingMethod"
+                      render={({ field }) => (
+                        <FormItem className="space-y-3">
+                          <FormLabel>Shipping Method</FormLabel>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              className="grid gap-3"
+                            >
+                              <div className="flex items-center space-x-2 p-3 border rounded-lg">
+                                <RadioGroupItem value="standard" id="standard" />
+                                <Label htmlFor="standard" className="flex-1 cursor-pointer">
+                                  <div className="flex justify-between items-center">
+                                    <div>
+                                      <div className="font-medium">Standard Shipping</div>
+                                      <div className="text-sm text-muted-foreground">5-7 business days</div>
+                                    </div>
+                                    <span className="font-medium">{formatZAR(65)}</span>
+                                  </div>
+                                </Label>
+                              </div>
+                              <div className="flex items-center space-x-2 p-3 border rounded-lg">
+                                <RadioGroupItem value="express" id="express" />
+                                <Label htmlFor="express" className="flex-1 cursor-pointer">
+                                  <div className="flex justify-between items-center">
+                                    <div>
+                                      <div className="font-medium">Express Shipping</div>
+                                      <div className="text-sm text-muted-foreground">2-3 business days</div>
+                                    </div>
+                                    <span className="font-medium">{formatZAR(150)}</span>
+                                  </div>
+                                </Label>
+                              </div>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <div className="flex justify-end pt-4">
-                    <Button type="submit" size="lg">Continue to Payment</Button>
-                  </div>
-                </form>
+                    <div className="flex justify-end pt-4">
+                      <Button type="submit" size="lg">Continue to Payment</Button>
+                    </div>
+                  </form>
+                </Form>
               </CardContent>
             </Card>
           )}
@@ -373,11 +514,11 @@ const Checkout = () => {
                     </Button>
                   </div>
                   <div className="text-sm text-muted-foreground space-y-1 p-3 bg-muted rounded-lg">
-                    <p className="font-medium text-foreground">{firstName} {lastName}</p>
-                    <p>{line1}{line2 ? `, ${line2}` : ''}</p>
-                    <p>{city}{state ? `, ${state}` : ''} {postal}</p>
-                    <p>{country}</p>
-                    {phone && <p>{phone}</p>}
+                    <p className="font-medium text-foreground">{form.getValues("firstName")} {form.getValues("lastName")}</p>
+                    <p>{form.getValues("line1")}{form.getValues("line2") ? `, ${form.getValues("line2")}` : ''}</p>
+                    <p>{form.getValues("city")}{form.getValues("state") ? `, ${form.getValues("state")}` : ''} {form.getValues("postal")}</p>
+                    <p>{form.getValues("country")}</p>
+                    {form.getValues("phone") && <p>{form.getValues("phone")}</p>}
                   </div>
                 </div>
 
@@ -401,7 +542,7 @@ const Checkout = () => {
 
                 <div className="flex gap-3 pt-4">
                   <Button variant="outline" onClick={() => setStep('payment')}>Back</Button>
-                  <Button onClick={handleSubmit} disabled={submitting} size="lg">
+                  <Button onClick={form.handleSubmit(handleSubmit)} disabled={submitting} size="lg">
                     {submitting ? 'Processing...' : 'Complete Order'}
                   </Button>
                 </div>
@@ -445,11 +586,11 @@ const Checkout = () => {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{item.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        R {item.price.toFixed(2)} each
+                        {formatZAR(item.price)} each
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">R {(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-medium">{formatZAR(item.price * item.quantity)}</p>
                     </div>
                   </div>
                 ))}
@@ -461,20 +602,20 @@ const Checkout = () => {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>R {subtotal.toFixed(2)}</span>
+                  <span>{formatZAR(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span>R {shipping.toFixed(2)}</span>
+                  <span>{formatZAR(shipping)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>VAT (15%)</span>
-                  <span>R {vat.toFixed(2)}</span>
+                  <span>{formatZAR(vat)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span>R {total.toFixed(2)}</span>
+                  <span>{formatZAR(total)}</span>
                 </div>
               </div>
             </CardContent>
