@@ -68,3 +68,42 @@ export const addCartItem = async (cartId: string, productId: string, quantity: n
   }
   return data as unknown as CartItem;
 };
+
+export const updateCartItemQuantity = async (itemId: string, quantity: number) => {
+  const newQty = Math.max(1, quantity);
+  const { data, error } = await supabase
+    .from('cart_items' as any)
+    .update({
+      quantity: newQty,
+      total_price: supabase.rpc ? undefined : undefined,
+    })
+    .eq('id', itemId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating item quantity:', error);
+    toast.error('Could not update item quantity');
+    return null;
+  }
+
+  // Ensure total_price is consistent (unit_price * quantity)
+  const updated = data as unknown as any;
+  if (updated && typeof updated.unit_price === 'number') {
+    updated.total_price = updated.unit_price * updated.quantity;
+  }
+  return updated as CartItem;
+};
+
+export const removeCartItem = async (itemId: string) => {
+  const { error } = await supabase
+    .from('cart_items' as any)
+    .delete()
+    .eq('id', itemId);
+  if (error) {
+    console.error('Error removing item:', error);
+    toast.error('Could not remove item');
+    return false;
+  }
+  return true;
+};

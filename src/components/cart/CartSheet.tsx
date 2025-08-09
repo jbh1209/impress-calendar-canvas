@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { supabase } from "@/integrations/supabase/client";
 import { getOrCreateActiveCart } from "@/services/cartService";
+import { formatZAR } from "@/utils/currency";
 
 interface CartItemView {
   id: string;
@@ -93,7 +94,6 @@ const CartSheet: React.FC<CartSheetProps> = ({ children }) => {
     }
   }, [open, loadItems]);
 
-  const formatZAR = useCallback((n: number) => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(n), []);
 
   const subtotal = useMemo(
     () => items.reduce((sum, i) => sum + i.price * i.quantity, 0),

@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getOrCreateActiveCart } from "@/services/cartService";
+import { getOrCreateActiveCart, updateCartItemQuantity, removeCartItem } from "@/services/cartService";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { pitchprintService } from "@/services/pitchprintService";
 import ImageWithFallback from "@/components/ImageWithFallback";
+import { formatZAR } from "@/utils/currency";
+import { toast } from "sonner";
 interface CartItemView {
   id: string;
   product_id: string;
@@ -19,6 +21,7 @@ interface CartItemView {
 const Cart = () => {
   const [items, setItems] = useState<CartItemView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const handleEditDesign = (item: CartItemView) => {
     if (!item.project_id) return;
@@ -86,6 +89,37 @@ const Cart = () => {
     })();
   }, []);
 
+  const handleQuantityChange = async (itemId: string, currentQty: number, delta: number) => {
+    const newQty = currentQty + delta;
+    if (newQty < 1) {
+      await handleRemove(itemId);
+      return;
+    }
+    setUpdatingId(itemId);
+    const updated = await updateCartItemQuantity(itemId, newQty);
+    if (!updated) {
+      toast.error('Could not update quantity');
+      setUpdatingId(null);
+      return;
+    }
+    setItems(prev => prev
+      .map(it => it.id === itemId ? { ...it, quantity: updated.quantity } : it)
+      .filter(it => it.quantity > 0)
+    );
+    setUpdatingId(null);
+  };
+
+  const handleRemove = async (itemId: string) => {
+    setUpdatingId(itemId);
+    const ok = await removeCartItem(itemId);
+    if (!ok) {
+      setUpdatingId(null);
+      return;
+    }
+    setItems(prev => prev.filter(it => it.id !== itemId));
+    setUpdatingId(null);
+  };
+
   const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.price * i.quantity, 0), [items]);
 
   if (loading) return <div className="container mx-auto p-6">Loading cart...</div>;
@@ -117,10 +151,15 @@ const Cart = () => {
                   </div>
                   <div className="flex-1">
                     <div className="font-medium">{i.name}</div>
-                    <div className="text-sm text-muted-foreground">Qty: {i.quantity}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Button variant="outline" size="icon" onClick={() => handleQuantityChange(i.id, i.quantity, -1)} disabled={updatingId === i.id} aria-label="Decrease quantity">-</Button>
+                      <span className="w-8 text-center">{i.quantity}</span>
+                      <Button variant="outline" size="icon" onClick={() => handleQuantityChange(i.id, i.quantity, 1)} disabled={updatingId === i.id} aria-label="Increase quantity">+</Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleRemove(i.id)} disabled={updatingId === i.id}>Remove</Button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="font-semibold">R {(i.price * i.quantity).toFixed(2)}</div>
+                    <div className="font-semibold">{formatZAR(i.price * i.quantity)}</div>
                     {i.project_id && (
                       <Button size="sm" variant="outline" onClick={() => handleEditDesign(i)}>
                         Edit Design
@@ -135,7 +174,7 @@ const Cart = () => {
             <CardContent className="p-6 space-y-3">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span className="font-semibold">R {subtotal.toFixed(2)}</span>
+                <span className="font-semibold">{formatZAR(subtotal)}</span>
               </div>
               <Link to="/checkout">
                 <Button className="w-full">Checkout</Button>
