@@ -152,8 +152,9 @@ const Checkout = () => {
   if (loading) return <div className="container mx-auto p-6">Loading checkout...</div>;
 
   return (
-    <main className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Checkout</h1>
+    <main className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl lg:text-4xl mb-2">Checkout</h1>
+      <p className="text-muted-foreground mb-6">Secure PayFast payment after shipping details</p>
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-2">
           <CardContent className="p-6">

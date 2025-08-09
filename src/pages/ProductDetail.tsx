@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { getOrCreateActiveCart, addCartItem } from "@/services/cartService";
 import { pitchprintService } from "@/services/pitchprintService";
-
+import ImageWithFallback from "@/components/ImageWithFallback";
 const ProductDetail = () => {
   const { id } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
@@ -58,23 +58,26 @@ const ProductDetail = () => {
   if (!product) return <div className="container mx-auto p-6">Product not found.</div>;
 
   return (
-    <main className="container mx-auto p-6">
+    <main className="container mx-auto px-4 py-8">
       <div className="grid gap-8 md:grid-cols-2">
         <Card className="overflow-hidden">
           <CardContent className="p-0">
-            <div className="aspect-[4/3] bg-gray-100">
+            <div className="aspect-square bg-muted">
               {product.images?.[0]?.image_url ? (
-                <img src={product.images[0].image_url} alt={product.images[0].alt_text || product.name} className="w-full h-full object-cover" />
+                <ImageWithFallback
+                  src={product.images[0].image_url}
+                  alt={product.images[0].alt_text || product.name}
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">No image</div>
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">No image</div>
               )}
             </div>
           </CardContent>
         </Card>
-        <div>
-          <h1 className="text-2xl font-bold mb-2">{product.name}</h1>
-          <p className="text-gray-600 mb-4">{product.description}</p>
-          <div className="text-xl font-semibold mb-6">R {Number(product.base_price).toFixed(2)}</div>
+        <div className="space-y-6">
+          <h1 className="text-3xl lg:text-4xl">{product.name}</h1>
+          <div className="text-2xl font-semibold">R {Number(product.base_price).toFixed(2)}</div>
           <div className="flex gap-3">
             {product.requires_customization ? (
               <Button onClick={handleCustomize}>Customize with PitchPrint</Button>
@@ -83,7 +86,10 @@ const ProductDetail = () => {
             )}
           </div>
           {product.requires_customization && product.customization_help_text && (
-            <p className="text-sm text-gray-500 mt-4">{product.customization_help_text}</p>
+            <p className="text-sm text-muted-foreground">{product.customization_help_text}</p>
+          )}
+          {product.description && (
+            <p className="text-muted-foreground">{product.description}</p>
           )}
         </div>
       </div>

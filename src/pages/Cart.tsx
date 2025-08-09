@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { pitchprintService } from "@/services/pitchprintService";
-
+import ImageWithFallback from "@/components/ImageWithFallback";
 interface CartItemView {
   id: string;
   product_id: string;
@@ -108,16 +108,16 @@ const Cart = () => {
             {items.map((i) => (
               <Card key={i.id}>
                 <CardContent className="p-4 flex gap-4 items-center">
-                  <div className="w-24 h-24 bg-gray-100 rounded overflow-hidden">
+                  <div className="w-24 h-24 bg-muted rounded-lg overflow-hidden">
                     {i.image ? (
-                      <img src={i.image} alt={i.name} className="w-full h-full object-cover" />
+                      <ImageWithFallback src={i.image} alt={i.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">No image</div>
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">No image</div>
                     )}
                   </div>
                   <div className="flex-1">
                     <div className="font-medium">{i.name}</div>
-                    <div className="text-sm text-gray-600">Qty: {i.quantity}</div>
+                    <div className="text-sm text-muted-foreground">Qty: {i.quantity}</div>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="font-semibold">R {(i.price * i.quantity).toFixed(2)}</div>
