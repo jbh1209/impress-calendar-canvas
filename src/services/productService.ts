@@ -246,26 +246,40 @@ export const saveProduct = async (product: Partial<Product>): Promise<Product | 
     
     // Save images if they exist
     if (images.length > 0) {
+      console.log('Saving images:', images);
+      
       // First, remove existing images if updating
       if (!isNewProduct) {
-        await supabase
+        const { error: deleteError } = await supabase
           .from('product_images' as any)
           .delete()
           .eq('product_id', savedProduct.id);
+        
+        if (deleteError) {
+          console.error('Error deleting existing images:', deleteError);
+        }
       }
       
       // Insert new images
       for (const image of images) {
+        // Filter out temporary IDs and ensure we have valid data
         const imageToSave = {
-          ...image,
-          product_id: savedProduct.id
+          product_id: savedProduct.id,
+          image_url: image.image_url,
+          alt_text: image.alt_text || null,
+          display_order: image.display_order || 0
         };
         
-        delete imageToSave.id;
+        console.log('Inserting image:', imageToSave);
         
-        await supabase
+        const { error: imageError } = await supabase
           .from('product_images' as any)
           .insert([imageToSave]);
+        
+        if (imageError) {
+          console.error('Error inserting image:', imageError);
+          toast.error(`Failed to save image: ${imageError.message}`);
+        }
       }
     }
     
