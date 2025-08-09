@@ -15,6 +15,8 @@ import { pitchprintService } from "@/services/pitchprintService";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { formatZAR } from "@/utils/currency";
 import { Truck, Shield, RefreshCw, Star, Heart, Share2 } from "lucide-react";
+import ProductReviews from "@/components/ProductReviews";
+import RelatedProducts from "@/components/RelatedProducts";
 const ProductDetail = () => {
   const { id } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
@@ -304,6 +306,12 @@ const ProductDetail = () => {
               </Card>
             )}
           </div>
+        </div>
+
+        {/* Related Products and Reviews */}
+        <div className="space-y-8 mt-16">
+          <RelatedProducts currentProductId={product.id} category={product.category} />
+          <ProductReviews />
         </div>
       </main>
       <Footer />
