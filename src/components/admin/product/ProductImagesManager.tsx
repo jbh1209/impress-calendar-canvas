@@ -1,11 +1,12 @@
 
 import { useState } from "react";
-import { PlusCircle, X, ArrowUp, ArrowDown } from "lucide-react";
+import { PlusCircle, X, ArrowUp, ArrowDown, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ProductImage } from "@/services/productService";
+import { ProductImage } from "@/services/types/productTypes";
+import { toast } from "@/hooks/use-toast";
 
 interface ProductImagesManagerProps {
   productId?: string;
@@ -18,21 +19,59 @@ const ProductImagesManager = ({ productId, images, onChange }: ProductImagesMana
     image_url: '',
     alt_text: ''
   });
+  const [isAddingImage, setIsAddingImage] = useState(false);
 
-  const handleAddImage = () => {
-    if (!newImage.image_url) return;
+  const handleAddImage = async () => {
+    if (!newImage.image_url?.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter an image URL",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Basic URL validation
+    try {
+      new URL(newImage.image_url);
+    } catch {
+      toast({
+        title: "Error", 
+        description: "Please enter a valid image URL",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsAddingImage(true);
     
-    const imageToAdd = {
-      ...newImage,
-      id: `temp-${Date.now()}`, // Temporary ID for client-side only
-      product_id: productId || '',
-      display_order: images.length,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    } as ProductImage;
+    try {
+      const imageToAdd = {
+        ...newImage,
+        id: `temp-${Date.now()}`, // Temporary ID for client-side only
+        product_id: productId || '',
+        display_order: images.length,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as ProductImage;
 
-    onChange([...images, imageToAdd]);
-    setNewImage({ image_url: '', alt_text: '' });
+      onChange([...images, imageToAdd]);
+      setNewImage({ image_url: '', alt_text: '' });
+      
+      toast({
+        title: "Success",
+        description: "Image added successfully"
+      });
+    } catch (error) {
+      console.error('Error adding image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add image",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAddingImage(false);
+    }
   };
 
   const handleRemoveImage = (id: string) => {
@@ -94,10 +133,19 @@ const ProductImagesManager = ({ productId, images, onChange }: ProductImagesMana
             <Button 
               variant="outline" 
               onClick={handleAddImage}
-              disabled={!newImage.image_url}
+              disabled={!newImage.image_url?.trim() || isAddingImage}
             >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Image
+              {isAddingImage ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Image
+                </>
+              )}
             </Button>
           </div>
           
@@ -108,6 +156,10 @@ const ProductImagesManager = ({ productId, images, onChange }: ProductImagesMana
                   src={image.image_url}
                   alt={image.alt_text || "Product image"}
                   className="w-full h-40 object-cover rounded-t-md"
+                  onError={(e) => {
+                    console.error('Image failed to load:', image.image_url);
+                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNSAzNUg1NVY0NUgyNVYzNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTI1IDQ1SDM1VjU1SDI1VjQ1WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K';
+                  }}
                 />
                 <div className="p-2 flex justify-between items-center">
                   <div className="text-xs truncate">{image.alt_text || "No description"}</div>
@@ -117,6 +169,7 @@ const ProductImagesManager = ({ productId, images, onChange }: ProductImagesMana
                       size="sm"
                       disabled={index === 0}
                       onClick={() => handleMoveImage(index, 'up')}
+                      title="Move up"
                     >
                       <ArrowUp className="h-4 w-4" />
                     </Button>
@@ -125,6 +178,7 @@ const ProductImagesManager = ({ productId, images, onChange }: ProductImagesMana
                       size="sm"
                       disabled={index === images.length - 1}
                       onClick={() => handleMoveImage(index, 'down')}
+                      title="Move down"
                     >
                       <ArrowDown className="h-4 w-4" />
                     </Button>
@@ -132,6 +186,7 @@ const ProductImagesManager = ({ productId, images, onChange }: ProductImagesMana
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveImage(image.id)}
+                      title="Remove image"
                     >
                       <X className="h-4 w-4" />
                     </Button>
